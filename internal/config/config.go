@@ -31,7 +31,7 @@ type DatabaseConfig struct {
 }
 
 func (d DatabaseConfig) DSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&collation=utf8mb4_unicode_ci&parseTime=True&loc=Local",
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&collate=utf8mb4_unicode_ci&parseTime=True&loc=Local",
 		d.Username, d.Password, d.Address, d.Database)
 }
 
@@ -45,13 +45,13 @@ func Load() *Config {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		Env:          getEnv("APP_ENV", "development"),
-		HTTPPort:     getEnv("HTTP_PORT", "9010"),
+		Env:          getEnv("FORGE_ENV", "development"),
+		HTTPPort:     getEnv("FORGE_HTTP_PORT", "9010"),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
-		LogLevel:     getEnv("LOG_LEVEL", "info"),
-		AllowOrigins: parseOrigins(getEnv("ALLOW_ORIGINS", "http://localhost:3000")),
+		LogLevel:     getEnv("FORGE_LOG_LEVEL", "info"),
+		AllowOrigins: parseOrigins(getEnv("FORGE_ALLOW_ORIGINS", "http://localhost:3000")),
 		Database: DatabaseConfig{
 			Database: getEnv("DB_DATABASE", "grapery"),
 			Username: getEnv("DB_USERNAME", "root"),
@@ -62,8 +62,8 @@ func Load() *Config {
 		},
 		JWT: JWTConfig{
 			Secret:          getEnv("FORGE_JWT_SECRET", "forge-admin-secret-change-me"),
-			AccessTokenExp:  24 * time.Hour,
-			RefreshTokenExp: 7 * 24 * time.Hour,
+			AccessTokenExp:  mustParseDuration(getEnv("FORGE_JWT_ACCESS_EXPIRY", "24h")),
+			RefreshTokenExp: mustParseDuration(getEnv("FORGE_JWT_REFRESH_EXPIRY", "168h")),
 		},
 	}
 
@@ -79,6 +79,14 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func mustParseDuration(s string) time.Duration {
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return 24 * time.Hour
+	}
+	return d
 }
 
 func parseOrigins(raw string) []string {

@@ -78,7 +78,6 @@ jobs:
           VERSION=$(echo ${{ github.sha }} | cut -c1-7)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Copy frontend output to embed directory
           mkdir -p internal/frontend/dist
           cp -r web/out/* internal/frontend/dist/
 
@@ -106,8 +105,6 @@ jobs:
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
-    env:
-      TAG: dev
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -118,12 +115,12 @@ jobs:
       - name: Build and push Docker image
         run: |
           docker build \
-            -t ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            -t ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev \
             --build-arg VERSION=develop-${{ github.sha }} \
             --build-arg COMMIT_SHA=${{ github.sha }} \
             --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
             .
-          docker push ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker push ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
 
   # ========================================
   # Docker 构建 - Production
@@ -135,8 +132,6 @@ jobs:
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
-    env:
-      TAG: prod
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -147,12 +142,12 @@ jobs:
       - name: Build and push Docker image
         run: |
           docker build \
-            -t ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            -t ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod \
             --build-arg VERSION=${{ github.sha }} \
             --build-arg COMMIT_SHA=${{ github.sha }} \
             --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
             .
-          docker push ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          docker push ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
 
   # ========================================
   # 部署到开发环境
@@ -171,25 +166,26 @@ jobs:
       - name: Generate .env file
         run: |
           cat > .env << EOF
-          # ========== Environment ==========
+          # ========== Docker ==========
+          IMAGE=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
+
+          # ========== Service ==========
           FORGE_ENV=development
           FORGE_HTTP_PORT=${{ env.SERVICE_PORT }}
           FORGE_LOG_LEVEL=debug
           FORGE_ALLOW_ORIGINS=*
 
-          # ========== Database Configuration ==========
+          # ========== Database ==========
           DB_DATABASE=${{ vars.DB_DATABASE || 'grapery_dev' }}
           DB_USERNAME=${{ vars.DB_USERNAME }}
           DB_PASSWORD=${{ vars.DB_PASSWORD }}
           DB_ADDRESS=${{ vars.DB_ADDRESS }}
-          DB_PORT=${{ vars.DB_PORT || '3306' }}
 
-          # ========== JWT Configuration ==========
+          # ========== JWT ==========
           FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET || 'forge-dev-secret-change-in-prod' }}
           FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '24h' }}
           FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '168h' }}
           EOF
-          echo "Development .env file generated"
 
       - name: Deploy notification
         run: |
@@ -225,32 +221,13 @@ jobs:
             mkdir -p "$SERVICE_DIR"
             cd "$SERVICE_DIR"
 
-            # Login to Aliyun ACR
             export REGISTRY=${{ env.REGISTRY }}
             echo "${{ vars.ACR_PASSWORD }}" | docker login $REGISTRY -u "${{ vars.ACR_USERNAME }}" --password-stdin
 
-            # Pull latest image
-            IMAGE=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
-            docker pull $IMAGE
-
-            # Ensure network exists
             docker network create grapery-network 2>/dev/null || echo "Network already exists"
 
-            # Deploy via docker compose
-            if [ -f docker-compose.yml ]; then
-              docker compose -p forge-admin down 2>/dev/null || true
-              docker compose -p forge-admin up -d
-            else
-              docker stop forge-admin || true
-              docker rm forge-admin || true
-              docker run -d \
-                --name forge-admin \
-                --restart unless-stopped \
-                --network grapery-network \
-                -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
-                --env-file .env \
-                $IMAGE
-            fi
+            docker compose -p forge-admin down 2>/dev/null || true
+            docker compose -p forge-admin up -d
 
             docker system prune -f
 
@@ -271,25 +248,26 @@ jobs:
       - name: Generate .env file
         run: |
           cat > .env << EOF
-          # ========== Environment ==========
+          # ========== Docker ==========
+          IMAGE=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
+
+          # ========== Service ==========
           FORGE_ENV=production
           FORGE_HTTP_PORT=${{ env.SERVICE_PORT }}
           FORGE_LOG_LEVEL=info
           FORGE_ALLOW_ORIGINS=${{ vars.FORGE_ALLOW_ORIGINS || '*' }}
 
-          # ========== Database Configuration ==========
+          # ========== Database ==========
           DB_DATABASE=${{ vars.DB_DATABASE || 'grapery' }}
           DB_USERNAME=${{ vars.DB_USERNAME }}
           DB_PASSWORD=${{ vars.DB_PASSWORD }}
           DB_ADDRESS=${{ vars.DB_ADDRESS }}
-          DB_PORT=${{ vars.DB_PORT || '3306' }}
 
-          # ========== JWT Configuration ==========
+          # ========== JWT ==========
           FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET }}
           FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '8h' }}
           FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '72h' }}
           EOF
-          echo "Production .env file generated"
 
       - name: Deploy notification
         run: |
@@ -329,31 +307,12 @@ jobs:
             mkdir -p "$SERVICE_DIR"
             cd "$SERVICE_DIR"
 
-            # Login to Aliyun ACR
             export REGISTRY=${{ env.REGISTRY }}
             echo "${{ vars.ACR_PASSWORD }}" | docker login $REGISTRY -u "${{ vars.ACR_USERNAME }}" --password-stdin
 
-            # Pull latest image
-            IMAGE=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
-            docker pull $IMAGE
-
-            # Ensure network exists
             docker network create grapery-network 2>/dev/null || echo "Network already exists"
 
-            # Deploy via docker compose
-            if [ -f docker-compose.yml ]; then
-              docker compose -p forge-admin down 2>/dev/null || true
-              docker compose -p forge-admin up -d
-            else
-              docker stop forge-admin || true
-              docker rm forge-admin || true
-              docker run -d \
-                --name forge-admin \
-                --restart unless-stopped \
-                --network grapery-network \
-                -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
-                --env-file .env \
-                $IMAGE
-            fi
+            docker compose -p forge-admin down 2>/dev/null || true
+            docker compose -p forge-admin up -d
 
             docker system prune -f
