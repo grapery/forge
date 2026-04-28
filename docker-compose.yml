@@ -1,0 +1,15 @@
+services:
+  forge-admin:
+    image: ${IMAGE}
+    container_name: forge-admin
+    restart: unless-stopped
+    ports:
+      - "${FORGE_HTTP_PORT:-9010}:9010"
+    env_file:
+      - .env
+    networks:
+      - grapery-network
+
+networks:
+  grapery-network:
+    external: true

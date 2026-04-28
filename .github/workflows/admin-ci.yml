@@ -1,0 +1,359 @@
+name: Forge Admin CI/CD
+
+on:
+  push:
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'web/**'
+      - 'go.mod'
+      - 'go.sum'
+      - 'Dockerfile'
+      - '.github/workflows/admin-ci.yml'
+    branches:
+      - main
+      - develop
+  pull_request:
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'web/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/admin-ci.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署环境'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  GO_VERSION: '1.25'
+  NODE_VERSION: '22'
+  REGISTRY: ${{ vars.ACR_REGISTRY || 'crpi-kz6w8hb0pa94yvgy.cn-hangzhou.personal.cr.aliyuncs.com' }}
+  IMAGE_NAME: forge-admin
+  SERVICE_NAME: admin
+  SERVICE_PORT: 9010
+
+jobs:
+  # ========================================
+  # 前端构建 + Go 构建验证
+  # ========================================
+  build:
+    name: Build Forge Admin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build frontend
+        run: |
+          cd web
+          npm ci
+          npm run build
+          echo "Frontend build completed"
+          ls -lh out/
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Build Go binary
+        run: |
+          VERSION=$(echo ${{ github.sha }} | cut -c1-7)
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Copy frontend output to embed directory
+          mkdir -p internal/frontend/dist
+          cp -r web/out/* internal/frontend/dist/
+
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.CommitSHA=${{ github.sha }} -X main.BuildTime=${BUILD_TIME}" \
+            -o ./bin/${{ env.SERVICE_NAME }} ./cmd/${{ env.SERVICE_NAME }}
+
+          echo "Build completed"
+          ls -lh ./bin/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-${{ env.SERVICE_NAME }}
+          path: bin/${{ env.SERVICE_NAME }}
+          retention-days: 7
+
+  # ========================================
+  # Docker 构建 - Develop
+  # ========================================
+  docker-develop:
+    name: Docker Build (Develop)
+    runs-on: ubuntu-latest
+    needs: build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    env:
+      TAG: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Aliyun ACR
+        run: echo ${{ vars.ACR_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ vars.ACR_USERNAME }} --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            --build-arg VERSION=develop-${{ github.sha }} \
+            --build-arg COMMIT_SHA=${{ github.sha }} \
+            --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            .
+          docker push ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
+  # ========================================
+  # Docker 构建 - Production
+  # ========================================
+  docker-production:
+    name: Docker Build (Production)
+    runs-on: ubuntu-latest
+    needs: build
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
+    env:
+      TAG: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Aliyun ACR
+        run: echo ${{ vars.ACR_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ vars.ACR_USERNAME }} --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:${{ env.TAG }} \
+            --build-arg VERSION=${{ github.sha }} \
+            --build-arg COMMIT_SHA=${{ github.sha }} \
+            --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            .
+          docker push ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+
+  # ========================================
+  # 部署到开发环境
+  # ========================================
+  deploy-develop:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: docker-develop
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate .env file
+        run: |
+          cat > .env << EOF
+          # ========== Environment ==========
+          FORGE_ENV=development
+          FORGE_HTTP_PORT=${{ env.SERVICE_PORT }}
+          FORGE_LOG_LEVEL=debug
+          FORGE_ALLOW_ORIGINS=*
+
+          # ========== Database Configuration ==========
+          DB_DATABASE=${{ vars.DB_DATABASE || 'grapery_dev' }}
+          DB_USERNAME=${{ vars.DB_USERNAME }}
+          DB_PASSWORD=${{ vars.DB_PASSWORD }}
+          DB_ADDRESS=${{ vars.DB_ADDRESS }}
+          DB_PORT=${{ vars.DB_PORT || '3306' }}
+
+          # ========== JWT Configuration ==========
+          FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET || 'forge-dev-secret-change-in-prod' }}
+          FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '24h' }}
+          FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '168h' }}
+          EOF
+          echo "Development .env file generated"
+
+      - name: Deploy notification
+        run: |
+          echo "## Development Deployment - Forge Admin" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | forge-${{ env.SERVICE_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Port | ${{ env.SERVICE_PORT }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | development |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload files to ECS
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ vars.DEV_DEPLOY_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ vars.SSH_KEY }}
+          port: 22
+          source: ".env,docker-compose.yml"
+          target: "/home/ubuntu/grapery/forge/"
+
+      - name: Remote Deploy to Development
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ vars.DEV_DEPLOY_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ vars.SSH_KEY }}
+          port: 22
+          script: |
+            SERVICE_DIR="/home/ubuntu/grapery/forge"
+            mkdir -p "$SERVICE_DIR"
+            cd "$SERVICE_DIR"
+
+            # Login to Aliyun ACR
+            export REGISTRY=${{ env.REGISTRY }}
+            echo "${{ vars.ACR_PASSWORD }}" | docker login $REGISTRY -u "${{ vars.ACR_USERNAME }}" --password-stdin
+
+            # Pull latest image
+            IMAGE=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
+            docker pull $IMAGE
+
+            # Ensure network exists
+            docker network create grapery-network 2>/dev/null || echo "Network already exists"
+
+            # Deploy via docker compose
+            if [ -f docker-compose.yml ]; then
+              docker compose -p forge-admin down 2>/dev/null || true
+              docker compose -p forge-admin up -d
+            else
+              docker stop forge-admin || true
+              docker rm forge-admin || true
+              docker run -d \
+                --name forge-admin \
+                --restart unless-stopped \
+                --network grapery-network \
+                -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
+                --env-file .env \
+                $IMAGE
+            fi
+
+            docker system prune -f
+
+  # ========================================
+  # 部署到生产环境
+  # ========================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: docker-production
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate .env file
+        run: |
+          cat > .env << EOF
+          # ========== Environment ==========
+          FORGE_ENV=production
+          FORGE_HTTP_PORT=${{ env.SERVICE_PORT }}
+          FORGE_LOG_LEVEL=info
+          FORGE_ALLOW_ORIGINS=${{ vars.FORGE_ALLOW_ORIGINS || '*' }}
+
+          # ========== Database Configuration ==========
+          DB_DATABASE=${{ vars.DB_DATABASE || 'grapery' }}
+          DB_USERNAME=${{ vars.DB_USERNAME }}
+          DB_PASSWORD=${{ vars.DB_PASSWORD }}
+          DB_ADDRESS=${{ vars.DB_ADDRESS }}
+          DB_PORT=${{ vars.DB_PORT || '3306' }}
+
+          # ========== JWT Configuration ==========
+          FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET }}
+          FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '8h' }}
+          FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '72h' }}
+          EOF
+          echo "Production .env file generated"
+
+      - name: Deploy notification
+        run: |
+          echo "## Production Deployment - Forge Admin" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | forge-${{ env.SERVICE_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Port | ${{ env.SERVICE_PORT }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | production |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Config Status" >> $GITHUB_STEP_SUMMARY
+          echo "- DB_PASSWORD: ${{ vars.DB_PASSWORD && 'Set' || 'Not Set' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- FORGE_JWT_SECRET: ${{ vars.FORGE_JWT_SECRET && 'Set' || 'Not Set' }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload files to ECS
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ vars.PROD_DEPLOY_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ vars.SSH_KEY }}
+          port: 22
+          source: ".env,docker-compose.yml"
+          target: "/home/ubuntu/grapery/forge/"
+
+      - name: Remote Deploy to Production
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ vars.PROD_DEPLOY_HOST }}
+          username: ${{ vars.SSH_USER }}
+          key: ${{ vars.SSH_KEY }}
+          port: 22
+          script: |
+            SERVICE_DIR="/home/ubuntu/grapery/forge"
+            mkdir -p "$SERVICE_DIR"
+            cd "$SERVICE_DIR"
+
+            # Login to Aliyun ACR
+            export REGISTRY=${{ env.REGISTRY }}
+            echo "${{ vars.ACR_PASSWORD }}" | docker login $REGISTRY -u "${{ vars.ACR_USERNAME }}" --password-stdin
+
+            # Pull latest image
+            IMAGE=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
+            docker pull $IMAGE
+
+            # Ensure network exists
+            docker network create grapery-network 2>/dev/null || echo "Network already exists"
+
+            # Deploy via docker compose
+            if [ -f docker-compose.yml ]; then
+              docker compose -p forge-admin down 2>/dev/null || true
+              docker compose -p forge-admin up -d
+            else
+              docker stop forge-admin || true
+              docker rm forge-admin || true
+              docker run -d \
+                --name forge-admin \
+                --restart unless-stopped \
+                --network grapery-network \
+                -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
+                --env-file .env \
+                $IMAGE
+            fi
+
+            docker system prune -f
