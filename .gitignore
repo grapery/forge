@@ -1,0 +1,11 @@
+bin/
+.env
+.env.local
+*.exe
+*.test
+.DS_Store
+admin
+web/node_modules/
+web/.next/
+web/out/
+internal/frontend/dist/
