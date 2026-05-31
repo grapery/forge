@@ -9,8 +9,8 @@ type Report struct {
 	// Joined from users table
 	ReporterName string `json:"reporterName,omitempty"`
 	ReportedName string `json:"reportedName,omitempty"`
-	CreatedAt    string `json:"createdAt"`
-	UpdatedAt    string `json:"updatedAt,omitempty"`
+	CreatedAt    int64  `json:"createdAt"`
+	UpdatedAt    int64  `json:"updatedAt,omitempty"`
 }
 
 type ReportListQuery struct {

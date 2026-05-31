@@ -18,6 +18,10 @@ func parsePagination(c *gin.Context) (page, pageSize int) {
 	return
 }
 
+func parseInt(s string) (int, error) {
+	return strconv.Atoi(s)
+}
+
 func clientIP(c *gin.Context) string {
 	return c.ClientIP()
 }

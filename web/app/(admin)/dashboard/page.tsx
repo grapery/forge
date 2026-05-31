@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { dashboardApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
-import { Users, BookOpen, Layers, Puzzle, UserCircle } from "lucide-react"
+import { Users, BookOpen, Layers, Puzzle, UserCircle, Brain, CreditCard, Receipt, Coins } from "lucide-react"
 import type { OverviewStats } from "@/lib/types"
 
 export default function DashboardPage() {
@@ -40,12 +40,16 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Platform overview</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <StatCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} />
         <StatCard title="Total Stories" value={stats?.totalStories ?? 0} icon={BookOpen} />
         <StatCard title="Total Storyboards" value={stats?.totalStoryboards ?? 0} icon={Layers} />
         <StatCard title="Total Fragments" value={stats?.totalFragments ?? 0} icon={Puzzle} />
         <StatCard title="Total Characters" value={stats?.totalCharacters ?? 0} icon={UserCircle} />
+        <StatCard title="AI Tasks" value={stats?.totalAITasks ?? 0} icon={Brain} />
+        <StatCard title="Active Memberships" value={stats?.activeMemberships ?? 0} icon={CreditCard} />
+        <StatCard title="Total Orders" value={stats?.totalOrders ?? 0} icon={Receipt} />
+        <StatCard title="Token Transactions" value={stats?.totalTokenTransactions ?? 0} icon={Coins} />
       </div>
     </div>
   )

@@ -3,57 +3,83 @@
 import { useEffect, useState } from "react"
 import { adminUserApi } from "@/lib/api/admin"
 import type { AdminUser } from "@/lib/types"
+import { useAuth } from "@/providers/auth-provider"
+import { PageHeader } from "@/components/shared/page-header"
+import { DataTable } from "@/components/shared/data-table"
+import { RoleBadge, StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-
-const statusColor: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  disabled: "bg-red-100 text-red-800",
-}
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, Plus, KeyRound, Pencil, Trash2 } from "lucide-react"
+import { CreateAdminDialog } from "./create-admin-dialog"
+import { EditAdminDialog } from "./edit-admin-dialog"
+import { ResetPasswordDialog } from "./reset-password-dialog"
+import { DeleteAdminConfirm } from "./delete-confirm"
 
 export default function AdminUsersPage() {
+  const { user: currentUser } = useAuth()
   const [items, setItems] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const pageSize = 20
 
-  useEffect(() => {
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editAdmin, setEditAdmin] = useState<AdminUser | null>(null)
+  const [resetAdmin, setResetAdmin] = useState<AdminUser | null>(null)
+  const [deleteAdmin, setDeleteAdmin] = useState<AdminUser | null>(null)
+
+  const isSuperAdmin = currentUser?.role === "super_admin"
+
+  const fetchData = () => {
     setLoading(true)
-    setError("")
     adminUserApi
       .list(page, pageSize)
       .then((data) => {
         setItems(data.items || [])
         setTotal(data.total)
       })
-      .catch((err) => setError(err.message || "Failed to load admin users"))
+      .catch(() => {})
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchData()
   }, [page])
 
-  const totalPages = Math.ceil(total / pageSize)
+  const formatTime = (ts?: number | null) => {
+    if (!ts) return "-"
+    return new Date(ts * 1000).toLocaleDateString()
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Admin Users</h1>
-        <p className="text-muted-foreground">Manage admin accounts and roles</p>
-      </div>
-
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      <PageHeader
+        title="Admin Users"
+        description="Manage admin accounts and roles"
+        actions={
+          isSuperAdmin ? (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Admin
+            </Button>
+          ) : undefined
+        }
+      />
 
       {loading ? (
-        <div>Loading...</div>
-      ) : items.length === 0 ? (
-        <div className="text-muted-foreground">No admin users found.</div>
+        <div className="py-12 text-center text-muted-foreground">Loading...</div>
       ) : (
-        <div className="space-y-3">
-          {items.map((u) => (
-            <Card key={u.id}>
-              <CardContent className="flex items-center justify-between p-4">
+        <DataTable
+          data={items}
+          pagination={{ page, pageSize, total }}
+          onPageChange={setPage}
+          columns={[
+            {
+              key: "user",
+              header: "User",
+              render: (u: AdminUser) => (
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
                     {u.username.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -61,27 +87,62 @@ export default function AdminUsersPage() {
                     <p className="text-xs text-muted-foreground">{u.email}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{u.role}</span>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[u.status] || "bg-gray-100 text-gray-800"}`}>
-                    {u.status}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              ),
+            },
+            {
+              key: "role",
+              header: "Role",
+              render: (u: AdminUser) => <RoleBadge role={u.role} />,
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (u: AdminUser) => <StatusBadge status={u.status} />,
+            },
+            {
+              key: "lastLogin",
+              header: "Last Login",
+              render: (u: AdminUser) => (
+                <span className="text-xs text-muted-foreground">{formatTime(u.lastLoginAt)}</span>
+              ),
+            },
+            {
+              key: "actions",
+              header: "",
+              render: (u: AdminUser) =>
+                isSuperAdmin && u.id !== currentUser?.id ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditAdmin(u)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setResetAdmin(u)}>
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        Reset Password
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive" onClick={() => setDeleteAdmin(u)}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : null,
+            },
+          ]}
+        />
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Total {total}, page {page}/{totalPages}</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
-          </div>
-        </div>
-      )}
+      <CreateAdminDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={fetchData} />
+      <EditAdminDialog open={!!editAdmin} onOpenChange={(o) => setEditAdmin(o ? editAdmin : null)} admin={editAdmin} onSuccess={fetchData} />
+      <ResetPasswordDialog open={!!resetAdmin} onOpenChange={(o) => setResetAdmin(o ? resetAdmin : null)} admin={resetAdmin} />
+      <DeleteAdminConfirm open={!!deleteAdmin} onOpenChange={(o) => setDeleteAdmin(o ? deleteAdmin : null)} admin={deleteAdmin} onSuccess={fetchData} />
     </div>
   )
 }

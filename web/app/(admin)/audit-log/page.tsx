@@ -1,12 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { auditLogApi } from "@/lib/api/admin"
 import type { AdminOperationLog } from "@/lib/types"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { PageHeader } from "@/components/shared/page-header"
+import { DataTable } from "@/components/shared/data-table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
-const actionColor: Record<string, string> = {
+const actionColors: Record<string, string> = {
   create: "bg-green-100 text-green-800",
   update: "bg-blue-100 text-blue-800",
   delete: "bg-red-100 text-red-800",
@@ -17,73 +19,114 @@ export default function AuditLogPage() {
   const [items, setItems] = useState<AdminOperationLog[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
+  const [action, setAction] = useState("")
+  const [resource, setResource] = useState("")
   const pageSize = 20
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     setLoading(true)
-    setError("")
     auditLogApi
-      .list({ page, pageSize })
+      .list({
+        page,
+        pageSize,
+        action: action || undefined,
+        resource: resource || undefined,
+      })
       .then((data) => {
         setItems(data.items || [])
         setTotal(data.total)
       })
-      .catch((err) => setError(err.message || "Failed to load audit logs"))
+      .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page])
+  }, [page, action, resource])
 
-  const totalPages = Math.ceil(total / pageSize)
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Audit Log</h1>
-        <p className="text-muted-foreground">Track all admin operations</p>
+      <PageHeader title="Audit Log" description="Track all admin operations" />
+
+      <div className="flex items-center gap-4">
+        <Select value={action || "all"} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All Actions" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Actions</SelectItem>
+            <SelectItem value="create">Create</SelectItem>
+            <SelectItem value="update">Update</SelectItem>
+            <SelectItem value="delete">Delete</SelectItem>
+            <SelectItem value="login">Login</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={resource || "all"} onValueChange={(v) => { setResource(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="All Resources" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Resources</SelectItem>
+            <SelectItem value="admin_user">Admin User</SelectItem>
+            <SelectItem value="feedback">Feedback</SelectItem>
+            <SelectItem value="report">Report</SelectItem>
+            <SelectItem value="user">User</SelectItem>
+            <SelectItem value="story">Story</SelectItem>
+            <SelectItem value="storyboard">Storyboard</SelectItem>
+            <SelectItem value="fragment">Fragment</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
-
       {loading ? (
-        <div>Loading...</div>
-      ) : items.length === 0 ? (
-        <div className="text-muted-foreground">No audit logs found.</div>
+        <div className="py-12 text-center text-muted-foreground">Loading...</div>
       ) : (
-        <div className="space-y-2">
-          {items.map((log) => (
-            <Card key={log.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actionColor[log.action] || "bg-gray-100 text-gray-800"}`}>
-                        {log.action}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{log.resource}</span>
-                      {log.resourceId && <span className="text-xs font-mono text-muted-foreground">{log.resourceId.slice(0, 8)}</span>}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                      <span>{log.adminName}</span>
-                      <span>{log.ip}</span>
-                      <span>{new Date(log.createdAt * 1000).toLocaleString()}</span>
-                    </div>
-                  </div>
+        <DataTable
+          data={items}
+          pagination={{ page, pageSize, total }}
+          onPageChange={setPage}
+          columns={[
+            {
+              key: "action",
+              header: "Action",
+              render: (log: AdminOperationLog) => (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actionColors[log.action] || "bg-gray-100 text-gray-800"}`}>
+                  {log.action}
+                </span>
+              ),
+            },
+            {
+              key: "resource",
+              header: "Resource",
+              render: (log: AdminOperationLog) => (
+                <div>
+                  <span className="text-sm">{log.resource}</span>
+                  {log.resourceId && (
+                    <span className="ml-2 text-xs font-mono text-muted-foreground">{log.resourceId.slice(0, 8)}</span>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Total {total}, page {page}/{totalPages}</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</Button>
-          </div>
-        </div>
+              ),
+            },
+            {
+              key: "admin",
+              header: "Admin",
+              render: (log: AdminOperationLog) => <span className="text-sm">{log.adminName}</span>,
+            },
+            {
+              key: "ip",
+              header: "IP",
+              render: (log: AdminOperationLog) => <span className="text-xs font-mono text-muted-foreground">{log.ip}</span>,
+            },
+            {
+              key: "time",
+              header: "Time",
+              render: (log: AdminOperationLog) => (
+                <span className="text-xs text-muted-foreground">{new Date(log.createdAt * 1000).toLocaleString()}</span>
+              ),
+            },
+          ]}
+        />
       )}
     </div>
   )

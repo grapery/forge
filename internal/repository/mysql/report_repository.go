@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
 )
@@ -12,7 +13,6 @@ type ReportFilter struct {
 	Status   string
 }
 
-// ListReports returns paginated user_reports with optional status filter.
 func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64, error) {
 	q := rr.db.Table("user_reports").Where("deleted_at IS NULL")
 
@@ -26,13 +26,13 @@ func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64,
 	}
 
 	type row struct {
-		ID         string `gorm:"column:id"`
-		ReporterID string `gorm:"column:reporter_id"`
-		ReportedID string `gorm:"column:reported_id"`
-		Reason     string `gorm:"column:reason"`
-		Status     string `gorm:"column:status"`
-		CreatedAt  string `gorm:"column:created_at"`
-		UpdatedAt  string `gorm:"column:updated_at"`
+		ID         string    `gorm:"column:id"`
+		ReporterID string    `gorm:"column:reporter_id"`
+		ReportedID string    `gorm:"column:reported_id"`
+		Reason     string    `gorm:"column:reason"`
+		Status     string    `gorm:"column:status"`
+		CreatedAt  time.Time `gorm:"column:created_at"`
+		UpdatedAt  time.Time `gorm:"column:updated_at"`
 	}
 
 	var rows []row
@@ -41,7 +41,6 @@ func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64,
 		return nil, 0, err
 	}
 
-	// Collect unique user IDs for batch lookup
 	userIDSet := make(map[string]struct{})
 	for _, r := range rows {
 		userIDSet[r.ReporterID] = struct{}{}
@@ -59,23 +58,22 @@ func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64,
 			Status:       r.Status,
 			ReporterName: userNames[r.ReporterID],
 			ReportedName: userNames[r.ReportedID],
-			CreatedAt:    r.CreatedAt,
-			UpdatedAt:    r.UpdatedAt,
+			CreatedAt:    r.CreatedAt.Unix(),
+			UpdatedAt:    r.UpdatedAt.Unix(),
 		}
 	}
 	return result, total, nil
 }
 
-// GetReport returns a single report by ID with user names.
 func (rr *ReadRepository) GetReport(id string) (*domain.Report, error) {
 	type row struct {
-		ID         string `gorm:"column:id"`
-		ReporterID string `gorm:"column:reporter_id"`
-		ReportedID string `gorm:"column:reported_id"`
-		Reason     string `gorm:"column:reason"`
-		Status     string `gorm:"column:status"`
-		CreatedAt  string `gorm:"column:created_at"`
-		UpdatedAt  string `gorm:"column:updated_at"`
+		ID         string    `gorm:"column:id"`
+		ReporterID string    `gorm:"column:reporter_id"`
+		ReportedID string    `gorm:"column:reported_id"`
+		Reason     string    `gorm:"column:reason"`
+		Status     string    `gorm:"column:status"`
+		CreatedAt  time.Time `gorm:"column:created_at"`
+		UpdatedAt  time.Time `gorm:"column:updated_at"`
 	}
 
 	var r row
@@ -93,18 +91,16 @@ func (rr *ReadRepository) GetReport(id string) (*domain.Report, error) {
 		Status:       r.Status,
 		ReporterName: names[r.ReporterID],
 		ReportedName: names[r.ReportedID],
-		CreatedAt:    r.CreatedAt,
-		UpdatedAt:    r.UpdatedAt,
+		CreatedAt:    r.CreatedAt.Unix(),
+		UpdatedAt:    r.UpdatedAt.Unix(),
 	}, nil
 }
 
-// UpdateReportStatus updates the status of a report.
 func (rr *ReadRepository) UpdateReportStatus(id, status string) error {
 	return rr.db.Table("user_reports").Where("id = ? AND deleted_at IS NULL", id).
 		Update("status", status).Error
 }
 
-// CountReportsByStatus returns counts grouped by status.
 func (rr *ReadRepository) CountReportsByStatus() (map[string]int64, error) {
 	type row struct {
 		Status string `gorm:"column:status"`
@@ -127,7 +123,6 @@ func (rr *ReadRepository) CountReportsByStatus() (map[string]int64, error) {
 	return result, nil
 }
 
-// batchUserNames returns a map of userID -> username for given IDs.
 func (rr *ReadRepository) batchUserNames(ids map[string]struct{}) map[string]string {
 	if len(ids) == 0 {
 		return nil
@@ -154,7 +149,6 @@ func (rr *ReadRepository) batchUserNames(ids map[string]struct{}) map[string]str
 	return result
 }
 
-// GetUserBasicInfo returns basic info for a user (for admin detail view).
 func (rr *ReadRepository) GetUserBasicInfo(userID string) (username, email, status string, err error) {
 	type row struct {
 		Username string `gorm:"column:username"`
@@ -168,7 +162,6 @@ func (rr *ReadRepository) GetUserBasicInfo(userID string) (username, email, stat
 	return r.Username, r.Email, r.Status, nil
 }
 
-// SuspendUser sets user status to "suspended".
 func (rr *ReadRepository) SuspendUser(userID string) error {
 	result := rr.db.Table("users").Where("id = ?", userID).Update("status", "suspended")
 	if result.Error != nil {
@@ -180,7 +173,6 @@ func (rr *ReadRepository) SuspendUser(userID string) error {
 	return nil
 }
 
-// ActivateUser sets user status to "active".
 func (rr *ReadRepository) ActivateUser(userID string) error {
 	result := rr.db.Table("users").Where("id = ?", userID).Update("status", "active")
 	if result.Error != nil {

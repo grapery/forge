@@ -31,12 +31,36 @@ func (rr *ReadRepository) CountStoryboards() (int64, error) {
 
 func (rr *ReadRepository) CountFragments() (int64, error) {
 	var count int64
-	err := rr.db.Table("story_fragments").Count(&count).Error
+	err := rr.db.Table("fragments").Where("deleted_at IS NULL").Count(&count).Error
 	return count, err
 }
 
 func (rr *ReadRepository) CountCharacters() (int64, error) {
 	var count int64
 	err := rr.db.Table("characters").Where("deleted_at IS NULL OR deleted_at = 0").Count(&count).Error
+	return count, err
+}
+
+func (rr *ReadRepository) CountAITasks() (int64, error) {
+	var count int64
+	err := rr.db.Table("ai_tasks").Count(&count).Error
+	return count, err
+}
+
+func (rr *ReadRepository) CountMemberships() (int64, error) {
+	var count int64
+	err := rr.db.Table("memberships").Where("status = ?", "active").Count(&count).Error
+	return count, err
+}
+
+func (rr *ReadRepository) CountOrders() (int64, error) {
+	var count int64
+	err := rr.db.Table("subscription_orders").Count(&count).Error
+	return count, err
+}
+
+func (rr *ReadRepository) CountTokenTransactions() (int64, error) {
+	var count int64
+	err := rr.db.Table("token_transactions").Count(&count).Error
 	return count, err
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { reportApi } from "@/lib/api/admin"
+import { reportApi, userApi } from "@/lib/api/admin"
 import type { Report } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -10,14 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 const statusLabel: Record<string, string> = {
   pending: "Pending",
-  reviewing: "Reviewing",
+  reviewed: "Reviewed",
   resolved: "Resolved",
   dismissed: "Dismissed",
 }
 
 const statusColor: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
-  reviewing: "bg-blue-100 text-blue-800",
+  reviewed: "bg-blue-100 text-blue-800",
   resolved: "bg-green-100 text-green-800",
   dismissed: "bg-gray-100 text-gray-800",
 }
@@ -72,9 +72,9 @@ export default function ReportDetailPage() {
     setActionLoading(action)
     try {
       if (action === "suspend") {
-        await reportApi.suspendUser(userId)
+        await userApi.suspend(userId)
       } else {
-        await reportApi.activateUser(userId)
+        await userApi.activate(userId)
       }
       alert(`User ${action === "suspend" ? "suspended" : "activated"} successfully`)
     } catch {
@@ -115,7 +115,7 @@ export default function ReportDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Submitted</p>
-                <p className="text-sm">{new Date(report.createdAt * 1000).toLocaleString()}</p>
+                <p className="text-sm">{typeof report.createdAt === "number" ? new Date(report.createdAt * 1000).toLocaleString() : new Date(report.createdAt).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Reporter</p>
@@ -150,7 +150,7 @@ export default function ReportDetailPage() {
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 >
                   <option value="pending">Pending</option>
-                  <option value="reviewing">Reviewing</option>
+                  <option value="reviewed">Reviewed</option>
                   <option value="resolved">Resolved</option>
                   <option value="dismissed">Dismissed</option>
                 </select>
