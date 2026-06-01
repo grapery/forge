@@ -46,6 +46,10 @@ export const adminUserApi = {
     forgeClient.put(`/api/admin/admin-users/${id}/password-reset`, { newPassword }),
   delete: (id: string) =>
     forgeClient.delete(`/api/admin/admin-users/${id}`),
+  getPermissions: (id: string) =>
+    forgeClient.get<any, string[]>(`/api/admin/admin-users/${id}/permissions`),
+  updatePermissions: (id: string, permissions: string[]) =>
+    forgeClient.put(`/api/admin/admin-users/${id}/permissions`, { permissions }),
 }
 
 export const auditLogApi = {

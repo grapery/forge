@@ -5,6 +5,7 @@ export interface AdminUser {
   displayName: string
   role: "super_admin" | "admin" | "operator" | "viewer"
   status: "active" | "disabled"
+  permissions: string[]
   lastLoginAt?: number | null
   lastLoginIp?: string
   createdAt: number

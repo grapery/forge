@@ -46,9 +46,9 @@ func (s *AdminAuthService) Login(req *domain.LoginRequest, ip string) (*domain.L
 	now := NowFunc()
 	admin.LastLoginAt = &now
 	admin.LastLoginIP = ip
-	_ = s.repo.UpdateAdminUser(admin)
+	_ = s.repo.UpdateAdminLastLogin(admin.ID, now, ip)
 
-	accessToken, err := auth.GenerateAccessToken(admin.ID, admin.Username, string(admin.Role), s.accessExpire)
+	accessToken, err := auth.GenerateAccessToken(admin.ID, admin.Username, string(admin.Role), admin.Permissions, s.accessExpire)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *AdminAuthService) RefreshToken(refreshToken string) (*domain.LoginRespo
 		return nil, errors.New("account is disabled")
 	}
 
-	accessToken, err := auth.GenerateAccessToken(admin.ID, admin.Username, string(admin.Role), s.accessExpire)
+	accessToken, err := auth.GenerateAccessToken(admin.ID, admin.Username, string(admin.Role), admin.Permissions, s.accessExpire)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (s *AdminAuthService) ChangePassword(adminID, oldPassword, newPassword stri
 		return err
 	}
 	admin.PasswordHash = hash
-	return s.repo.UpdateAdminUser(admin)
+	return s.repo.UpdateAdminPassword(admin.ID, hash)
 }
 
 func (s *AdminAuthService) SeedDefaultAdmin() {

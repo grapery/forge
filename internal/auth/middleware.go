@@ -12,9 +12,10 @@ const (
 )
 
 type AdminContext struct {
-	AdminID  string
-	Username string
-	Role     string
+	AdminID     string
+	Username    string
+	Role        string
+	Permissions []string
 }
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -41,11 +42,17 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		ctx := AdminContext{
-			AdminID:  claims.AdminID,
-			Username: claims.Username,
-			Role:     claims.Role,
-		}
+			ctx := AdminContext{
+				AdminID:     claims.AdminID,
+				Username:    claims.Username,
+				Role:        claims.Role,
+				Permissions: claims.Permissions,
+			}
+
+
+
+
+
 		c.Set(AdminContextKey, ctx)
 		c.Next()
 	}

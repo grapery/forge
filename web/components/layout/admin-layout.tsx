@@ -35,42 +35,43 @@ type NavItem = {
   icon: any
   roles: string[]
   group?: string
+  permission?: string
 }
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "operator", "viewer"] },
   // Content
-  { href: "/content", label: "Content", icon: FileText, roles: ["super_admin", "admin"], group: "Content" },
-  { href: "/characters", label: "Characters", icon: Ghost, roles: ["super_admin", "admin"], group: "Content" },
-  { href: "/comments", label: "Comments", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Content" },
-  { href: "/tags", label: "Tags", icon: Tags, roles: ["super_admin", "admin"], group: "Content" },
-  { href: "/genres", label: "Genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "Content" },
+  { href: "/content", label: "Content", icon: FileText, roles: ["super_admin", "admin"], group: "Content", permission: "content" },
+  { href: "/characters", label: "Characters", icon: Ghost, roles: ["super_admin", "admin"], group: "Content", permission: "characters" },
+  { href: "/comments", label: "Comments", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Content", permission: "comments" },
+  { href: "/tags", label: "Tags", icon: Tags, roles: ["super_admin", "admin"], group: "Content", permission: "tags" },
+  { href: "/genres", label: "Genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "Content", permission: "genres" },
   // AI
-  { href: "/ai-tasks", label: "AI Tasks", icon: Brain, roles: ["super_admin", "admin"], group: "AI" },
-  { href: "/ai-generations", label: "AI Generations", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI" },
-  { href: "/agents", label: "Agents", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI" },
-  { href: "/prompts", label: "Prompts", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI" },
-  { href: "/styles", label: "Styles", icon: Palette, roles: ["super_admin", "admin"], group: "AI" },
+  { href: "/ai-tasks", label: "AI Tasks", icon: Brain, roles: ["super_admin", "admin"], group: "AI", permission: "ai-tasks" },
+  { href: "/ai-generations", label: "AI Generations", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "ai-generations" },
+  { href: "/agents", label: "Agents", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "agents" },
+  { href: "/prompts", label: "Prompts", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "prompts" },
+  { href: "/styles", label: "Styles", icon: Palette, roles: ["super_admin", "admin"], group: "AI", permission: "styles" },
   // Users
-  { href: "/users", label: "Users", icon: Users, roles: ["super_admin", "admin"], group: "Users" },
-  { href: "/account-deletions", label: "Account Deletions", icon: UserX, roles: ["super_admin", "admin"], group: "Users" },
-  { href: "/devices", label: "Devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "Users" },
+  { href: "/users", label: "Users", icon: Users, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
+  { href: "/account-deletions", label: "Account Deletions", icon: UserX, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
+  { href: "/devices", label: "Devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
   // Finance
-  { href: "/memberships", label: "Memberships", icon: CreditCard, roles: ["super_admin", "admin"], group: "Finance" },
-  { href: "/orders", label: "Orders", icon: CreditCard, roles: ["super_admin", "admin"], group: "Finance" },
-  { href: "/tokens", label: "Tokens", icon: Coins, roles: ["super_admin", "admin"], group: "Finance" },
+  { href: "/memberships", label: "Memberships", icon: CreditCard, roles: ["super_admin", "admin"], group: "Finance", permission: "memberships" },
+  { href: "/orders", label: "Orders", icon: CreditCard, roles: ["super_admin", "admin"], group: "Finance", permission: "orders" },
+  { href: "/tokens", label: "Tokens", icon: Coins, roles: ["super_admin", "admin"], group: "Finance", permission: "tokens" },
   // Growth
-  { href: "/invitation-codes", label: "Invitation Codes", icon: Mail, roles: ["super_admin", "admin"], group: "Growth" },
-  { href: "/referrals", label: "Referrals", icon: Users, roles: ["super_admin", "admin"], group: "Growth" },
-  { href: "/search-analytics", label: "Search Analytics", icon: Search, roles: ["super_admin", "admin"], group: "Growth" },
+  { href: "/invitation-codes", label: "Invitation Codes", icon: Mail, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
+  { href: "/referrals", label: "Referrals", icon: Users, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
+  { href: "/search-analytics", label: "Search Analytics", icon: Search, roles: ["super_admin", "admin"], group: "Growth", permission: "search" },
   // Community
-  { href: "/feedback", label: "Feedback", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Community" },
-  { href: "/reports", label: "Reports", icon: Shield, roles: ["super_admin", "admin", "operator"], group: "Community" },
-  { href: "/topics", label: "Topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "Community" },
-  { href: "/notifications", label: "Broadcast", icon: Megaphone, roles: ["super_admin", "admin"], group: "Community" },
+  { href: "/feedback", label: "Feedback", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "feedback" },
+  { href: "/reports", label: "Reports", icon: Shield, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "reports" },
+  { href: "/topics", label: "Topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "topics" },
+  { href: "/notifications", label: "Broadcast", icon: Megaphone, roles: ["super_admin", "admin"], group: "Community", permission: "notifications" },
   // System
   { href: "/admin-users", label: "Admin Users", icon: Shield, roles: ["super_admin"], group: "System" },
-  { href: "/audit-log", label: "Audit Log", icon: Activity, roles: ["super_admin", "admin"], group: "System" },
+  { href: "/audit-log", label: "Audit Log", icon: Activity, roles: ["super_admin", "admin"], group: "System", permission: "audit-log" },
 ]
 
 const groupOrder = ["", "Content", "AI", "Users", "Finance", "Growth", "Community", "System"]
@@ -91,7 +92,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }
   if (!user) return null
 
-  const filteredNav = navItems.filter((item) => item.roles.includes(user.role))
+  const filteredNav = navItems.filter((item) => {
+    if (!item.roles.includes(user.role)) return false
+    // For operator and viewer roles, check permissions
+    if ((user.role === "operator" || user.role === "viewer") && item.permission) {
+      const userPermissions = user.permissions || []
+      if (!userPermissions.includes(item.permission)) return false
+    }
+    return true
+  })
 
   const groupedNav: { label: string; items: NavItem[] }[] = []
   let currentGroup = ""

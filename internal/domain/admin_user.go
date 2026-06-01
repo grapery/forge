@@ -17,8 +17,9 @@ type AdminUser struct {
 	Role         AdminRole `json:"role"`
 	Status       string    `json:"status"` // active / disabled
 	PasswordHash string    `json:"-"`
+	Permissions  []string  `json:"permissions"`
 	LastLoginAt  *int64    `json:"lastLoginAt,omitempty"`
-	LastLoginIP  string    `json:"lastLoginIp,omitempty"`
+	LastLoginIP  string    `json:"lastAdminIp,omitempty"`
 	CreatedAt    int64     `json:"createdAt"`
 	UpdatedAt    int64     `json:"updatedAt"`
 }
@@ -37,6 +38,52 @@ func (r AdminRole) IsValid() bool {
 	switch r {
 	case RoleSuperAdmin, RoleAdmin, RoleOperator, RoleViewer:
 		return true
+	}
+	return false
+}
+
+func IsAdminRole(role AdminRole) bool {
+	return role == RoleSuperAdmin || role == RoleAdmin
+}
+
+// Permission keys
+const (
+	PermContent         = "content"
+	PermCharacters      = "characters"
+	PermComments        = "comments"
+	PermTags            = "tags"
+	PermGenres          = "genres"
+	PermAITasks         = "ai-tasks"
+	PermAIGenerations   = "ai-generations"
+	PermAgents          = "agents"
+	PermPrompts         = "prompts"
+	PermStyles          = "styles"
+	PermUsers           = "users"
+	PermMemberships     = "memberships"
+	PermOrders          = "orders"
+	PermTokens          = "tokens"
+	PermInvitationCodes = "invitation-codes"
+	PermFeedback        = "feedback"
+	PermReports         = "reports"
+	PermTopics          = "topics"
+	PermNotifications   = "notifications"
+	PermSearch          = "search"
+	PermAuditLog        = "audit-log"
+)
+
+var AllPermissions = []string{
+	PermContent, PermCharacters, PermComments, PermTags, PermGenres,
+	PermAITasks, PermAIGenerations, PermAgents, PermPrompts, PermStyles,
+	PermUsers, PermMemberships, PermOrders, PermTokens, PermInvitationCodes,
+	PermFeedback, PermReports, PermTopics, PermNotifications, PermSearch,
+	PermAuditLog,
+}
+
+func IsValidPermission(p string) bool {
+	for _, perm := range AllPermissions {
+		if perm == p {
+			return true
+		}
 	}
 	return false
 }
@@ -78,4 +125,8 @@ type UpdateAdminUserRequest struct {
 
 type ResetAdminPasswordRequest struct {
 	NewPassword string `json:"newPassword" binding:"required,min=8"`
+}
+
+type UpdatePermissionsRequest struct {
+	Permissions []string `json:"permissions" binding:"required"`
 }

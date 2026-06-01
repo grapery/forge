@@ -9,7 +9,14 @@ services:
       - .env
     networks:
       - grapery-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9010/health | grep -q ok"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 networks:
+  # 与 ngx / server / vippay 等同机部署时共用（由 ngx-ci 或首次部署创建）
   grapery-network:
     external: true

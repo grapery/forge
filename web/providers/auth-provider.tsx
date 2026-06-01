@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("forge_access_token")
     localStorage.removeItem("forge_refresh_token")
     setUser(null)
-    window.location.href = "/login"
+    window.location.href = "/forge/login"
   }
 
   return (

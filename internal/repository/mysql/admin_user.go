@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
@@ -28,13 +29,30 @@ func (r *Repository) CreateAdminUser(u *domain.AdminUser) error {
 }
 
 func (r *Repository) UpdateAdminUser(u *domain.AdminUser) error {
+	permsJSON, _ := json.Marshal(u.Permissions)
 	return r.db.Model(&AdminUser{}).Where("id = ?", u.ID).Updates(map[string]interface{}{
 		"display_name":  u.DisplayName,
 		"role":          string(u.Role),
 		"status":        u.Status,
 		"password_hash": u.PasswordHash,
+		"permissions":   string(permsJSON),
 		"last_login_at": u.LastLoginAt,
 		"last_login_ip": u.LastLoginIP,
+		"updated_at":    time.Now().Unix(),
+	}).Error
+}
+
+func (r *Repository) UpdateAdminLastLogin(id string, lastLoginAt int64, lastLoginIP string) error {
+	return r.db.Model(&AdminUser{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"last_login_at": lastLoginAt,
+		"last_login_ip": lastLoginIP,
+		"updated_at":    time.Now().Unix(),
+	}).Error
+}
+
+func (r *Repository) UpdateAdminPassword(id string, passwordHash string) error {
+	return r.db.Model(&AdminUser{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"password_hash": passwordHash,
 		"updated_at":    time.Now().Unix(),
 	}).Error
 }
@@ -73,6 +91,10 @@ func (r *Repository) SeedSuperAdmin(u *domain.AdminUser) error {
 }
 
 func adminUserToDomain(m *AdminUser) *domain.AdminUser {
+	var perms []string
+	if m.Permissions != "" {
+		json.Unmarshal([]byte(m.Permissions), &perms)
+	}
 	return &domain.AdminUser{
 		ID:           m.ID,
 		Username:     m.Username,
@@ -81,6 +103,7 @@ func adminUserToDomain(m *AdminUser) *domain.AdminUser {
 		Role:         domain.AdminRole(m.Role),
 		Status:       m.Status,
 		PasswordHash: m.PasswordHash,
+		Permissions:  perms,
 		LastLoginAt:  m.LastLoginAt,
 		LastLoginIP:  m.LastLoginIP,
 		CreatedAt:    m.CreatedAt,
@@ -89,6 +112,7 @@ func adminUserToDomain(m *AdminUser) *domain.AdminUser {
 }
 
 func adminUserToModel(u *domain.AdminUser) *AdminUser {
+	permsJSON, _ := json.Marshal(u.Permissions)
 	return &AdminUser{
 		ID:           u.ID,
 		Username:     u.Username,
@@ -96,6 +120,7 @@ func adminUserToModel(u *domain.AdminUser) *AdminUser {
 		PasswordHash: u.PasswordHash,
 		DisplayName:  u.DisplayName,
 		Role:         string(u.Role),
+		Permissions:  string(permsJSON),
 		Status:       u.Status,
 	}
 }

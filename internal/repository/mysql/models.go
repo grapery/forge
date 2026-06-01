@@ -9,6 +9,7 @@ type AdminUser struct {
 	PasswordHash string     `gorm:"column:password_hash;size:255"`
 	DisplayName  string     `gorm:"column:display_name;size:100"`
 	Role         string     `gorm:"column:role;size:20;index"`
+	Permissions  string     `gorm:"column:permissions;type:text"`
 	Status       string     `gorm:"column:status;size:20;default:active"`
 	LastLoginAt  *int64     `gorm:"column:last_login_at"`
 	LastLoginIP  string     `gorm:"column:last_login_ip;size:45"`

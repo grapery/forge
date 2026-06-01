@@ -27,7 +27,7 @@ func RegisterStaticRoutes(r *gin.Engine) {
 			return
 		}
 
-		// Try serving the exact file for non-root paths
+		// Try serving static export files (Next.js output: route.html at dist root)
 		if path != "/" {
 			cleanPath := strings.TrimPrefix(path, "/")
 			if fileExists(sub, cleanPath) {
@@ -35,10 +35,16 @@ func RegisterStaticRoutes(r *gin.Engine) {
 				fileServer.ServeHTTP(c.Writer, c.Request)
 				return
 			}
+			htmlPath := cleanPath + ".html"
+			if fileExists(sub, htmlPath) {
+				c.Request.URL.Path = "/" + htmlPath
+				fileServer.ServeHTTP(c.Writer, c.Request)
+				return
+			}
 		}
 
-		// Fallback to index.html for SPA routing
-		c.Request.URL.Path = "/"
+		// Fallback to index.html for unknown client routes
+		c.Request.URL.Path = "/index.html"
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 }

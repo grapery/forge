@@ -44,6 +44,7 @@ func (s *AdminUserMgmtService) CreateAdminUser(req *domain.CreateAdminUserReques
 		Role:         req.Role,
 		Status:       "active",
 		PasswordHash: hash,
+		Permissions:  []string{},
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
@@ -99,7 +100,7 @@ func (s *AdminUserMgmtService) ResetAdminPassword(id string, newPassword string)
 		return err
 	}
 	admin.PasswordHash = hash
-	return s.repo.UpdateAdminUser(admin)
+	return s.repo.UpdateAdminPassword(admin.ID, hash)
 }
 
 func (s *AdminUserMgmtService) DeleteAdminUser(id string, deleterRole domain.AdminRole, deleterID string) error {
@@ -114,4 +115,36 @@ func (s *AdminUserMgmtService) DeleteAdminUser(id string, deleterRole domain.Adm
 		return errors.New("insufficient role to delete this user")
 	}
 	return s.repo.DeleteAdminUser(id)
+}
+
+func (s *AdminUserMgmtService) GetPermissions(id string) ([]string, error) {
+	admin, err := s.repo.GetAdminByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return admin.Permissions, nil
+}
+
+func (s *AdminUserMgmtService) UpdatePermissions(id string, permissions []string, adminRole domain.AdminRole, adminID string) error {
+	if id == adminID {
+		return errors.New("cannot modify your own permissions")
+	}
+	if !domain.IsAdminRole(adminRole) {
+		return errors.New("only admins can manage permissions")
+	}
+	admin, err := s.repo.GetAdminByID(id)
+	if err != nil {
+		return err
+	}
+	if admin.Role != domain.RoleOperator && admin.Role != domain.RoleViewer {
+		return errors.New("can only set permissions for operators/viewers")
+	}
+	validPerms := make([]string, 0, len(permissions))
+	for _, p := range permissions {
+		if domain.IsValidPermission(p) {
+			validPerms = append(validPerms, p)
+		}
+	}
+	admin.Permissions = validPerms
+	return s.repo.UpdateAdminUser(admin)
 }

@@ -9,11 +9,12 @@ import { DataTable } from "@/components/shared/data-table"
 import { RoleBadge, StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus, KeyRound, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Plus, KeyRound, Pencil, Trash2, Shield } from "lucide-react"
 import { CreateAdminDialog } from "./create-admin-dialog"
 import { EditAdminDialog } from "./edit-admin-dialog"
 import { ResetPasswordDialog } from "./reset-password-dialog"
 import { DeleteAdminConfirm } from "./delete-confirm"
+import { PermissionEditor } from "@/components/admin/permission-editor"
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth()
@@ -27,6 +28,7 @@ export default function AdminUsersPage() {
   const [editAdmin, setEditAdmin] = useState<AdminUser | null>(null)
   const [resetAdmin, setResetAdmin] = useState<AdminUser | null>(null)
   const [deleteAdmin, setDeleteAdmin] = useState<AdminUser | null>(null)
+  const [permissionsAdmin, setPermissionsAdmin] = useState<AdminUser | null>(null)
 
   const isSuperAdmin = currentUser?.role === "super_admin"
 
@@ -126,6 +128,12 @@ export default function AdminUsersPage() {
                         <KeyRound className="mr-2 h-4 w-4" />
                         Reset Password
                       </DropdownMenuItem>
+                      {(u.role === "operator" || u.role === "viewer") && (
+							<DropdownMenuItem onClick={() => setPermissionsAdmin(u)}>
+								<Shield className="mr-2 h-4 w-4" />
+								Permissions
+							</DropdownMenuItem>
+						)}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-destructive" onClick={() => setDeleteAdmin(u)}>
                         <Trash2 className="mr-2 h-4 w-4" />
@@ -143,6 +151,14 @@ export default function AdminUsersPage() {
       <EditAdminDialog open={!!editAdmin} onOpenChange={(o) => setEditAdmin(o ? editAdmin : null)} admin={editAdmin} onSuccess={fetchData} />
       <ResetPasswordDialog open={!!resetAdmin} onOpenChange={(o) => setResetAdmin(o ? resetAdmin : null)} admin={resetAdmin} />
       <DeleteAdminConfirm open={!!deleteAdmin} onOpenChange={(o) => setDeleteAdmin(o ? deleteAdmin : null)} admin={deleteAdmin} onSuccess={fetchData} />
+      {permissionsAdmin && (
+        <PermissionEditor
+          userId={permissionsAdmin.id}
+          open={!!permissionsAdmin}
+          onOpenChange={(o) => setPermissionsAdmin(o ? permissionsAdmin : null)}
+          onSaved={fetchData}
+        />
+      )}
     </div>
   )
 }

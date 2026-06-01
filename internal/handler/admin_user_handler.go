@@ -109,3 +109,35 @@ func (h *AdminUserHandler) Delete(c *gin.Context) {
 
 	Success(c, nil)
 }
+
+func (h *AdminUserHandler) GetPermissions(c *gin.Context) {
+	id := c.Param("id")
+	perms, err := h.mgmtSvc.GetPermissions(id)
+	if err != nil {
+		Error(c, CodeNotFound, "user not found")
+		return
+	}
+	Success(c, perms)
+}
+
+func (h *AdminUserHandler) UpdatePermissions(c *gin.Context) {
+	ctx := auth.GetAdminContext(c)
+	if ctx == nil {
+		Error(c, CodeUnauthorized, "unauthorized")
+		return
+	}
+	id := c.Param("id")
+
+	var req domain.UpdatePermissionsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+
+	if err := h.mgmtSvc.UpdatePermissions(id, req.Permissions, domain.AdminRole(ctx.Role), ctx.AdminID); err != nil {
+		Error(c, CodeError, err.Error())
+		return
+	}
+
+	Success(c, nil)
+}

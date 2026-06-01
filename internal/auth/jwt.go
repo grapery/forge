@@ -16,9 +16,10 @@ var (
 var jwtSecret []byte
 
 type AdminClaims struct {
-	AdminID   string `json:"adminId"`
-	Username  string `json:"username"`
-	Role      string `json:"role"`
+	AdminID     string   `json:"adminId"`
+	Username    string   `json:"username"`
+	Role        string   `json:"role"`
+	Permissions []string `json:"permissions,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -26,15 +27,16 @@ func SetJWTSecret(secret string) {
 	jwtSecret = []byte(secret)
 }
 
-func GenerateAccessToken(adminID, username, role string, expiry time.Duration) (string, error) {
+func GenerateAccessToken(adminID, username, role string, permissions []string, expiry time.Duration) (string, error) {
 	if len(jwtSecret) == 0 {
 		return "", ErrSecretNotSet
 	}
 	now := time.Now()
 	claims := AdminClaims{
-		AdminID:  adminID,
-		Username: username,
-		Role:     role,
+		AdminID:     adminID,
+		Username:    username,
+		Role:        role,
+		Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "forge-admin",
 			Subject:   adminID,

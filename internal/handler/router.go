@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	adminAuth "github.com/grapestree/fgrapery/forge/internal/auth"
+	"github.com/grapestree/fgrapery/forge/internal/domain"
 	"github.com/grapestree/fgrapery/forge/internal/middleware"
 	"github.com/grapestree/fgrapery/forge/internal/service"
 	"go.uber.org/zap"
@@ -75,11 +76,13 @@ func SetupRouter(
 			adminUsers.POST("", adminUserH.Create)
 			adminUsers.PUT("/:id", adminUserH.Update)
 			adminUsers.PUT("/:id/password-reset", adminUserH.ResetPassword)
+			adminUsers.PUT("/:id/permissions", adminUserH.UpdatePermissions)
+			adminUsers.GET("/:id/permissions", adminUserH.GetPermissions)
 			adminUsers.DELETE("/:id", adminUserH.Delete)
 		}
 
 		feedback := protected.Group("/feedback")
-		feedback.Use(middleware.RequireRole("super_admin", "admin", "operator"))
+		feedback.Use(middleware.RequirePermission(domain.PermFeedback))
 		{
 			feedback.GET("", feedbackH.List)
 			feedback.GET("/counts", feedbackH.StatusCounts)
@@ -88,7 +91,7 @@ func SetupRouter(
 		}
 
 		reports := protected.Group("/reports")
-		reports.Use(middleware.RequireRole("super_admin", "admin", "operator"))
+		reports.Use(middleware.RequirePermission(domain.PermReports))
 		{
 			reports.GET("", reportH.List)
 			reports.GET("/counts", reportH.StatusCounts)
@@ -97,21 +100,21 @@ func SetupRouter(
 		}
 
 		users := protected.Group("/users")
-		users.Use(middleware.RequireRole("super_admin", "admin"))
+		users.Use(middleware.RequirePermission(domain.PermUsers))
 		{
 			users.GET("", userH.List)
 			users.GET("/counts", userH.StatusCounts)
 			users.GET("/:id", userH.Get)
 		}
-		protected.PUT("/users/:id/suspend", middleware.RequireRole("super_admin", "admin", "operator"), userH.Suspend)
-		protected.PUT("/users/:id/activate", middleware.RequireRole("super_admin", "admin", "operator"), userH.Activate)
+		protected.PUT("/users/:id/suspend", middleware.RequirePermission(domain.PermUsers), userH.Suspend)
+		protected.PUT("/users/:id/activate", middleware.RequirePermission(domain.PermUsers), userH.Activate)
 
 		auditLogs := protected.Group("/operations")
-		auditLogs.Use(middleware.RequireRole("super_admin", "admin"))
+		auditLogs.Use(middleware.RequirePermission(domain.PermAuditLog))
 		{ auditLogs.GET("/log", auditLogH.List) }
 
 		content := protected.Group("/content")
-		content.Use(middleware.RequireRole("super_admin", "admin"))
+		content.Use(middleware.RequirePermission(domain.PermContent))
 		{
 			content.GET("", contentH.List)
 			content.GET("/:type/counts", contentH.StatusCounts)
@@ -120,7 +123,7 @@ func SetupRouter(
 		}
 
 		topics := protected.Group("/topics")
-		topics.Use(middleware.RequireRole("super_admin", "admin", "operator"))
+		topics.Use(middleware.RequirePermission(domain.PermTopics))
 		{
 			topics.GET("", topicH.List)
 			topics.GET("/:topic/fragments", topicH.ListFragments)
@@ -128,7 +131,7 @@ func SetupRouter(
 		}
 
 		prompts := protected.Group("/prompts")
-		prompts.Use(middleware.RequireRole("super_admin", "admin"))
+		prompts.Use(middleware.RequirePermission(domain.PermPrompts))
 		{
 			prompts.GET("/audit", promptH.List)
 			prompts.GET("/audit/summary", promptH.Summary)
@@ -136,7 +139,7 @@ func SetupRouter(
 		}
 
 		characters := protected.Group("/characters")
-		characters.Use(middleware.RequireRole("super_admin", "admin"))
+		characters.Use(middleware.RequirePermission(domain.PermCharacters))
 		{
 			characters.GET("", characterH.List)
 			characters.GET("/counts", characterH.StatusCounts)
@@ -145,7 +148,7 @@ func SetupRouter(
 		}
 
 		comments := protected.Group("/comments")
-		comments.Use(middleware.RequireRole("super_admin", "admin", "operator"))
+		comments.Use(middleware.RequirePermission(domain.PermComments))
 		{
 			comments.GET("", commentH.List)
 			comments.GET("/counts", commentH.StatusCounts)
@@ -154,7 +157,7 @@ func SetupRouter(
 		}
 
 		accountDeletions := protected.Group("/account-deletions")
-		accountDeletions.Use(middleware.RequireRole("super_admin", "admin"))
+		accountDeletions.Use(middleware.RequirePermission(domain.PermUsers))
 		{
 			accountDeletions.GET("", deletionH.List)
 			accountDeletions.GET("/counts", deletionH.StatusCounts)
@@ -163,14 +166,14 @@ func SetupRouter(
 		}
 
 		memberships := protected.Group("/memberships")
-		memberships.Use(middleware.RequireRole("super_admin", "admin"))
+		memberships.Use(middleware.RequirePermission(domain.PermMemberships))
 		{
 			memberships.GET("", membershipH.List)
 			memberships.GET("/summary", membershipH.Summary)
 		}
 
 		plans := protected.Group("/plans")
-		plans.Use(middleware.RequireRole("super_admin", "admin"))
+		plans.Use(middleware.RequirePermission(domain.PermOrders))
 		{
 			plans.GET("", planH.List)
 			plans.POST("", planH.Create)
@@ -178,7 +181,7 @@ func SetupRouter(
 		}
 
 		orders := protected.Group("/orders")
-		orders.Use(middleware.RequireRole("super_admin", "admin"))
+		orders.Use(middleware.RequirePermission(domain.PermOrders))
 		{
 			orders.GET("", orderH.List)
 			orders.GET("/summary", orderH.Summary)
@@ -187,14 +190,14 @@ func SetupRouter(
 		}
 
 		tokens := protected.Group("/tokens")
-		tokens.Use(middleware.RequireRole("super_admin", "admin"))
+		tokens.Use(middleware.RequirePermission(domain.PermTokens))
 		{
 			tokens.GET("", tokenH.List)
 			tokens.GET("/summary", tokenH.Summary)
 		}
 
 		aiTasks := protected.Group("/ai-tasks")
-		aiTasks.Use(middleware.RequireRole("super_admin", "admin"))
+		aiTasks.Use(middleware.RequirePermission(domain.PermAITasks))
 		{
 			aiTasks.GET("", aiTaskH.List)
 			aiTasks.GET("/summary", aiTaskH.Summary)
@@ -203,7 +206,7 @@ func SetupRouter(
 		}
 
 		aiGenerations := protected.Group("/ai-generations")
-		aiGenerations.Use(middleware.RequireRole("super_admin", "admin"))
+		aiGenerations.Use(middleware.RequirePermission(domain.PermAIGenerations))
 		{
 			aiGenerations.GET("", aiGenH.List)
 			aiGenerations.GET("/summary", aiGenH.Summary)
@@ -211,7 +214,7 @@ func SetupRouter(
 		}
 
 		agents := protected.Group("/agents")
-		agents.Use(middleware.RequireRole("super_admin", "admin"))
+		agents.Use(middleware.RequirePermission(domain.PermAgents))
 		{
 			agents.GET("", agentH.List)
 			agents.GET("/:id", agentH.Get)
@@ -222,7 +225,7 @@ func SetupRouter(
 		}
 
 		tags := protected.Group("/tags")
-		tags.Use(middleware.RequireRole("super_admin", "admin"))
+		tags.Use(middleware.RequirePermission(domain.PermTags))
 		{
 			tags.GET("", tagH.List)
 			tags.GET("/:id", tagH.Get)
@@ -232,7 +235,7 @@ func SetupRouter(
 		}
 
 		styles := protected.Group("/styles")
-		styles.Use(middleware.RequireRole("super_admin", "admin"))
+		styles.Use(middleware.RequirePermission(domain.PermStyles))
 		{
 			styles.GET("", styleH.List)
 			styles.GET("/:id", styleH.Get)
@@ -241,14 +244,14 @@ func SetupRouter(
 		}
 
 		genres := protected.Group("/genres")
-		genres.Use(middleware.RequireRole("super_admin", "admin"))
+		genres.Use(middleware.RequirePermission(domain.PermGenres))
 		{
 			genres.GET("", genreH.List)
 			genres.PUT("/:id", genreH.Update)
 		}
 
 		invitations := protected.Group("/invitation-codes")
-		invitations.Use(middleware.RequireRole("super_admin", "admin"))
+		invitations.Use(middleware.RequirePermission(domain.PermInvitationCodes))
 		{
 			invitations.GET("", invitationH.ListCodes)
 			invitations.POST("", invitationH.CreateCode)
@@ -256,22 +259,22 @@ func SetupRouter(
 		}
 
 		referrals := protected.Group("/referrals")
-		referrals.Use(middleware.RequireRole("super_admin", "admin"))
+		referrals.Use(middleware.RequirePermission(domain.PermInvitationCodes))
 		{ referrals.GET("", invitationH.ListReferrals) }
 
 		devices := protected.Group("/devices")
-		devices.Use(middleware.RequireRole("super_admin", "admin"))
+		devices.Use(middleware.RequirePermission(domain.PermUsers))
 		{
 			devices.GET("", deviceH.List)
 			devices.GET("/counts", deviceH.PlatformCounts)
 		}
 
 		notifications := protected.Group("/notifications")
-		notifications.Use(middleware.RequireRole("super_admin", "admin"))
+		notifications.Use(middleware.RequirePermission(domain.PermNotifications))
 		{ notifications.GET("", notificationH.List) }
 
 		search := protected.Group("/search")
-		search.Use(middleware.RequireRole("super_admin", "admin"))
+		search.Use(middleware.RequirePermission(domain.PermSearch))
 		{
 			search.GET("/history", searchH.History)
 			search.GET("/trends", searchH.Trends)

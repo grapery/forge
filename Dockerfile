@@ -1,5 +1,7 @@
 # Stage 1: Build frontend
 FROM node:22-alpine AS frontend
+ARG NEXT_PUBLIC_FORGE_API_URL=/forge
+ENV NEXT_PUBLIC_FORGE_API_URL=$NEXT_PUBLIC_FORGE_API_URL
 WORKDIR /app/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
@@ -23,8 +25,10 @@ RUN CGO_ENABLED=0 go build -o /admin ./cmd/admin/
 
 # Stage 3: Minimal runtime
 FROM alpine:3.20
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk --no-cache add ca-certificates tzdata wget
 COPY --from=builder /admin /usr/local/bin/admin
 
 EXPOSE 9010
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:9010/health | grep -q ok || exit 1
 ENTRYPOINT ["admin"]

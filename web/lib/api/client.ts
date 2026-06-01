@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const FORGE_API_URL = process.env.NEXT_PUBLIC_FORGE_API_URL || "http://localhost:9010"
+const FORGE_API_URL = process.env.NEXT_PUBLIC_FORGE_API_URL || "/forge"
 
 const forgeClient = axios.create({
   baseURL: FORGE_API_URL,
@@ -51,7 +51,7 @@ forgeClient.interceptors.response.use(
             .catch((err) => {
               localStorage.removeItem("forge_access_token")
               localStorage.removeItem("forge_refresh_token")
-              window.location.href = "/login"
+              window.location.href = "/forge/login"
               throw err
             })
             .finally(() => {
@@ -69,7 +69,7 @@ forgeClient.interceptors.response.use(
       }
       localStorage.removeItem("forge_access_token")
       localStorage.removeItem("forge_refresh_token")
-      window.location.href = "/login"
+      window.location.href = "/forge/login"
     }
     const msg = error.response?.data?.message || error.message || "Request failed"
     return Promise.reject(new Error(msg))
