@@ -1,16 +1,28 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { genreApi } from "@/lib/api/admin"
+
 import type { GenreCatalogItem } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { Button } from "@/components/ui/button"
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+
 import { Input } from "@/components/ui/input"
+
 import { Label } from "@/components/ui/label"
+
 import { Pencil, BookOpen } from "lucide-react"
+
 import { toast } from "sonner"
+
 
 export default function GenresPage() {
   const [items, setItems] = useState<GenreCatalogItem[]>([])
@@ -84,7 +96,7 @@ export default function GenresPage() {
       <PageHeader title="Genres" description="Manage system genre catalog" icon={BookOpen} />
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

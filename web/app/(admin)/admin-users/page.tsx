@@ -1,20 +1,36 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { adminUserApi } from "@/lib/api/admin"
+
 import type { AdminUser } from "@/lib/types"
+
 import { useAuth } from "@/providers/auth-provider"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { RoleBadge, StatusBadge } from "@/components/shared/status-badge"
+
 import { Button } from "@/components/ui/button"
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+
 import { MoreHorizontal, Plus, KeyRound, Pencil, Trash2, Shield } from "lucide-react"
+
 import { CreateAdminDialog } from "./create-admin-dialog"
+
 import { EditAdminDialog } from "./edit-admin-dialog"
+
 import { ResetPasswordDialog } from "./reset-password-dialog"
+
 import { DeleteAdminConfirm } from "./delete-confirm"
+
 import { PermissionEditor } from "@/components/admin/permission-editor"
+
 
 export default function AdminUsersPage() {
   const { user: currentUser } = useAuth()
@@ -70,7 +86,7 @@ export default function AdminUsersPage() {
       />
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

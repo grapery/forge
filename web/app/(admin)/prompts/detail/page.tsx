@@ -1,15 +1,26 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useSearchParams } from "next/navigation"
+
 import { promptApi } from "@/lib/api/admin"
+
 import type { PromptAuditRecord } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { ArrowLeft } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 
 export default function PromptDetailPage() {
   const searchParams = useSearchParams()
@@ -24,7 +35,7 @@ export default function PromptDetailPage() {
     promptApi.get(id).then(setRecord).catch(() => {}).finally(() => setLoading(false))
   }, [id])
 
-  if (loading) return <div className="py-12 text-center text-muted-foreground">Loading...</div>
+  if (loading) return <PageSkeleton />
   if (!record) return <div className="py-12 text-center text-muted-foreground">Record not found</div>
 
   const formatTime = (ts: number) => new Date(ts * 1000).toLocaleString()

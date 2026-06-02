@@ -1,14 +1,24 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { searchApi } from "@/lib/api/admin"
+
 import type { SearchHistoryItem, SearchTrend } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Search, TrendingUp } from "lucide-react"
+
 
 export default function SearchAnalyticsPage() {
   const [items, setItems] = useState<SearchHistoryItem[]>([])
@@ -76,7 +86,7 @@ export default function SearchAnalyticsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

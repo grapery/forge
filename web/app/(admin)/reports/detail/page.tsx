@@ -1,12 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useRouter, useSearchParams } from "next/navigation"
+
 import { reportApi, userApi } from "@/lib/api/admin"
+
 import type { Report } from "@/lib/types"
+
 import { Button } from "@/components/ui/button"
+
 import { Label } from "@/components/ui/label"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 
 const statusLabel: Record<string, string> = {
   pending: "Pending",
@@ -84,7 +92,7 @@ export default function ReportDetailPage() {
     }
   }
 
-  if (loading) return <div>Loading...</div>
+  if (loading) return <PageSkeleton />
   if (!report) return null
 
   return (

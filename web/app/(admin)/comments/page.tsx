@@ -1,18 +1,32 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { commentApi } from "@/lib/api/admin"
+
 import type { CommentItem, CommentStatusCount } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { MessageSquare, BookOpen, Puzzle, Users, Trash2 } from "lucide-react"
+
 import { toast } from "sonner"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 
 export default function CommentsPage() {
   const [items, setItems] = useState<CommentItem[]>([])
@@ -99,7 +113,7 @@ export default function CommentsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

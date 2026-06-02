@@ -1,14 +1,24 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { membershipApi } from "@/lib/api/admin"
+
 import type { MembershipItem, MembershipSummary } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Users, Shield, Crown, User } from "lucide-react"
+
 
 export default function MembershipsPage() {
   const [items, setItems] = useState<MembershipItem[]>([])
@@ -89,7 +99,7 @@ export default function MembershipsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

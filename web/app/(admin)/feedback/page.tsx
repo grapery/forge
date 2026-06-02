@@ -1,13 +1,22 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useRouter, useSearchParams } from "next/navigation"
+
 import { feedbackApi } from "@/lib/api/admin"
+
 import type { Feedback, FeedbackStatusCount } from "@/lib/types"
+
 import { Button } from "@/components/ui/button"
+
 import { Card, CardContent } from "@/components/ui/card"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { MessageSquare } from "lucide-react"
+
 
 const statusOptions = ["", "received", "processing", "resolved", "closed"]
 
@@ -102,7 +111,7 @@ export default function FeedbackPage() {
 
       {/* Feedback list */}
       {loading ? (
-        <div>Loading...</div>
+        <PageSkeleton />
       ) : items.length === 0 ? (
         <div className="text-muted-foreground">No feedback found.</div>
       ) : (

@@ -1,18 +1,32 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { aiTaskApi } from "@/lib/api/admin"
+
 import type { AITaskItem, AITaskSummary } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { ListTodo, Clock, CheckCircle, XCircle, Ban, Brain } from "lucide-react"
+
 import { toast } from "sonner"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pending: "outline",
@@ -104,7 +118,7 @@ export default function AITasksPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

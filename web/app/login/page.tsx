@@ -32,11 +32,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40">
-      <Card className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-subtle">
+      <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-purple-500/10 blur-3xl" />
+
+      <Card className="relative z-10 w-full max-w-sm shadow-lg border-0 bg-card/95 backdrop-blur-sm animate-scale-in">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <Anvil className="h-6 w-6 text-primary-foreground" />
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow">
+            <Anvil className="h-7 w-7 text-primary-foreground" />
           </div>
           <CardTitle className="text-xl">Forge Admin</CardTitle>
           <p className="text-sm text-muted-foreground">Sign in to manage your platform</p>
@@ -51,9 +54,14 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            {error && <p className="text-sm text-destructive animate-fade-in">{error}</p>}
+            <Button type="submit" className="w-full bg-gradient-primary shadow-md hover:opacity-90 active:scale-[0.98] transition-all duration-200" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                  Signing in...
+                </span>
+              ) : "Sign In"}
             </Button>
           </form>
         </CardContent>

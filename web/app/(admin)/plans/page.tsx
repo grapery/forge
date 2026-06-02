@@ -1,13 +1,22 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { planApi } from "@/lib/api/admin"
+
 import type { SubscriptionPlanItem } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import {
   Dialog,
   DialogContent,
@@ -16,11 +25,17 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+
 import { Label } from "@/components/ui/label"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { CreditCard, Plus, Pencil, Trash2 } from "lucide-react"
+
 import { toast } from "sonner"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 
 interface PlanFormData {
   name: string
@@ -163,7 +178,7 @@ export default function PlansPage() {
       />
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

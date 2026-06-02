@@ -1,19 +1,34 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { invitationApi } from "@/lib/api/admin"
+
 import type { InvitationCodeItem } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
 import { Input } from "@/components/ui/input"
+
 import { Label } from "@/components/ui/label"
+
 import { Ticket, ToggleLeft, ToggleRight, Mail } from "lucide-react"
+
 import { toast } from "sonner"
+
 
 export default function InvitationCodesPage() {
   const [items, setItems] = useState<InvitationCodeItem[]>([])
@@ -117,7 +132,7 @@ export default function InvitationCodesPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

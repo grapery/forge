@@ -1,12 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useRouter, useSearchParams } from "next/navigation"
+
 import { feedbackApi } from "@/lib/api/admin"
+
 import type { Feedback } from "@/lib/types"
+
 import { Button } from "@/components/ui/button"
+
 import { Label } from "@/components/ui/label"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 
 const statusLabel: Record<string, string> = {
   received: "Received",
@@ -58,7 +66,7 @@ export default function FeedbackDetailPage() {
     }
   }
 
-  if (loading) return <div>Loading...</div>
+  if (loading) return <PageSkeleton />
   if (!fb) return null
 
   return (

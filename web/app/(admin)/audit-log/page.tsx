@@ -1,13 +1,22 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { auditLogApi } from "@/lib/api/admin"
+
 import type { AdminOperationLog } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Badge } from "@/components/ui/badge"
+
 import { ScrollText } from "lucide-react"
+
 
 const actionColors: Record<string, string> = {
   create: "bg-green-100 text-green-800",
@@ -81,7 +90,7 @@ export default function AuditLogPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

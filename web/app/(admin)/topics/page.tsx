@@ -1,13 +1,22 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { topicApi } from "@/lib/api/admin"
+
 import type { TopicStats } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { Hash, BookOpen, Layers } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 
 export default function TopicsPage() {
   const router = useRouter()
@@ -45,7 +54,7 @@ export default function TopicsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

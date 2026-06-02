@@ -1,18 +1,32 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { characterApi } from "@/lib/api/admin"
+
 import type { CharacterItem, CharacterStatusCount } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Users, Eye, EyeOff, Trash2, Ghost } from "lucide-react"
+
 import { toast } from "sonner"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 
 export default function CharactersPage() {
   const [items, setItems] = useState<CharacterItem[]>([])
@@ -99,7 +113,7 @@ export default function CharactersPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

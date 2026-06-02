@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
+import { cn } from "@/lib/utils"
 
 interface PaginationInfo {
   page: number
@@ -32,7 +33,7 @@ export function DataTable<T>({
   const totalPages = Math.ceil(pagination.total / pagination.pageSize)
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="overflow-x-auto rounded-md border">
         <table className="w-full text-sm">
           <thead>
@@ -55,7 +56,11 @@ export function DataTable<T>({
               data.map((item, idx) => (
                 <tr
                   key={(item as any).id || idx}
-                  className={`border-b transition-colors hover:bg-muted/50 ${onRowClick ? "cursor-pointer" : ""}`}
+                  className={cn(
+                    "border-b transition-colors hover:bg-muted/50 animate-fade-in-up",
+                    onRowClick && "cursor-pointer"
+                  )}
+                  style={{ animationDelay: `${idx * 30}ms` }}
                   onClick={() => onRowClick?.(item)}
                 >
                   {columns.map((col) => (

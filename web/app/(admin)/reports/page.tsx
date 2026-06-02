@@ -1,13 +1,22 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useRouter, useSearchParams } from "next/navigation"
+
 import { reportApi } from "@/lib/api/admin"
+
 import type { Report } from "@/lib/types"
+
 import { Button } from "@/components/ui/button"
+
 import { Card, CardContent } from "@/components/ui/card"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { Flag } from "lucide-react"
+
 
 const statusOptions = ["", "pending", "reviewed", "resolved", "dismissed"]
 
@@ -102,7 +111,7 @@ export default function ReportsPage() {
 
       {/* Report list */}
       {loading ? (
-        <div>Loading...</div>
+        <PageSkeleton />
       ) : items.length === 0 ? (
         <div className="text-muted-foreground">No reports found.</div>
       ) : (

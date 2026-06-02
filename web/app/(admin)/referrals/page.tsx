@@ -1,12 +1,20 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { invitationApi } from "@/lib/api/admin"
+
 import type { ReferralItem } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Users, UserCheck } from "lucide-react"
+
 
 export default function ReferralsPage() {
   const [items, setItems] = useState<ReferralItem[]>([])
@@ -41,7 +49,7 @@ export default function ReferralsPage() {
       <PageHeader title="Referrals" description="View referral records" icon={UserCheck} />
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

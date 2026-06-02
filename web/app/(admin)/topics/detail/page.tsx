@@ -1,14 +1,24 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useSearchParams } from "next/navigation"
+
 import { topicApi } from "@/lib/api/admin"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { Button } from "@/components/ui/button"
+
 import { ArrowLeft } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 
 export default function TopicDetailPage() {
   const searchParams = useSearchParams()
@@ -60,7 +70,7 @@ export default function TopicDetailPage() {
 
         <TabsContent value={tab}>
           {loading ? (
-            <div className="py-12 text-center text-muted-foreground">Loading...</div>
+            <PageSkeleton />
           ) : items.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">No content found</div>
           ) : (

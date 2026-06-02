@@ -1,20 +1,36 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { userApi } from "@/lib/api/admin"
+
 import type { PlatformUser, UserStatusCount } from "@/lib/types"
+
 import { useAuth } from "@/providers/auth-provider"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Users as UsersIcon, UserCheck, UserX, Shield, ShieldOff } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 import { toast } from "sonner"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth()
@@ -105,7 +121,7 @@ export default function UsersPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

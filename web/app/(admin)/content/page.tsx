@@ -1,18 +1,32 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { contentApi } from "@/lib/api/admin"
+
 import type { ContentItem, ContentStatusCount } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { SearchInput } from "@/components/shared/search-input"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 import { Eye, Trash2, FileText } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 import { toast } from "sonner"
+
 
 const publishedStatuses: Record<string, string> = {
   story: "published",
@@ -148,7 +162,7 @@ export default function ContentPage() {
 
         <TabsContent value={tab}>
           {loading ? (
-            <div className="py-12 text-center text-muted-foreground">Loading...</div>
+            <PageSkeleton />
           ) : (
             <DataTable
               data={items}

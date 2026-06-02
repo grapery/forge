@@ -1,14 +1,24 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { tokenApi } from "@/lib/api/admin"
+
 import type { TokenTransactionItem, TokenSummary } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Coins, ArrowDown, ArrowUp, RotateCcw, Gift } from "lucide-react"
+
 
 export default function TokensPage() {
   const [items, setItems] = useState<TokenTransactionItem[]>([])
@@ -77,7 +87,7 @@ export default function TokensPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

@@ -1,14 +1,24 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { promptApi } from "@/lib/api/admin"
+
 import type { PromptAuditRecord, PromptAuditSummary } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { FileText, Cpu, Zap, Terminal } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 
 export default function PromptsPage() {
   const router = useRouter()
@@ -83,7 +93,7 @@ export default function PromptsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

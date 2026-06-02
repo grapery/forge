@@ -1,17 +1,30 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { accountDeletionApi } from "@/lib/api/admin"
+
 import type { AccountDeletionItem, AccountDeletionStatusCount } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { DataTable } from "@/components/shared/data-table"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { UserMinus, UserX, Clock, Loader2, CheckCircle2, XCircle } from "lucide-react"
+
 import { toast } from "sonner"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 
 export default function AccountDeletionsPage() {
   const [items, setItems] = useState<AccountDeletionItem[]>([])
@@ -102,7 +115,7 @@ export default function AccountDeletionsPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-muted-foreground">Loading...</div>
+        <PageSkeleton />
       ) : (
         <DataTable
           data={items}

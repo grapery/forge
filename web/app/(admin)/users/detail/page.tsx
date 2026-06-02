@@ -1,18 +1,32 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useSearchParams } from "next/navigation"
+
 import { userApi } from "@/lib/api/admin"
+
 import type { PlatformUser } from "@/lib/types"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { StatCard } from "@/components/shared/stat-card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 import { ArrowLeft, BookOpen, Layers, Users, Shield, ShieldOff } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 import { toast } from "sonner"
+
 
 export default function UserDetailPage() {
   const searchParams = useSearchParams()
@@ -45,7 +59,7 @@ export default function UserDetailPage() {
     }
   }
 
-  if (loading) return <div className="py-12 text-center text-muted-foreground">Loading...</div>
+  if (loading) return <PageSkeleton />
   if (!user) return <div className="py-12 text-center text-muted-foreground">User not found</div>
 
   const formatTime = (ts: number | null) => ts ? new Date(ts * 1000).toLocaleString() : "-"

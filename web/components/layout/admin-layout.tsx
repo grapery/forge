@@ -35,6 +35,7 @@ import {
   UserCheck,
   ScrollText,
   FileSearch,
+  Anvil,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -97,13 +98,19 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }, [user, loading, router])
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center">Loading...</div>
+    return (
+      <div className="flex min-h-screen items-center justify-center animate-fade-in">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
   if (!user) return null
 
   const filteredNav = navItems.filter((item) => {
     if (!item.roles.includes(user.role)) return false
-    // For operator and viewer roles, check permissions
     if ((user.role === "operator" || user.role === "viewer") && item.permission) {
       const userPermissions = user.permissions || []
       if (!userPermissions.includes(item.permission)) return false
@@ -112,27 +119,28 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   })
 
   const groupedNav: { label: string; items: NavItem[] }[] = []
-  let currentGroup = ""
   for (const group of groupOrder) {
     const items = filteredNav.filter((item) => (item.group || "") === group)
     if (items.length > 0) {
       groupedNav.push({ label: group, items })
-      currentGroup = group
     }
   }
 
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-60 border-r bg-muted/30 flex flex-col">
-        <div className="flex h-14 items-center border-b px-4">
-          <span className="font-semibold">Forge Admin</span>
+      <aside className="w-60 border-r bg-sidebar-bg flex flex-col shadow-sm">
+        <div className="flex h-14 items-center gap-2.5 border-b px-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
+            <Anvil className="h-4 w-4 text-primary-foreground" />
+          </div>
+          <span className="font-semibold tracking-tight">Forge Admin</span>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           {groupedNav.map((group) => (
             <div key={group.label} className="mb-2">
               {group.label && (
-                <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest">
                   {group.label}
                 </div>
               )}
@@ -141,8 +149,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   onClick={() => router.push(item.href)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                    pathname.startsWith(item.href) ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-150 border-l-[3px]",
+                    pathname.startsWith(item.href)
+                      ? "bg-primary/10 text-primary font-medium border-l-primary sidebar-active-bg"
+                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:translate-x-0.5 border-l-transparent"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -152,9 +162,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="border-t p-2">
+        <div className="border-t p-2 bg-muted/30">
           <div className="flex items-center gap-2 px-3 py-2 text-sm">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground text-xs font-medium ring-2 ring-primary/20">
               {user.username.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -162,11 +172,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <p className="truncate text-xs text-muted-foreground">{user.role}</p>
             </div>
           </div>
-          <button onClick={() => router.push("/change-password")} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+          <button onClick={() => router.push("/change-password")} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
             <KeyRound className="h-4 w-4" />
             Change Password
           </button>
-          <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+          <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
             <LogOut className="h-4 w-4" />
             Logout
           </button>
@@ -175,7 +185,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">
-        <div className="p-6">{children}</div>
+        <div key={pathname} className="p-6 animate-fade-in-up">
+          {children}
+        </div>
       </main>
     </div>
   )

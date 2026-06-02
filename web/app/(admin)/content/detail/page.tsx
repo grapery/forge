@@ -1,16 +1,28 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { PageSkeleton } from "@/components/shared/skeleton"
+
 import { useSearchParams } from "next/navigation"
+
 import { contentApi } from "@/lib/api/admin"
+
 import { PageHeader } from "@/components/shared/page-header"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+
 import { ArrowLeft, Eye, Trash2 } from "lucide-react"
+
 import { useRouter } from "next/navigation"
+
 import { toast } from "sonner"
+
 
 export default function ContentDetailPage() {
   const searchParams = useSearchParams()
@@ -39,7 +51,7 @@ export default function ContentDetailPage() {
     }
   }
 
-  if (loading) return <div className="py-12 text-center text-muted-foreground">Loading...</div>
+  if (loading) return <PageSkeleton />
   if (!detail) return <div className="py-12 text-center text-muted-foreground">Content not found</div>
 
   const formatTime = (ts: any) => {
