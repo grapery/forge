@@ -9,8 +9,6 @@ import (
 	"github.com/grapestree/fgrapery/forge/internal/frontend"
 )
 
-// RegisterStaticRoutes serves the embedded Next.js static assets.
-// API routes take priority; everything else falls through to SPA index.html.
 func RegisterStaticRoutes(r *gin.Engine) {
 	sub, err := fs.Sub(frontend.DistFS, "dist")
 	if err != nil {
@@ -20,12 +18,6 @@ func RegisterStaticRoutes(r *gin.Engine) {
 
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
-
-		// Skip API routes
-		if strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/forge/api/") {
-			c.JSON(http.StatusNotFound, gin.H{"code": -4, "message": "not found"})
-			return
-		}
 
 		// Only serve under /forge/ prefix (matches Next.js basePath)
 		if !strings.HasPrefix(path, "/forge/") && path != "/forge" {
@@ -39,11 +31,11 @@ func RegisterStaticRoutes(r *gin.Engine) {
 			fsPath = "/index.html"
 		}
 
-		// Try serving the exact file
-		if fsPath != "/index.html" {
-			cleanPath := strings.TrimPrefix(fsPath, "/")
+		// Try exact file match
+		cleanPath := strings.TrimPrefix(fsPath, "/")
+		if cleanPath != "" && cleanPath != "index.html" {
 			if fileExists(sub, cleanPath) {
-				c.Request.URL.Path = fsPath
+				c.Request.URL.Path = "/" + cleanPath
 				fileServer.ServeHTTP(c.Writer, c.Request)
 				return
 			}
@@ -55,9 +47,15 @@ func RegisterStaticRoutes(r *gin.Engine) {
 			}
 		}
 
-		// Fallback to index.html for SPA client-side routing
-		c.Request.URL.Path = "/index.html"
-		fileServer.ServeHTTP(c.Writer, c.Request)
+		// SPA fallback: serve index.html directly
+		f, err := sub.Open("index.html")
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"code": -4, "message": "not found"})
+			return
+		}
+		defer f.Close()
+		stat, _ := f.Stat()
+		c.DataFromReader(http.StatusOK, stat.Size(), "text/html; charset=utf-8", f, nil)
 	})
 }
 
