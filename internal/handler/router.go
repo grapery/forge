@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	adminAuth "github.com/grapestree/fgrapery/forge/internal/auth"
 	"github.com/grapestree/fgrapery/forge/internal/domain"
@@ -280,6 +282,10 @@ func SetupRouter(
 			search.GET("/trends", searchH.Trends)
 		}
 	}
+
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"code": -4, "message": "not found"})
+	})
 
 	return r
 }

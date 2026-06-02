@@ -116,7 +116,6 @@ func main() {
 
 	// Router
 	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, auditSvc, logger, cfg.AllowOrigins)
-	handler.RegisterStaticRoutes(router)
 
 	// HTTP server
 	srv := &http.Server{
