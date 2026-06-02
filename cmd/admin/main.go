@@ -17,11 +17,15 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	Version   = "dev"
+	CommitSHA = "none"
+	BuildTime = "unknown"
+)
+
 func main() {
-	// Load config
 	cfg := config.Load()
 
-	// Logger
 	var logger *zap.Logger
 	var err error
 	if cfg.Env == "production" {
@@ -35,27 +39,31 @@ func main() {
 	}
 	defer logger.Sync()
 
-	// JWT
 	auth.SetJWTSecret(cfg.JWT.Secret)
 
-	// Database
-	db, err := mysql.InitDB(cfg.Database, logger)
+	// Main business database (read-only for business data)
+	mainDB, err := mysql.InitDB(cfg.Database, logger)
 	if err != nil {
-		logger.Fatal("failed to init database", zap.Error(err))
+		logger.Fatal("failed to init main database", zap.Error(err))
 	}
 
-	repo := mysql.NewRepository(db, logger)
-	readRepo := mysql.NewReadRepository(db)
-	writeRepo := mysql.NewWriteRepository(db)
+	// Forge ops database (admin tables + stats)
+	forgeDB, err := mysql.InitDB(cfg.ForgeDB, logger)
+	if err != nil {
+		logger.Fatal("failed to init forge database", zap.Error(err))
+	}
 
-	// Auto-migrate admin tables
+	repo := mysql.NewRepository(forgeDB, logger)
+	readRepo := mysql.NewReadRepository(mainDB)
+	writeRepo := mysql.NewWriteRepository(mainDB)
+
 	if err := repo.AutoMigrate(); err != nil {
 		logger.Fatal("failed to auto-migrate", zap.Error(err))
 	}
 
 	// Services
 	authSvc := service.NewAdminAuthService(repo, logger, cfg.JWT.AccessTokenExp, cfg.JWT.RefreshTokenExp)
-	dashSvc := service.NewDashboardService(readRepo, logger)
+	dashSvc := service.NewDashboardService(readRepo, repo, logger)
 	auditSvc := service.NewAuditLogService(repo, logger)
 	adminUserSvc := service.NewAdminUserMgmtService(repo, logger)
 	feedbackSvc := service.NewFeedbackService(readRepo, logger)
@@ -81,13 +89,13 @@ func main() {
 	deviceSvc := service.NewDeviceService(readRepo)
 	notificationSvc := service.NewNotificationService(readRepo)
 	searchSvc := service.NewSearchAnalyticsService(readRepo)
+	collector := service.NewStatsCollector(readRepo, repo, logger)
 
-	// Seed default admin
 	authSvc.SeedDefaultAdmin()
 
 	// Handlers
 	authH := handler.NewAuthHandler(authSvc, auditSvc, logger)
-	dashH := handler.NewDashboardHandler(dashSvc, logger)
+	dashH := handler.NewDashboardHandler(dashSvc, collector, logger)
 	adminUserH := handler.NewAdminUserHandler(adminUserSvc, logger)
 	auditLogH := handler.NewAuditLogHandler(auditSvc, logger)
 	feedbackH := handler.NewFeedbackHandler(feedbackSvc, logger)
@@ -114,10 +122,11 @@ func main() {
 	notificationH := handler.NewNotificationHandler(notificationSvc, logger)
 	searchH := handler.NewSearchAnalyticsHandler(searchSvc, logger)
 
-	// Router
 	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, auditSvc, logger, cfg.AllowOrigins)
 
-	// HTTP server
+	// Daily stats collection (runs at 1:00 AM)
+	go startDailyCollector(collector, logger)
+
 	srv := &http.Server{
 		Addr:         cfg.Addr(),
 		Handler:      router,
@@ -126,7 +135,6 @@ func main() {
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 
-	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -148,4 +156,16 @@ func main() {
 	}
 
 	logger.Info("server exited")
+}
+
+func startDailyCollector(collector *service.StatsCollector, logger *zap.Logger) {
+	for {
+		now := time.Now()
+		next := time.Date(now.Year(), now.Month(), now.Day()+1, 1, 0, 0, 0, now.Location())
+		timer := time.NewTimer(next.Sub(now))
+		<-timer.C
+		if err := collector.Collect(""); err != nil {
+			logger.Error("daily stats collection failed", zap.Error(err))
+		}
+	}
 }

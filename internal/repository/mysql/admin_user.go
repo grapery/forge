@@ -125,7 +125,4 @@ func adminUserToModel(u *domain.AdminUser) *AdminUser {
 	}
 }
 
-// AutoMigrate creates tables if not exist.
-func (r *Repository) AutoMigrate() error {
-	return r.db.AutoMigrate(&AdminUser{}, &AdminOperationLog{})
-}
+// AutoMigrate is defined in repository.go

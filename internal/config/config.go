@@ -18,6 +18,7 @@ type Config struct {
 	LogLevel     string
 	AllowOrigins []string
 	Database     DatabaseConfig
+	ForgeDB      DatabaseConfig
 	JWT          JWTConfig
 }
 
@@ -59,6 +60,14 @@ func Load() *Config {
 			Address:  getEnv("DB_ADDRESS", "127.0.0.1:3306"),
 			MaxIdle:  10,
 			MaxOpen:  100,
+		},
+		ForgeDB: DatabaseConfig{
+			Database: getEnv("FORGE_DB_DATABASE", "forge_ops"),
+			Username: getEnv("FORGE_DB_USERNAME", getEnv("DB_USERNAME", "root")),
+			Password: getEnv("FORGE_DB_PASSWORD", getEnv("DB_PASSWORD", "")),
+			Address:  getEnv("FORGE_DB_ADDRESS", getEnv("DB_ADDRESS", "127.0.0.1:3306")),
+			MaxIdle:  5,
+			MaxOpen:  20,
 		},
 		JWT: JWTConfig{
 			Secret:          getEnv("FORGE_JWT_SECRET", "forge-admin-secret-change-me"),

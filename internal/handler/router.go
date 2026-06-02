@@ -69,7 +69,10 @@ func SetupRouter(
 
 		dashboard := protected.Group("/dashboard")
 		dashboard.Use(middleware.RequireRole("super_admin", "admin", "operator", "viewer"))
-		{ dashboard.GET("/overview", dashH.GetOverview) }
+		{
+			dashboard.GET("/overview", dashH.GetOverview)
+			dashboard.POST("/collect-stats", dashH.CollectStats)
+		}
 
 		adminUsers := protected.Group("/admin-users")
 		adminUsers.Use(middleware.RequireRole("super_admin"))

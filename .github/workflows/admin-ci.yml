@@ -198,6 +198,12 @@ jobs:
           DB_PASSWORD=${{ vars.DB_PASSWORD }}
           DB_ADDRESS=${{ vars.DB_ADDRESS }}
 
+          # ========== Forge Database ==========
+          FORGE_DB_DATABASE=forge_ops
+          FORGE_DB_USERNAME=${{ vars.FORGE_DB_USERNAME || vars.DB_USERNAME }}
+          FORGE_DB_PASSWORD=${{ vars.FORGE_DB_PASSWORD || vars.DB_PASSWORD }}
+          FORGE_DB_ADDRESS=${{ vars.FORGE_DB_ADDRESS || vars.DB_ADDRESS }}
+
           # ========== JWT ==========
           FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET || 'forge-dev-secret-change-in-prod' }}
           FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '24h' }}
@@ -305,6 +311,12 @@ jobs:
           DB_USERNAME=${{ vars.DB_USERNAME }}
           DB_PASSWORD=${{ vars.DB_PASSWORD }}
           DB_ADDRESS=${{ vars.DB_ADDRESS }}
+
+          # ========== Forge Database ==========
+          FORGE_DB_DATABASE=forge_ops
+          FORGE_DB_USERNAME=${{ vars.FORGE_DB_USERNAME || vars.DB_USERNAME }}
+          FORGE_DB_PASSWORD=${{ vars.FORGE_DB_PASSWORD || vars.DB_PASSWORD }}
+          FORGE_DB_ADDRESS=${{ vars.FORGE_DB_ADDRESS || vars.DB_ADDRESS }}
 
           # ========== JWT ==========
           FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET }}

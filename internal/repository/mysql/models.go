@@ -35,3 +35,28 @@ type AdminOperationLog struct {
 }
 
 func (AdminOperationLog) TableName() string { return "admin_operation_logs" }
+
+type DailyStat struct {
+	ID                uint    `gorm:"column:id;primaryKey;autoIncrement"`
+	Date              string  `gorm:"column:date;uniqueIndex;size:10"`
+	TotalUsers        int64   `gorm:"column:total_users"`
+	NewUsers          int64   `gorm:"column:new_users"`
+	TotalStories      int64   `gorm:"column:total_stories"`
+	NewStories        int64   `gorm:"column:new_stories"`
+	TotalCharacters   int64   `gorm:"column:total_characters"`
+	NewCharacters     int64   `gorm:"column:new_characters"`
+	TotalFragments    int64   `gorm:"column:total_fragments"`
+	NewFragments      int64   `gorm:"column:new_fragments"`
+	ActiveMemberships int64   `gorm:"column:active_memberships"`
+	TotalOrders       int64   `gorm:"column:total_orders"`
+	NewOrders         int64   `gorm:"column:new_orders"`
+	TotalRevenue      float64 `gorm:"column:total_revenue"`
+	NewRevenue        float64 `gorm:"column:new_revenue"`
+	TotalAITasks      int64   `gorm:"column:total_ai_tasks"`
+	NewAITasks        int64   `gorm:"column:new_ai_tasks"`
+	TotalTokenTx      int64   `gorm:"column:total_token_tx"`
+	NewTokenTx        int64   `gorm:"column:new_token_tx"`
+	CreatedAt         int64   `gorm:"column:created_at;autoCreateTime"`
+}
+
+func (DailyStat) TableName() string { return "daily_stats" }

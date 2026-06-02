@@ -33,6 +33,8 @@ export const authApi = {
 export const dashboardApi = {
   getOverview: () =>
     forgeClient.get<any, OverviewStats>("/api/admin/dashboard/overview"),
+  collectStats: (date?: string) =>
+    forgeClient.post<any, { code: number; message: string }>("/api/admin/dashboard/collect-stats" + (date ? `?date=${date}` : "")),
 }
 
 export const adminUserApi = {

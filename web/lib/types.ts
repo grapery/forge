@@ -34,6 +34,22 @@ export interface OverviewStats {
   activeMemberships: number
   totalOrders: number
   totalTokenTransactions: number
+  trends: DailyTrend[]
+}
+
+export interface DailyTrend {
+  date: string
+  totalUsers: number
+  newUsers: number
+  totalStories: number
+  newStories: number
+  totalCharacters: number
+  newCharacters: number
+  totalOrders: number
+  newOrders: number
+  newRevenue: number
+  totalAITasks: number
+  newAITasks: number
 }
 
 export interface PaginatedData<T> {

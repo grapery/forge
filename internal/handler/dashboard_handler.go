@@ -1,18 +1,21 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/service"
 	"go.uber.org/zap"
 )
 
 type DashboardHandler struct {
-	dashSvc *service.DashboardService
-	logger  *zap.Logger
+	dashSvc    *service.DashboardService
+	collector  *service.StatsCollector
+	logger     *zap.Logger
 }
 
-func NewDashboardHandler(dashSvc *service.DashboardService, logger *zap.Logger) *DashboardHandler {
-	return &DashboardHandler{dashSvc: dashSvc, logger: logger}
+func NewDashboardHandler(dashSvc *service.DashboardService, collector *service.StatsCollector, logger *zap.Logger) *DashboardHandler {
+	return &DashboardHandler{dashSvc: dashSvc, collector: collector, logger: logger}
 }
 
 func (h *DashboardHandler) GetOverview(c *gin.Context) {
@@ -22,4 +25,13 @@ func (h *DashboardHandler) GetOverview(c *gin.Context) {
 		return
 	}
 	Success(c, stats)
+}
+
+func (h *DashboardHandler) CollectStats(c *gin.Context) {
+	date := c.Query("date")
+	if err := h.collector.Collect(date); err != nil {
+		Error(c, CodeInternalError, "failed to collect stats")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "stats collected"})
 }
