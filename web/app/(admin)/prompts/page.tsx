@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { DataTable } from "@/components/shared/data-table"
 import { StatCard } from "@/components/shared/stat-card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Cpu, Zap } from "lucide-react"
+import { FileText, Cpu, Zap, Terminal } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function PromptsPage() {
@@ -45,7 +45,7 @@ export default function PromptsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Prompt Audit" description="Review AI prompt usage and audit records" />
+      <PageHeader title="Prompt Audit" description="Review AI prompt usage and audit records" icon={Terminal} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-3">

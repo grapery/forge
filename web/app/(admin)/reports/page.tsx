@@ -6,6 +6,8 @@ import { reportApi } from "@/lib/api/admin"
 import type { Report } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { PageHeader } from "@/components/shared/page-header"
+import { Flag } from "lucide-react"
 
 const statusOptions = ["", "pending", "reviewed", "resolved", "dismissed"]
 
@@ -64,10 +66,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">User Reports</h1>
-        <p className="text-muted-foreground">Review and handle user report submissions</p>
-      </div>
+      <PageHeader title="User Reports" description="Review and handle user report submissions" icon={Flag} />
 
       {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 

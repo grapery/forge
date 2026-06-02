@@ -38,7 +38,7 @@ export default function TopicsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Topics" description="Browse trending topics and hashtags" />
+      <PageHeader title="Topics" description="Browse trending topics and hashtags" icon={Hash} />
 
       <div className="w-64">
         <SearchInput onSearch={setSearch} placeholder="Search topics..." />

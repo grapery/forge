@@ -52,7 +52,7 @@ export default function MembershipsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Memberships" description="Manage user memberships" />
+      <PageHeader title="Memberships" description="Manage user memberships" icon={Crown} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">

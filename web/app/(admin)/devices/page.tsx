@@ -55,7 +55,7 @@ export default function DevicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Devices" description="Manage user devices and push tokens" />
+      <PageHeader title="Devices" description="Manage user devices and push tokens" icon={Smartphone} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-3">

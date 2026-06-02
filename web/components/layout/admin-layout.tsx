@@ -26,6 +26,15 @@ import {
   Megaphone,
   UserX,
   Smartphone,
+  Bot,
+  Terminal,
+  Receipt,
+  Flag,
+  Bell,
+  Crown,
+  UserCheck,
+  ScrollText,
+  FileSearch,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,29 +58,29 @@ const navItems: NavItem[] = [
   // AI
   { href: "/ai-tasks", label: "AI Tasks", icon: Brain, roles: ["super_admin", "admin"], group: "AI", permission: "ai-tasks" },
   { href: "/ai-generations", label: "AI Generations", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "ai-generations" },
-  { href: "/agents", label: "Agents", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "agents" },
-  { href: "/prompts", label: "Prompts", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "prompts" },
+  { href: "/agents", label: "Agents", icon: Bot, roles: ["super_admin", "admin"], group: "AI", permission: "agents" },
+  { href: "/prompts", label: "Prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "AI", permission: "prompts" },
   { href: "/styles", label: "Styles", icon: Palette, roles: ["super_admin", "admin"], group: "AI", permission: "styles" },
   // Users
   { href: "/users", label: "Users", icon: Users, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
   { href: "/account-deletions", label: "Account Deletions", icon: UserX, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
   { href: "/devices", label: "Devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
   // Finance
-  { href: "/memberships", label: "Memberships", icon: CreditCard, roles: ["super_admin", "admin"], group: "Finance", permission: "memberships" },
-  { href: "/orders", label: "Orders", icon: CreditCard, roles: ["super_admin", "admin"], group: "Finance", permission: "orders" },
+  { href: "/memberships", label: "Memberships", icon: Crown, roles: ["super_admin", "admin"], group: "Finance", permission: "memberships" },
+  { href: "/orders", label: "Orders", icon: Receipt, roles: ["super_admin", "admin"], group: "Finance", permission: "orders" },
   { href: "/tokens", label: "Tokens", icon: Coins, roles: ["super_admin", "admin"], group: "Finance", permission: "tokens" },
   // Growth
   { href: "/invitation-codes", label: "Invitation Codes", icon: Mail, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
-  { href: "/referrals", label: "Referrals", icon: Users, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
+  { href: "/referrals", label: "Referrals", icon: UserCheck, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
   { href: "/search-analytics", label: "Search Analytics", icon: Search, roles: ["super_admin", "admin"], group: "Growth", permission: "search" },
   // Community
   { href: "/feedback", label: "Feedback", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "feedback" },
-  { href: "/reports", label: "Reports", icon: Shield, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "reports" },
+  { href: "/reports", label: "Reports", icon: Flag, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "reports" },
   { href: "/topics", label: "Topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "topics" },
-  { href: "/notifications", label: "Broadcast", icon: Megaphone, roles: ["super_admin", "admin"], group: "Community", permission: "notifications" },
+  { href: "/notifications", label: "Broadcast", icon: Bell, roles: ["super_admin", "admin"], group: "Community", permission: "notifications" },
   // System
   { href: "/admin-users", label: "Admin Users", icon: Shield, roles: ["super_admin"], group: "System" },
-  { href: "/audit-log", label: "Audit Log", icon: Activity, roles: ["super_admin", "admin"], group: "System", permission: "audit-log" },
+  { href: "/audit-log", label: "Audit Log", icon: ScrollText, roles: ["super_admin", "admin"], group: "System", permission: "audit-log" },
 ]
 
 const groupOrder = ["", "Content", "AI", "Users", "Finance", "Growth", "Community", "System"]

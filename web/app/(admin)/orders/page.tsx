@@ -9,7 +9,7 @@ import { StatCard } from "@/components/shared/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { DollarSign, ShoppingCart, Clock, CheckCircle, RotateCcw } from "lucide-react"
+import { DollarSign, ShoppingCart, Clock, CheckCircle, RotateCcw, Receipt } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
@@ -78,7 +78,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Orders" description="Manage subscription orders" />
+      <PageHeader title="Orders" description="Manage subscription orders" icon={Receipt} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">

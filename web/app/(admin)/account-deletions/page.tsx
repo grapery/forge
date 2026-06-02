@@ -9,7 +9,7 @@ import { StatCard } from "@/components/shared/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UserMinus, Clock, Loader2, CheckCircle2, XCircle } from "lucide-react"
+import { UserMinus, UserX, Clock, Loader2, CheckCircle2, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
@@ -75,7 +75,7 @@ export default function AccountDeletionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Account Deletions" description="Manage account deletion requests" />
+      <PageHeader title="Account Deletions" description="Manage account deletion requests" icon={UserX} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-4">

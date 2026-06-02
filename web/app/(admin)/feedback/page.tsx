@@ -6,6 +6,8 @@ import { feedbackApi } from "@/lib/api/admin"
 import type { Feedback, FeedbackStatusCount } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { PageHeader } from "@/components/shared/page-header"
+import { MessageSquare } from "lucide-react"
 
 const statusOptions = ["", "received", "processing", "resolved", "closed"]
 
@@ -64,10 +66,7 @@ export default function FeedbackPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">User Feedback</h1>
-        <p className="text-muted-foreground">Review and respond to user feedback</p>
-      </div>
+      <PageHeader title="User Feedback" description="Review and respond to user feedback" icon={MessageSquare} />
 
       {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 

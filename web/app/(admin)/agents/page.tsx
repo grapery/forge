@@ -8,7 +8,7 @@ import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Power, PowerOff } from "lucide-react"
+import { Power, PowerOff, Bot } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
@@ -65,7 +65,7 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Agents" description="Manage AI agents and their status" />
+      <PageHeader title="Agents" description="Manage AI agents and their status" icon={Bot} />
 
       <div className="flex items-center gap-4">
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>

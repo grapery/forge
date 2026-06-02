@@ -58,6 +58,7 @@ export default function AdminUsersPage() {
       <PageHeader
         title="Admin Users"
         description="Manage admin accounts and roles"
+        icon={Shield}
         actions={
           isSuperAdmin ? (
             <Button onClick={() => setCreateOpen(true)}>

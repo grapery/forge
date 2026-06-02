@@ -47,7 +47,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Notifications" description="View notification history" />
+      <PageHeader title="Notifications" description="View notification history" icon={Bell} />
 
       <div className="flex items-center gap-4">
         <div className="w-64">

@@ -6,7 +6,7 @@ import type { ReferralItem } from "@/lib/types"
 import { PageHeader } from "@/components/shared/page-header"
 import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
-import { Users } from "lucide-react"
+import { Users, UserCheck } from "lucide-react"
 
 export default function ReferralsPage() {
   const [items, setItems] = useState<ReferralItem[]>([])
@@ -38,7 +38,7 @@ export default function ReferralsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Referrals" description="View referral records" />
+      <PageHeader title="Referrals" description="View referral records" icon={UserCheck} />
 
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">Loading...</div>

@@ -55,7 +55,7 @@ export default function SearchAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Search Analytics" description="Track search history and trending queries" />
+      <PageHeader title="Search Analytics" description="Track search history and trending queries" icon={Search} />
 
       <div className="flex items-center gap-4">
         <div className="w-64">

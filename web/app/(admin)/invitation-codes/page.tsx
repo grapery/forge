@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Ticket, ToggleLeft, ToggleRight } from "lucide-react"
+import { Ticket, ToggleLeft, ToggleRight, Mail } from "lucide-react"
 import { toast } from "sonner"
 
 export default function InvitationCodesPage() {
@@ -92,6 +92,7 @@ export default function InvitationCodesPage() {
       <PageHeader
         title="Invitation Codes"
         description="Manage invitation codes for user registration"
+        icon={Mail}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Ticket className="mr-2 h-4 w-4" />Create Code

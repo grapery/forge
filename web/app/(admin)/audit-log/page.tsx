@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header"
 import { DataTable } from "@/components/shared/data-table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { ScrollText } from "lucide-react"
 
 const actionColors: Record<string, string> = {
   create: "bg-green-100 text-green-800",
@@ -47,7 +48,7 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Audit Log" description="Track all admin operations" />
+      <PageHeader title="Audit Log" description="Track all admin operations" icon={ScrollText} />
 
       <div className="flex items-center gap-4">
         <Select value={action || "all"} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(1) }}>

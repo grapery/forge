@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { Anvil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
@@ -34,6 +35,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
+            <Anvil className="h-6 w-6 text-primary-foreground" />
+          </div>
           <CardTitle className="text-xl">Forge Admin</CardTitle>
           <p className="text-sm text-muted-foreground">Sign in to manage your platform</p>
         </CardHeader>

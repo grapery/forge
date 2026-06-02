@@ -154,6 +154,7 @@ export default function PlansPage() {
       <PageHeader
         title="Plans"
         description="Manage subscription plans"
+        icon={CreditCard}
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" /> Create Plan

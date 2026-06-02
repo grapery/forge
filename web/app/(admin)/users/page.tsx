@@ -78,7 +78,7 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Users" description="Manage platform users" />
+      <PageHeader title="Users" description="Manage platform users" icon={UsersIcon} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-3">

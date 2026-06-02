@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/shared/empty-state"
 
 interface PaginationInfo {
   page: number
@@ -46,8 +47,8 @@ export function DataTable<T>({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-8 text-center text-muted-foreground">
-                  No data found
+                <td colSpan={columns.length}>
+                  <EmptyState />
                 </td>
               </tr>
             ) : (

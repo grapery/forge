@@ -10,7 +10,7 @@ import { StatCard } from "@/components/shared/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users, Eye, EyeOff, Sparkles, Trash2 } from "lucide-react"
+import { Users, Eye, EyeOff, Trash2, Ghost } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
@@ -72,14 +72,13 @@ export default function CharactersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Characters" description="Manage platform characters" />
+      <PageHeader title="Characters" description="Manage platform characters" icon={Ghost} />
 
       {counts && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <StatCard title="Total" value={counts.total} icon={Users} />
           <StatCard title="Public" value={counts.public} icon={Eye} />
           <StatCard title="Private" value={counts.private} icon={EyeOff} />
-          <StatCard title="AI Generated" value={counts.aiGenerated} icon={Sparkles} />
         </div>
       )}
 
@@ -126,15 +125,6 @@ export default function CharactersPage() {
               header: "Story",
               render: (c: CharacterItem) => (
                 <span className="text-xs text-muted-foreground">{c.storyId || "-"}</span>
-              ),
-            },
-            {
-              key: "aiGenerated",
-              header: "AI Generated",
-              render: (c: CharacterItem) => (
-                <Badge variant={c.aiGenerated ? "default" : "secondary"}>
-                  {c.aiGenerated ? "Yes" : "No"}
-                </Badge>
               ),
             },
             {

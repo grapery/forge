@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Pencil } from "lucide-react"
+import { Pencil, BookOpen } from "lucide-react"
 import { toast } from "sonner"
 
 export default function GenresPage() {
@@ -81,7 +81,7 @@ export default function GenresPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Genres" description="Manage system genre catalog" />
+      <PageHeader title="Genres" description="Manage system genre catalog" icon={BookOpen} />
 
       {loading ? (
         <div className="py-12 text-center text-muted-foreground">Loading...</div>

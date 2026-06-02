@@ -70,7 +70,7 @@ export default function CommentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Comments" description="Manage platform comments" />
+      <PageHeader title="Comments" description="Manage platform comments" icon={MessageSquare} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-4">

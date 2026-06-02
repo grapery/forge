@@ -50,7 +50,7 @@ export default function TokensPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tokens" description="Token transaction history" />
+      <PageHeader title="Tokens" description="Token transaction history" icon={Coins} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">

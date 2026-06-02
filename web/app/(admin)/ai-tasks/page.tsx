@@ -10,7 +10,7 @@ import { StatCard } from "@/components/shared/stat-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ListTodo, Clock, CheckCircle, XCircle, Ban } from "lucide-react"
+import { ListTodo, Clock, CheckCircle, XCircle, Ban, Brain } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
@@ -73,7 +73,7 @@ export default function AITasksPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="AI Tasks" description="Monitor and manage AI task executions" />
+      <PageHeader title="AI Tasks" description="Monitor and manage AI task executions" icon={Brain} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">

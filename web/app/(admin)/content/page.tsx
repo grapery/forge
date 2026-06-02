@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
-import { Eye, Trash2 } from "lucide-react"
+import { Eye, Trash2, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -125,7 +125,7 @@ export default function ContentPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Content" description="Review and manage stories, storyboards, and fragments" />
+      <PageHeader title="Content" description="Review and manage stories, storyboards, and fragments" icon={FileText} />
 
       {counts && (
         <div className="flex gap-4 text-sm text-muted-foreground">
