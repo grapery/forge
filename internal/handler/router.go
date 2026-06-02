@@ -51,7 +51,7 @@ func SetupRouter(
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	api := r.Group("/api/admin")
+	api := r.Group("/forge/api/admin")
 	authRoutes := api.Group("/auth")
 	{
 		authRoutes.POST("/login", authH.Login)

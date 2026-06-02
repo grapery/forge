@@ -22,16 +22,28 @@ func RegisterStaticRoutes(r *gin.Engine) {
 		path := c.Request.URL.Path
 
 		// Skip API routes
-		if strings.HasPrefix(path, "/api/") {
+		if strings.HasPrefix(path, "/api/") || strings.HasPrefix(path, "/forge/api/") {
 			c.JSON(http.StatusNotFound, gin.H{"code": -4, "message": "not found"})
 			return
 		}
 
-		// Try serving static export files (Next.js output: route.html at dist root)
-		if path != "/" {
-			cleanPath := strings.TrimPrefix(path, "/")
+		// Only serve under /forge/ prefix (matches Next.js basePath)
+		if !strings.HasPrefix(path, "/forge/") && path != "/forge" {
+			c.JSON(http.StatusNotFound, gin.H{"code": -4, "message": "not found"})
+			return
+		}
+
+		// Strip /forge prefix to get the filesystem path
+		fsPath := strings.TrimPrefix(path, "/forge")
+		if fsPath == "" || fsPath == "/" {
+			fsPath = "/index.html"
+		}
+
+		// Try serving the exact file
+		if fsPath != "/index.html" {
+			cleanPath := strings.TrimPrefix(fsPath, "/")
 			if fileExists(sub, cleanPath) {
-				c.Request.URL.Path = path
+				c.Request.URL.Path = fsPath
 				fileServer.ServeHTTP(c.Writer, c.Request)
 				return
 			}
@@ -43,7 +55,7 @@ func RegisterStaticRoutes(r *gin.Engine) {
 			}
 		}
 
-		// Fallback to index.html for unknown client routes
+		// Fallback to index.html for SPA client-side routing
 		c.Request.URL.Path = "/index.html"
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -119,21 +118,10 @@ func main() {
 	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, auditSvc, logger, cfg.AllowOrigins)
 	handler.RegisterStaticRoutes(router)
 
-	// Strip /forge prefix for nginx path-based routing
-	forgeHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/forge/") || r.URL.Path == "/forge" {
-			r.URL.Path = strings.TrimPrefix(r.URL.Path, "/forge")
-			if r.URL.Path == "" {
-				r.URL.Path = "/"
-			}
-		}
-		router.ServeHTTP(w, r)
-	})
-
 	// HTTP server
 	srv := &http.Server{
 		Addr:         cfg.Addr(),
-		Handler:      forgeHandler,
+		Handler:      router,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
