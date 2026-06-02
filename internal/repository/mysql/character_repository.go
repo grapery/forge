@@ -41,9 +41,7 @@ func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*d
 		Portrait                string `gorm:"column:portrait"`
 		PortraitGenerationStatus string `gorm:"column:portrait_generation_status"`
 		IsPublic                bool   `gorm:"column:is_public"`
-		AIGenerated             bool   `gorm:"column:ai_generated"`
 		SourceType              string `gorm:"column:source_type"`
-		AIStyle                 string `gorm:"column:ai_style"`
 		Likes                   int    `gorm:"column:likes"`
 		Comments                int    `gorm:"column:comments"`
 		Shares                  int    `gorm:"column:shares"`
@@ -55,7 +53,7 @@ func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*d
 
 	var rows []row
 	if err := q.Select("id, name, story_id, author_id, description, avatar, poster, portrait, "+
-		"portrait_generation_status, is_public, ai_generated, source_type, ai_style, "+
+		"portrait_generation_status, is_public, source_type, "+
 		"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, "+
 		"COALESCE(shares, 0) as shares, COALESCE(followers, 0) as followers, COALESCE(stories, 0) as stories, "+
 		"created_at, updated_at").
@@ -84,9 +82,7 @@ func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*d
 			Portrait:                r.Portrait,
 			PortraitGenerationStatus: r.PortraitGenerationStatus,
 			IsPublic:                r.IsPublic,
-			AIGenerated:             r.AIGenerated,
 			SourceType:              r.SourceType,
-			AIStyle:                 r.AIStyle,
 			Likes:                   r.Likes,
 			Comments:                r.Comments,
 			Shares:                  r.Shares,
@@ -116,7 +112,6 @@ func (rr *ReadRepository) CountCharactersByStatus() (*domain.CharacterStatusCoun
 	base.Count(&counts.Total)
 	base.Where("is_public = ?", true).Count(&counts.Public)
 	base.Where("is_public = ?", false).Count(&counts.Private)
-	base.Where("ai_generated = ?", true).Count(&counts.AIGenerated)
 	return &counts, nil
 }
 

@@ -12,9 +12,7 @@ type CharacterItem struct {
 	Portrait                string `json:"portrait"`
 	PortraitGenerationStatus string `json:"portraitGenerationStatus"`
 	IsPublic                bool   `json:"isPublic"`
-	AIGenerated             bool   `json:"aiGenerated"`
 	SourceType              string `json:"sourceType"`
-	AIStyle                 string `json:"aiStyle"`
 	Likes                   int    `json:"likes"`
 	Comments                int    `json:"comments"`
 	Shares                  int    `json:"shares"`
@@ -33,10 +31,9 @@ type CharacterListQuery struct {
 }
 
 type CharacterStatusCount struct {
-	Total       int64 `json:"total"`
-	Public      int64 `json:"public"`
-	Private     int64 `json:"private"`
-	AIGenerated int64 `json:"aiGenerated"`
+	Total   int64 `json:"total"`
+	Public  int64 `json:"public"`
+	Private int64 `json:"private"`
 }
 
 type CharacterActionRequest struct {
