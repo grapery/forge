@@ -38,17 +38,17 @@ env:
   GO_VERSION: '1.25'
   NODE_VERSION: '22'
   REGISTRY: ${{ vars.ACR_REGISTRY || 'crpi-kz6w8hb0pa94yvgy.cn-hangzhou.personal.cr.aliyuncs.com' }}
-  IMAGE_NAME: forge-admin
-  SERVICE_NAME: admin
+  IMAGE_ADMIN: forge-admin
+  IMAGE_WEB: forge-web
   SERVICE_PORT: '9010'
   DEPLOY_DIR: /home/ubuntu/grapery/forge
 
 jobs:
   # ========================================
-  # 前端构建 + Go 构建验证
+  # 前端构建验证
   # ========================================
-  build:
-    name: Build Forge Admin
+  build-frontend:
+    name: Build Frontend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -63,7 +63,6 @@ jobs:
 
       - name: Build frontend
         env:
-          # 与 ngx /forge/ 反代及 next.config basePath 一致
           NEXT_PUBLIC_FORGE_API_URL: /forge
         run: |
           cd web
@@ -71,6 +70,16 @@ jobs:
           npm run build
           echo "Frontend build completed"
           ls -lh out/
+
+  # ========================================
+  # Go 后端构建验证
+  # ========================================
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -84,22 +93,12 @@ jobs:
           VERSION=$(echo ${{ github.sha }} | cut -c1-7)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          mkdir -p internal/frontend/dist
-          cp -r web/out/* internal/frontend/dist/
-
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
             -ldflags="-s -w -X main.Version=${VERSION} -X main.CommitSHA=${{ github.sha }} -X main.BuildTime=${BUILD_TIME}" \
-            -o ./bin/${{ env.SERVICE_NAME }} ./cmd/${{ env.SERVICE_NAME }}
+            -o ./bin/admin ./cmd/admin/
 
           echo "Build completed"
           ls -lh ./bin/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: forge-${{ env.SERVICE_NAME }}
-          path: bin/${{ env.SERVICE_NAME }}
-          retention-days: 7
 
   # ========================================
   # Docker 构建 - Develop
@@ -107,7 +106,7 @@ jobs:
   docker-develop:
     name: Docker Build (Develop)
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build-frontend, build-backend]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
@@ -118,15 +117,19 @@ jobs:
       - name: Login to Aliyun ACR
         run: echo ${{ vars.ACR_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ vars.ACR_USERNAME }} --password-stdin
 
-      - name: Build and push Docker image
+      - name: Build and push forge-admin image
         run: |
           docker build \
-            -t ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev \
-            --build-arg VERSION=develop-${{ github.sha }} \
-            --build-arg COMMIT_SHA=${{ github.sha }} \
-            --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -t ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_ADMIN }}:dev \
             .
-          docker push ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
+          docker push ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_ADMIN }}:dev
+
+      - name: Build and push forge-web image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_WEB }}:dev \
+            ./web
+          docker push ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_WEB }}:dev
 
   # ========================================
   # Docker 构建 - Production
@@ -134,8 +137,7 @@ jobs:
   docker-production:
     name: Docker Build (Production)
     runs-on: ubuntu-latest
-    needs: build
-    # 生产部署默认关闭；就绪后在仓库 Variables 设置 ENABLE_FORGE_PROD_DEPLOY=true
+    needs: [build-frontend, build-backend]
     if: |
       vars.ENABLE_FORGE_PROD_DEPLOY == 'true' &&
       (
@@ -149,15 +151,19 @@ jobs:
       - name: Login to Aliyun ACR
         run: echo ${{ vars.ACR_PASSWORD }} | docker login ${{ env.REGISTRY }} -u ${{ vars.ACR_USERNAME }} --password-stdin
 
-      - name: Build and push Docker image
+      - name: Build and push forge-admin image
         run: |
           docker build \
-            -t ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod \
-            --build-arg VERSION=${{ github.sha }} \
-            --build-arg COMMIT_SHA=${{ github.sha }} \
-            --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            -t ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_ADMIN }}:prod \
             .
-          docker push ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
+          docker push ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_ADMIN }}:prod
+
+      - name: Build and push forge-web image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_WEB }}:prod \
+            ./web
+          docker push ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_WEB }}:prod
 
   # ========================================
   # 部署到开发环境
@@ -177,7 +183,8 @@ jobs:
         run: |
           cat > .env << EOF
           # ========== Docker ==========
-          IMAGE=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
+          IMAGE_ADMIN=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_ADMIN }}:dev
+          IMAGE_WEB=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_WEB }}:dev
 
           # ========== Service ==========
           FORGE_ENV=development
@@ -203,19 +210,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | forge-${{ env.SERVICE_NAME }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_ADMIN }}:dev\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_WEB }}:dev\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Port | ${{ env.SERVICE_PORT }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Environment | development |" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | \`${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| DB_DATABASE | \`grapery_dev\` (default) |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Config checks" >> $GITHUB_STEP_SUMMARY
-          echo "- DB_PASSWORD: ${{ vars.DB_PASSWORD != '' && 'Set' || 'Missing' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- FORGE_JWT_SECRET: ${{ vars.FORGE_JWT_SECRET != '' && 'Set' || 'Missing' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- SSH_KEY: ${{ vars.SSH_KEY != '' && 'Set' || 'Missing' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "After first deploy or nginx route changes, run **ngx** \`ngx-ci.yml\` (workflow_dispatch)." >> $GITHUB_STEP_SUMMARY
 
       - name: Prepare SSH private key
         id: ssh_key
@@ -231,7 +230,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > "$KEY_FILE"
           chmod 600 "$KEY_FILE"
           if ! ssh-keygen -y -f "$KEY_FILE" >/dev/null 2>&1; then
-            echo "::error::vars.SSH_KEY is not valid PEM (must keep line breaks; copy from grapery repo or .pem file)"
+            echo "::error::vars.SSH_KEY is not valid PEM"
             exit 1
           fi
           echo "path=$KEY_FILE" >> "$GITHUB_OUTPUT"
@@ -261,13 +260,13 @@ jobs:
             export REGISTRY=${{ env.REGISTRY }}
             echo "${{ vars.ACR_PASSWORD }}" | docker login $REGISTRY -u "${{ vars.ACR_USERNAME }}" --password-stdin
 
-            export IMAGE=${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_NAME }}:dev
-            docker pull "$IMAGE"
+            docker pull ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_ADMIN }}:dev
+            docker pull ${{ env.REGISTRY }}/grapery-dev/${{ env.IMAGE_WEB }}:dev
 
             docker network create grapery-network 2>/dev/null || echo "Network already exists"
 
-            docker compose -p forge-admin down 2>/dev/null || true
-            docker compose -p forge-admin up -d
+            docker compose -p forge down 2>/dev/null || true
+            docker compose -p forge up -d
 
             docker image prune -f
 
@@ -292,7 +291,8 @@ jobs:
         run: |
           cat > .env << EOF
           # ========== Docker ==========
-          IMAGE=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
+          IMAGE_ADMIN=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_ADMIN }}:prod
+          IMAGE_WEB=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_WEB }}:prod
 
           # ========== Service ==========
           FORGE_ENV=production
@@ -312,24 +312,6 @@ jobs:
           FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '72h' }}
           EOF
 
-      - name: Deploy notification
-        run: |
-          echo "## Production Deployment - Forge Admin" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | forge-${{ env.SERVICE_NAME }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Port | ${{ env.SERVICE_PORT }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Environment | production |" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | \`${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| DB_DATABASE | \`grapery\` (default) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Config checks" >> $GITHUB_STEP_SUMMARY
-          echo "- DB_PASSWORD: ${{ vars.DB_PASSWORD != '' && 'Set' || 'Missing' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- FORGE_JWT_SECRET: ${{ vars.FORGE_JWT_SECRET != '' && 'Set' || 'Missing' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- SSH_KEY: ${{ vars.SSH_KEY != '' && 'Set' || 'Missing' }}" >> $GITHUB_STEP_SUMMARY
-
       - name: Prepare SSH private key
         id: ssh_key
         env:
@@ -344,7 +326,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > "$KEY_FILE"
           chmod 600 "$KEY_FILE"
           if ! ssh-keygen -y -f "$KEY_FILE" >/dev/null 2>&1; then
-            echo "::error::vars.SSH_KEY is not valid PEM (must keep line breaks; copy from grapery repo or .pem file)"
+            echo "::error::vars.SSH_KEY is not valid PEM"
             exit 1
           fi
           echo "path=$KEY_FILE" >> "$GITHUB_OUTPUT"
@@ -374,13 +356,12 @@ jobs:
             export REGISTRY=${{ env.REGISTRY }}
             echo "${{ vars.ACR_PASSWORD }}" | docker login $REGISTRY -u "${{ vars.ACR_USERNAME }}" --password-stdin
 
-            export IMAGE=${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_NAME }}:prod
-            docker pull "$IMAGE"
+            docker pull ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_ADMIN }}:prod
+            docker pull ${{ env.REGISTRY }}/grapery-prod/${{ env.IMAGE_WEB }}:prod
 
             docker network create grapery-network 2>/dev/null || echo "Network already exists"
 
-            docker compose -p forge-admin down 2>/dev/null || true
-            docker compose -p forge-admin up -d
+            docker compose -p forge down 2>/dev/null || true
+            docker compose -p forge up -d
 
             docker image prune -f
-
