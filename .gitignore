@@ -4,7 +4,7 @@ bin/
 *.exe
 *.test
 .DS_Store
-admin
+/admin
 web/node_modules/
 web/.next/
 web/out/
