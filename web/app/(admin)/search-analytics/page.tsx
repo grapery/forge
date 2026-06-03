@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { searchApi } from "@/lib/api/admin"
@@ -21,6 +22,7 @@ import { Search, TrendingUp } from "lucide-react"
 
 
 export default function SearchAnalyticsPage() {
+  const t = useTranslations("searchAnalytics")
   const [items, setItems] = useState<SearchHistoryItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -65,21 +67,21 @@ export default function SearchAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Search Analytics" description="Track search history and trending queries" icon={Search} />
+      <PageHeader title={t("title")} description={t("description")} icon={Search} />
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search by user ID..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={type || "all"} onValueChange={(v) => setType(v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="story">Story</SelectItem>
-            <SelectItem value="fragment">Fragment</SelectItem>
-            <SelectItem value="character">Character</SelectItem>
+            <SelectItem value="all">{t("filterAllTypes")}</SelectItem>
+            <SelectItem value="story">{t("filterStory")}</SelectItem>
+            <SelectItem value="fragment">{t("filterFragment")}</SelectItem>
+            <SelectItem value="character">{t("filterCharacter")}</SelectItem>
             <SelectItem value="user">User</SelectItem>
           </SelectContent>
         </Select>
@@ -95,35 +97,35 @@ export default function SearchAnalyticsPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (item: SearchHistoryItem) => (
                 <span className="text-sm font-medium">{item.userName}</span>
               ),
             },
             {
               key: "query",
-              header: "Query",
+              header: t("columnQuery"),
               render: (item: SearchHistoryItem) => (
                 <span className="text-sm">{item.query}</span>
               ),
             },
             {
               key: "type",
-              header: "Type",
+              header: t("columnType"),
               render: (item: SearchHistoryItem) => (
                 <Badge variant="secondary">{item.type}</Badge>
               ),
             },
             {
               key: "resultCount",
-              header: "Results",
+              header: t("columnResults"),
               render: (item: SearchHistoryItem) => (
                 <span className="text-sm">{item.resultCount}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (item: SearchHistoryItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),

@@ -34,6 +34,8 @@ export interface OverviewStats {
   activeMemberships: number
   totalOrders: number
   totalTokenTransactions: number
+  totalForkEvents: number
+  totalTokenConsumed: number
   trends: DailyTrend[]
 }
 
@@ -50,6 +52,12 @@ export interface DailyTrend {
   newRevenue: number
   totalAITasks: number
   newAITasks: number
+  totalFragments: number
+  newFragments: number
+  totalStoryboards: number
+  newStoryboards: number
+  forkEvents: number
+  tokenConsumed: number
 }
 
 export interface PaginatedData<T> {

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { adminUserApi } from "@/lib/api/admin"
 import type { AdminUser } from "@/lib/types"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 interface ResetPasswordDialogProps {
   open: boolean
@@ -23,12 +24,13 @@ interface ResetPasswordDialogProps {
 }
 
 export function ResetPasswordDialog({ open, onOpenChange, admin }: ResetPasswordDialogProps) {
+  const t = useTranslations("resetPasswordDialog")
   const [loading, setLoading] = useState(false)
   const [newPassword, setNewPassword] = useState("")
 
   const handleSubmit = async () => {
     if (!admin || !newPassword) {
-      toast.error("Please enter a new password")
+      toast.error(t("errorRequired"))
       return
     }
     setLoading(true)

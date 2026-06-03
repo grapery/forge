@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { membershipApi } from "@/lib/api/admin"
@@ -21,6 +22,7 @@ import { Users, Shield, Crown, User } from "lucide-react"
 
 
 export default function MembershipsPage() {
+  const t = useTranslations("memberships")
   const [items, setItems] = useState<MembershipItem[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<MembershipSummary | null>(null)
@@ -62,38 +64,38 @@ export default function MembershipsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Memberships" description="Manage user memberships" icon={Crown} />
+      <PageHeader title={t("title")} description={t("description")} icon={Crown} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Active Memberships" value={summary.activeMemberships} icon={Users} />
-          <StatCard title="Basic Members" value={summary.basicMembers} icon={Shield} />
-          <StatCard title="Premium Members" value={summary.premiumMembers} icon={Crown} />
-          <StatCard title="Free Members" value={summary.freeMembers} icon={User} />
+          <StatCard title={t("statActiveMemberships")} value={summary.activeMemberships} icon={Users} />
+          <StatCard title={t("statBasicMembers")} value={summary.basicMembers} icon={Shield} />
+          <StatCard title={t("statPremiumMembers")} value={summary.premiumMembers} icon={Crown} />
+          <StatCard title={t("statFreeMembers")} value={summary.freeMembers} icon={User} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <Select value={tier || "all"} onValueChange={(v) => { setTier(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Tiers" />
+            <SelectValue placeholder={t("filterAllTiers")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Tiers</SelectItem>
-            <SelectItem value="basic">Basic</SelectItem>
-            <SelectItem value="premium">Premium</SelectItem>
-            <SelectItem value="free">Free</SelectItem>
+            <SelectItem value="all">{t("filterAllTiers")}</SelectItem>
+            <SelectItem value="basic">{t("filterBasic")}</SelectItem>
+            <SelectItem value="premium">{t("filterPremium")}</SelectItem>
+            <SelectItem value="free">{t("filterFree")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="active">{t("filterActive")}</SelectItem>
+            <SelectItem value="expired">{t("filterExpired")}</SelectItem>
+            <SelectItem value="cancelled">{t("filterCancelled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -108,14 +110,14 @@ export default function MembershipsPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (m: MembershipItem) => (
                 <span className="text-sm font-medium">{m.userName}</span>
               ),
             },
             {
               key: "tier",
-              header: "Tier",
+              header: t("columnTier"),
               render: (m: MembershipItem) => (
                 <Badge variant={m.tier === "premium" ? "default" : m.tier === "basic" ? "secondary" : "outline"}>
                   {m.tier}
@@ -124,7 +126,7 @@ export default function MembershipsPage() {
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (m: MembershipItem) => (
                 <Badge variant={m.status === "active" ? "default" : m.status === "expired" ? "secondary" : "outline"}>
                   {m.status}
@@ -133,21 +135,21 @@ export default function MembershipsPage() {
             },
             {
               key: "startDate",
-              header: "Start Date",
+              header: t("columnStartDate"),
               render: (m: MembershipItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(m.startDate)}</span>
               ),
             },
             {
               key: "endDate",
-              header: "End Date",
+              header: t("columnEndDate"),
               render: (m: MembershipItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(m.endDate)}</span>
               ),
             },
             {
               key: "autoRenew",
-              header: "Auto Renew",
+              header: t("columnAutoRenew"),
               render: (m: MembershipItem) => (
                 <Badge variant={m.autoRenew ? "default" : "secondary"}>
                   {m.autoRenew ? "Yes" : "No"}
@@ -156,21 +158,21 @@ export default function MembershipsPage() {
             },
             {
               key: "tokens",
-              header: "Tokens",
+              header: t("columnTokens"),
               render: (m: MembershipItem) => (
                 <span className="text-sm">{m.tokenUsed}/{m.tokenQuota}</span>
               ),
             },
             {
               key: "storage",
-              header: "Storage",
+              header: t("columnStorage"),
               render: (m: MembershipItem) => (
                 <span className="text-sm">{m.storageUsed}/{m.storageQuota}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (m: MembershipItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(m.createdAt)}</span>
               ),

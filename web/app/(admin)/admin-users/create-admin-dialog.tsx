@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { adminUserApi } from "@/lib/api/admin"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 interface CreateAdminDialogProps {
   open: boolean
@@ -23,6 +24,7 @@ interface CreateAdminDialogProps {
 }
 
 export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdminDialogProps) {
+  const t = useTranslations("createAdminDialog")
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     username: "",
@@ -34,18 +36,18 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
 
   const handleSubmit = async () => {
     if (!form.username || !form.email || !form.password) {
-      toast.error("Please fill in all required fields")
+      toast.error(t("errorRequired"))
       return
     }
     setLoading(true)
     try {
       await adminUserApi.create(form)
-      toast.success("Admin user created successfully")
+      toast.success(t("toastCreated"))
       setForm({ username: "", email: "", password: "", displayName: "", role: "viewer" })
       onOpenChange(false)
       onSuccess()
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to create admin user")
+      toast.error(err.response?.data?.message || err.message || t("toastCreateFailed"))
     } finally {
       setLoading(false)
     }
@@ -55,7 +57,7 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Admin User</DialogTitle>
+          <DialogTitle>{t("dialogTitle")}</DialogTitle>
           <DialogDescription>Add a new administrator to the system.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -65,7 +67,7 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
               id="username"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              placeholder="Enter username"
+              placeholder={t("placeholderUsername")}
             />
           </div>
           <div className="grid gap-2">
@@ -75,7 +77,7 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="Enter email"
+              placeholder={t("placeholderEmail")}
             />
           </div>
           <div className="grid gap-2">
@@ -85,7 +87,7 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Enter password"
+              placeholder={t("placeholderPassword")}
             />
           </div>
           <div className="grid gap-2">
@@ -94,7 +96,7 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
               id="displayName"
               value={form.displayName}
               onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-              placeholder="Enter display name"
+              placeholder={t("placeholderDisplayName")}
             />
           </div>
           <div className="grid gap-2">
@@ -116,7 +118,7 @@ export function CreateAdminDialog({ open, onOpenChange, onSuccess }: CreateAdmin
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Creating..." : "Create"}
+            {loading ? t("buttonCreating") : t("buttonCreate")}
           </Button>
         </DialogFooter>
       </DialogContent>

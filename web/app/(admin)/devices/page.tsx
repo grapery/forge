@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { deviceApi } from "@/lib/api/admin"
@@ -23,6 +24,7 @@ import { Smartphone } from "lucide-react"
 
 
 export default function DevicesPage() {
+  const t = useTranslations("devices")
   const [items, setItems] = useState<UserDeviceItem[]>([])
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<DevicePlatformCount | null>(null)
@@ -66,38 +68,38 @@ export default function DevicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Devices" description="Manage user devices and push tokens" icon={Smartphone} />
+      <PageHeader title={t("title")} description={t("description")} icon={Smartphone} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="iOS" value={counts.ios} icon={Smartphone} />
-          <StatCard title="Android" value={counts.android} icon={Smartphone} />
-          <StatCard title="Other" value={counts.other} icon={Smartphone} />
+          <StatCard title={t("statIos")} value={counts.ios} icon={Smartphone} />
+          <StatCard title={t("statAndroid")} value={counts.android} icon={Smartphone} />
+          <StatCard title={t("statOther")} value={counts.other} icon={Smartphone} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search by user ID..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={platform || "all"} onValueChange={(v) => setPlatform(v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Platforms" />
+            <SelectValue placeholder={t("filterAllPlatforms")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Platforms</SelectItem>
-            <SelectItem value="ios">iOS</SelectItem>
-            <SelectItem value="android">Android</SelectItem>
+            <SelectItem value="all">{t("filterAllPlatforms")}</SelectItem>
+            <SelectItem value="ios">{t("filterIos")}</SelectItem>
+            <SelectItem value="android">{t("filterAndroid")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={isActive || "all"} onValueChange={(v) => setIsActive(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="true">Active</SelectItem>
-            <SelectItem value="false">Inactive</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="true">{t("filterActive")}</SelectItem>
+            <SelectItem value="false">{t("filterInactive")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -112,14 +114,14 @@ export default function DevicesPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (item: UserDeviceItem) => (
                 <span className="text-sm font-medium">{item.userName}</span>
               ),
             },
             {
               key: "platform",
-              header: "Platform",
+              header: t("columnPlatform"),
               render: (item: UserDeviceItem) => (
                 <Badge variant={item.platform === "ios" ? "default" : "secondary"}>
                   {item.platform}
@@ -128,44 +130,44 @@ export default function DevicesPage() {
             },
             {
               key: "deviceModel",
-              header: "Device Model",
+              header: t("columnDeviceModel"),
               render: (item: UserDeviceItem) => (
                 <span className="text-sm text-muted-foreground">{item.deviceModel || "-"}</span>
               ),
             },
             {
               key: "osVersion",
-              header: "OS Version",
+              header: t("columnOsVersion"),
               render: (item: UserDeviceItem) => (
                 <span className="text-sm text-muted-foreground">{item.osVersion || "-"}</span>
               ),
             },
             {
               key: "appVersion",
-              header: "App Version",
+              header: t("columnAppVersion"),
               render: (item: UserDeviceItem) => (
                 <span className="text-sm">{item.appVersion || "-"}</span>
               ),
             },
             {
               key: "isActive",
-              header: "Active",
+              header: t("columnActive"),
               render: (item: UserDeviceItem) => (
                 <Badge variant={item.isActive ? "default" : "secondary"}>
-                  {item.isActive ? "Yes" : "No"}
+                  {item.isActive ? t("filterActive") : t("filterInactive")}
                 </Badge>
               ),
             },
             {
               key: "lastActiveAt",
-              header: "Last Active",
+              header: t("columnLastActive"),
               render: (item: UserDeviceItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.lastActiveAt)}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (item: UserDeviceItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),

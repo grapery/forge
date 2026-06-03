@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { accountDeletionApi } from "@/lib/api/admin"
@@ -27,6 +28,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function AccountDeletionsPage() {
+  const t = useTranslations("accountDeletions")
   const [items, setItems] = useState<AccountDeletionItem[]>([])
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<AccountDeletionStatusCount | null>(null)
@@ -62,7 +64,7 @@ export default function AccountDeletionsPage() {
     if (!actionItem || !actionType) return
     try {
       await accountDeletionApi.action(actionItem.id, { action: actionType })
-      toast.success(`Request ${actionType}d for "${actionItem.userName}"`)
+      toast.success(t("toastActioned", { action: actionType, userName: actionItem.userName }))
       setActionItem(null)
       setActionType(null)
       fetchData()
@@ -88,28 +90,28 @@ export default function AccountDeletionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Account Deletions" description="Manage account deletion requests" icon={UserX} />
+      <PageHeader title={t("title")} description={t("description")} icon={UserX} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Pending" value={counts.pending} icon={Clock} />
-          <StatCard title="Processing" value={counts.processing} icon={Loader2} />
-          <StatCard title="Completed" value={counts.completed} icon={CheckCircle2} />
-          <StatCard title="Cancelled" value={counts.cancelled} icon={XCircle} />
+          <StatCard title={t("statPending")} value={counts.pending} icon={Clock} />
+          <StatCard title={t("statProcessing")} value={counts.processing} icon={Loader2} />
+          <StatCard title={t("statCompleted")} value={counts.completed} icon={CheckCircle2} />
+          <StatCard title={t("statCancelled")} value={counts.cancelled} icon={XCircle} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="pending">{t("filterPending")}</SelectItem>
+            <SelectItem value="processing">{t("filterProcessing")}</SelectItem>
+            <SelectItem value="completed">{t("filterCompleted")}</SelectItem>
+            <SelectItem value="cancelled">{t("filterCancelled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -124,42 +126,42 @@ export default function AccountDeletionsPage() {
           columns={[
             {
               key: "user",
-              header: "User",
+              header: t("columnUser"),
               render: (d: AccountDeletionItem) => (
                 <span className="text-sm font-medium">{d.userName}</span>
               ),
             },
             {
               key: "reason",
-              header: "Reason",
+              header: t("columnReason"),
               render: (d: AccountDeletionItem) => (
                 <span className="text-sm text-muted-foreground">{d.reason || "-"}</span>
               ),
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (d: AccountDeletionItem) => (
                 <Badge variant={statusBadgeVariant(d.status)}>{d.status}</Badge>
               ),
             },
             {
               key: "requestedAt",
-              header: "Requested At",
+              header: t("columnRequestedAt"),
               render: (d: AccountDeletionItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(d.requestedAt)}</span>
               ),
             },
             {
               key: "scheduledDeletion",
-              header: "Scheduled Deletion",
+              header: t("columnScheduledDeletion"),
               render: (d: AccountDeletionItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(d.scheduledDeletionAt)}</span>
               ),
             },
             {
               key: "created",
-              header: "Created",
+              header: t("columnCreated"),
               render: (d: AccountDeletionItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(d.createdAt)}</span>
               ),
@@ -175,7 +177,7 @@ export default function AccountDeletionsPage() {
                       size="sm"
                       onClick={(e) => { e.stopPropagation(); setActionItem(d); setActionType("process") }}
                     >
-                      <Loader2 className="mr-1 h-3 w-3" />Process
+                      <Loader2 className="mr-1 h-3 w-3" />{t("buttonProcess")}
                     </Button>
                   )}
                   {d.status === "processing" && (
@@ -185,7 +187,7 @@ export default function AccountDeletionsPage() {
                         size="sm"
                         onClick={(e) => { e.stopPropagation(); setActionItem(d); setActionType("complete") }}
                       >
-                        <CheckCircle2 className="mr-1 h-3 w-3" />Complete
+                        <CheckCircle2 className="mr-1 h-3 w-3" />{t("buttonComplete")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -193,7 +195,7 @@ export default function AccountDeletionsPage() {
                         className="text-destructive"
                         onClick={(e) => { e.stopPropagation(); setActionItem(d); setActionType("cancel") }}
                       >
-                        <XCircle className="mr-1 h-3 w-3" />Cancel
+                        <XCircle className="mr-1 h-3 w-3" />{t("buttonCancel")}
                       </Button>
                     </>
                   )}
@@ -207,9 +209,9 @@ export default function AccountDeletionsPage() {
       <ConfirmDialog
         open={!!actionItem && !!actionType}
         onOpenChange={(o) => { if (!o) { setActionItem(null); setActionType(null) } }}
-        title={`${actionType?.charAt(0).toUpperCase()}${actionType?.slice(1)} Deletion Request`}
-        description={`Are you sure you want to ${actionType} the deletion request for "${actionItem?.userName}"?`}
-        confirmLabel={actionType ? actionType.charAt(0).toUpperCase() + actionType.slice(1) : ""}
+        title={t("dialogTitle", { action: actionType || "" })}
+        description={t("dialogDescription", { action: actionType || "", userName: actionItem?.userName || "" })}
+        confirmLabel={t("dialogConfirm", { action: actionType || "" })}
         variant={actionType === "cancel" ? "destructive" : "default"}
         onConfirm={handleAction}
       />

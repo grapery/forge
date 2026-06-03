@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { aiGenerationApi } from "@/lib/api/admin"
@@ -28,6 +29,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 }
 
 export default function AIGenerationsPage() {
+  const t = useTranslations("aiGenerations")
   const [items, setItems] = useState<AIGenerationRecordItem[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<AIGenerationSummary | null>(null)
@@ -63,27 +65,27 @@ export default function AIGenerationsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="AI Generations" description="View AI generation history and usage metrics" icon={Sparkles} />
+      <PageHeader title={t("title")} description={t("description")} icon={Sparkles} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Total Records" value={summary.totalRecords} icon={BarChart3} />
-          <StatCard title="Total Tokens" value={summary.totalTokens} icon={Type} />
-          <StatCard title="Total Images" value={summary.totalImages} icon={Image} />
-          <StatCard title="Total Videos" value={summary.totalVideos} icon={Video} />
+          <StatCard title={t("statTotalRecords")} value={summary.totalRecords} icon={BarChart3} />
+          <StatCard title={t("statTotalTokens")} value={summary.totalTokens} icon={Type} />
+          <StatCard title={t("statTotalImages")} value={summary.totalImages} icon={Image} />
+          <StatCard title={t("statTotalVideos")} value={summary.totalVideos} icon={Video} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <Select value={type || "all"} onValueChange={(v) => setType(v === "all" ? "" : v)}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="image_generation">Image Generation</SelectItem>
-            <SelectItem value="video_generation">Video Generation</SelectItem>
-            <SelectItem value="text_generation">Text Generation</SelectItem>
+            <SelectItem value="all">{t("filterAllTypes")}</SelectItem>
+            <SelectItem value="image_generation">{t("filterImageGeneration")}</SelectItem>
+            <SelectItem value="video_generation">{t("filterVideoGeneration")}</SelectItem>
+            <SelectItem value="text_generation">{t("filterTextGeneration")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -98,91 +100,91 @@ export default function AIGenerationsPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm text-muted-foreground">{r.userName}</span>
               ),
             },
             {
               key: "type",
-              header: "Type",
+              header: t("columnType"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm font-medium">{r.type}</span>
               ),
             },
             {
               key: "provider",
-              header: "Provider",
+              header: t("columnProvider"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm text-muted-foreground">{r.provider || "-"}</span>
               ),
             },
             {
               key: "model",
-              header: "Model",
+              header: t("columnModel"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm text-muted-foreground">{r.model || "-"}</span>
               ),
             },
             {
               key: "inputTokens",
-              header: "Input Tokens",
+              header: t("columnInputTokens"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm">{r.inputTokens || 0}</span>
               ),
             },
             {
               key: "outputTokens",
-              header: "Output Tokens",
+              header: t("columnOutputTokens"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm">{r.outputTokens || 0}</span>
               ),
             },
             {
               key: "totalTokens",
-              header: "Total Tokens",
+              header: t("columnTotalTokens"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm font-medium">{r.totalTokens || 0}</span>
               ),
             },
             {
               key: "imageCount",
-              header: "Images",
+              header: t("columnImages"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm">{r.imageCount || 0}</span>
               ),
             },
             {
               key: "videoCount",
-              header: "Videos",
+              header: t("columnVideos"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm">{r.videoCount || 0}</span>
               ),
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (r: AIGenerationRecordItem) => (
                 <Badge variant={statusVariant[r.status] || "secondary"}>{r.status}</Badge>
               ),
             },
             {
               key: "durationMs",
-              header: "Duration",
+              header: t("columnDuration"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-sm">{r.durationMs ? `${r.durationMs}ms` : "-"}</span>
               ),
             },
             {
               key: "relatedEntityType",
-              header: "Entity",
+              header: t("columnEntity"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-xs text-muted-foreground">{r.relatedEntityType || "-"}</span>
               ),
             },
             {
               key: "errorMessage",
-              header: "Error",
+              header: t("columnError"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="max-w-[200px] truncate text-xs text-destructive" title={r.errorMessage}>
                   {r.errorMessage ? (r.errorMessage.length > 40 ? r.errorMessage.slice(0, 40) + "..." : r.errorMessage) : "-"}
@@ -191,7 +193,7 @@ export default function AIGenerationsPage() {
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (r: AIGenerationRecordItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(r.createdAt)}</span>
               ),

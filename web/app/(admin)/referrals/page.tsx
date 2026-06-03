@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { invitationApi } from "@/lib/api/admin"
@@ -17,6 +18,7 @@ import { Users, UserCheck } from "lucide-react"
 
 
 export default function ReferralsPage() {
+  const t = useTranslations("referrals")
   const [items, setItems] = useState<ReferralItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -46,7 +48,7 @@ export default function ReferralsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Referrals" description="View referral records" icon={UserCheck} />
+      <PageHeader title={t("title")} description={t("description")} icon={UserCheck} />
 
       {loading ? (
         <PageSkeleton />
@@ -58,35 +60,35 @@ export default function ReferralsPage() {
           columns={[
             {
               key: "referrerName",
-              header: "Referrer",
+              header: t("columnReferrer"),
               render: (item: ReferralItem) => (
                 <span className="text-sm font-medium">{item.referrerName}</span>
               ),
             },
             {
               key: "refereeName",
-              header: "Referee",
+              header: t("columnReferee"),
               render: (item: ReferralItem) => (
                 <span className="text-sm text-muted-foreground">{item.refereeName}</span>
               ),
             },
             {
               key: "referralCode",
-              header: "Referral Code",
+              header: t("columnReferralCode"),
               render: (item: ReferralItem) => (
                 <span className="font-mono text-sm">{item.referralCode}</span>
               ),
             },
             {
               key: "pointsEarned",
-              header: "Points Earned",
+              header: t("columnPointsEarned"),
               render: (item: ReferralItem) => (
                 <span className="text-sm">{item.pointsEarned}</span>
               ),
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (item: ReferralItem) => (
                 <Badge variant={item.status === "completed" ? "default" : "secondary"}>
                   {item.status}
@@ -95,7 +97,7 @@ export default function ReferralsPage() {
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (item: ReferralItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),

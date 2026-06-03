@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
+import { useTranslations } from "next-intl"
+
 import { userApi } from "@/lib/api/admin"
 
 import type { PlatformUser, UserStatusCount } from "@/lib/types"
@@ -33,6 +35,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function UsersPage() {
+  const t = useTranslations("users")
+  const tc = useTranslations("common")
   const { user: currentUser } = useAuth()
   const router = useRouter()
   const [items, setItems] = useState<PlatformUser[]>([])
@@ -74,10 +78,10 @@ export default function UsersPage() {
     try {
       if (actionType === "suspend") {
         await userApi.suspend(actionUser.id)
-        toast.success(`User ${actionUser.username} suspended`)
+        toast.success(t("toastSuspended", { username: actionUser.username }))
       } else {
         await userApi.activate(actionUser.id)
-        toast.success(`User ${actionUser.username} activated`)
+        toast.success(t("toastActivated", { username: actionUser.username }))
       }
       setActionUser(null)
       setActionType(null)
@@ -94,28 +98,28 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Users" description="Manage platform users" icon={UsersIcon} />
+      <PageHeader title={t("title")} description={t("description")} icon={UsersIcon} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Active Users" value={counts.active} icon={UserCheck} />
-          <StatCard title="Suspended" value={counts.suspended} icon={UserX} />
-          <StatCard title="Total" value={counts.active + counts.suspended} icon={UsersIcon} />
+          <StatCard title={t("statActiveUsers")} value={counts.active} icon={UserCheck} />
+          <StatCard title={t("statSuspended")} value={counts.suspended} icon={UserX} />
+          <StatCard title={t("statTotal")} value={counts.active + counts.suspended} icon={UsersIcon} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search users..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="active">{t("filterActive")}</SelectItem>
+            <SelectItem value="suspended">{t("filterSuspended")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -131,7 +135,7 @@ export default function UsersPage() {
           columns={[
             {
               key: "user",
-              header: "User",
+              header: t("columnUser"),
               render: (u: PlatformUser) => (
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
@@ -146,7 +150,7 @@ export default function UsersPage() {
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (u: PlatformUser) => (
                 <Badge variant={u.status === "active" ? "default" : "destructive"}>
                   {u.status}
@@ -155,21 +159,21 @@ export default function UsersPage() {
             },
             {
               key: "stats",
-              header: "Content",
+              header: t("columnContent"),
               render: (u: PlatformUser) => (
                 <span className="text-xs text-muted-foreground">
-                  {u.storyboardCount} boards, {u.fragmentsCount} fragments
+                  {t("contentStats", { boards: u.storyboardCount, fragments: u.fragmentsCount })}
                 </span>
               ),
             },
             {
               key: "followers",
-              header: "Followers",
+              header: t("columnFollowers"),
               render: (u: PlatformUser) => <span className="text-sm">{u.followers}</span>,
             },
             {
               key: "joined",
-              header: "Joined",
+              header: t("columnJoined"),
               render: (u: PlatformUser) => <span className="text-xs text-muted-foreground">{formatTime(u.createdAt)}</span>,
             },
             {
@@ -185,7 +189,7 @@ export default function UsersPage() {
                         className="text-destructive"
                         onClick={(e) => { e.stopPropagation(); setActionUser(u); setActionType("suspend") }}
                       >
-                        <ShieldOff className="mr-1 h-3 w-3" />Suspend
+                        <ShieldOff className="mr-1 h-3 w-3" />{t("buttonSuspend")}
                       </Button>
                     ) : (
                       <Button
@@ -193,7 +197,7 @@ export default function UsersPage() {
                         size="sm"
                         onClick={(e) => { e.stopPropagation(); setActionUser(u); setActionType("activate") }}
                       >
-                        <Shield className="mr-1 h-3 w-3" />Activate
+                        <Shield className="mr-1 h-3 w-3" />{t("buttonActivate")}
                       </Button>
                     )}
                   </div>
@@ -206,9 +210,9 @@ export default function UsersPage() {
       <ConfirmDialog
         open={!!actionUser && !!actionType}
         onOpenChange={(o) => { if (!o) { setActionUser(null); setActionType(null) } }}
-        title={actionType === "suspend" ? "Suspend User" : "Activate User"}
-        description={`Are you sure you want to ${actionType} "${actionUser?.username}"?`}
-        confirmLabel={actionType === "suspend" ? "Suspend" : "Activate"}
+        title={actionType === "suspend" ? t("dialogSuspendTitle") : t("dialogActivateTitle")}
+        description={actionType === "suspend" ? t("dialogSuspendDescription", { username: actionUser?.username || "" }) : t("dialogActivateDescription", { username: actionUser?.username || "" })}
+        confirmLabel={actionType === "suspend" ? t("dialogConfirmSuspend") : t("dialogConfirmActivate")}
         variant={actionType === "suspend" ? "destructive" : "default"}
         onConfirm={handleUserAction}
       />

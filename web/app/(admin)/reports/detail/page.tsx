@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { useRouter, useSearchParams } from "next/navigation"
@@ -16,13 +17,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 
-const statusLabel: Record<string, string> = {
-  pending: "Pending",
-  reviewed: "Reviewed",
-  resolved: "Resolved",
-  dismissed: "Dismissed",
-}
-
 const statusColor: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   reviewed: "bg-blue-100 text-blue-800",
@@ -31,9 +25,17 @@ const statusColor: Record<string, string> = {
 }
 
 export default function ReportDetailPage() {
+  const t = useTranslations("reportsDetail")
   const router = useRouter()
   const searchParams = useSearchParams()
   const id = searchParams.get("id") || ""
+
+  const statusLabel: Record<string, string> = {
+    pending: t("statusPending"),
+    reviewed: t("statusReviewed"),
+    resolved: t("statusResolved"),
+    dismissed: t("statusDismissed"),
+  }
 
   const [report, setReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(true)
@@ -99,96 +101,94 @@ export default function ReportDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Report Detail</h1>
-          <p className="text-muted-foreground">ID: {report.id}</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("titleId", { id: report.id })}</p>
         </div>
         <Button variant="outline" onClick={() => router.push("/reports")}>
-          Back to List
+          {t("buttonBackToList")}
         </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Report info */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Report Info</CardTitle>
+            <CardTitle className="text-base">{t("cardReportInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="text-xs text-muted-foreground">{t("fieldStatus")}</p>
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[report.status]}`}>
                   {statusLabel[report.status] || report.status}
                 </span>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Submitted</p>
+                <p className="text-xs text-muted-foreground">{t("fieldSubmitted")}</p>
                 <p className="text-sm">{typeof report.createdAt === "number" ? new Date(report.createdAt * 1000).toLocaleString() : new Date(report.createdAt).toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Reporter</p>
+                <p className="text-xs text-muted-foreground">{t("fieldReporter")}</p>
                 <p className="text-sm">{report.reporterName || report.reporterId.slice(0, 8)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Reported User</p>
+                <p className="text-xs text-muted-foreground">{t("fieldReportedUser")}</p>
                 <p className="text-sm">{report.reportedName || report.reportedId.slice(0, 8)}</p>
               </div>
             </div>
 
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Reason</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("fieldReason")}</p>
               <div className="rounded-lg bg-muted p-4 text-sm whitespace-pre-wrap">{report.reason}</div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Review & actions */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Review Report</CardTitle>
+              <CardTitle className="text-base">{t("cardReviewReport")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t("fieldStatus")}</Label>
                 <select
                   id="status"
                   value={reviewStatus}
                   onChange={(e) => setReviewStatus(e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="reviewed">Reviewed</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="dismissed">Dismissed</option>
+                  <option value="pending">{t("statusPending")}</option>
+                  <option value="reviewed">{t("statusReviewed")}</option>
+                  <option value="resolved">{t("statusResolved")}</option>
+                  <option value="dismissed">{t("statusDismissed")}</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="remarks">Remarks</Label>
+                <Label htmlFor="remarks">{t("fieldRemarks")}</Label>
                 <textarea
                   id="remarks"
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   rows={4}
                   className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder="Internal remarks for this review..."
+                  placeholder={t("placeholderRemarks")}
                 />
               </div>
 
               <Button onClick={handleReview} disabled={saving} className="w-full">
-                {saving ? "Saving..." : "Submit Review"}
+                {saving ? t("buttonSaving") : t("buttonSubmitReview")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">User Actions</CardTitle>
+              <CardTitle className="text-base">{t("cardUserActions")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Take action against reported user: <span className="font-medium text-foreground">{report.reportedName || report.reportedId.slice(0, 8)}</span>
+                {t("userActionDescription")} <span className="font-medium text-foreground">{report.reportedName || report.reportedId.slice(0, 8)}</span>
               </p>
               <div className="flex gap-2">
                 <Button
@@ -197,7 +197,7 @@ export default function ReportDetailPage() {
                   disabled={!!actionLoading}
                   onClick={() => handleUserAction("suspend")}
                 >
-                  {actionLoading === "suspend" ? "Suspending..." : "Suspend User"}
+                  {actionLoading === "suspend" ? t("buttonSuspending") : t("buttonSuspendUser")}
                 </Button>
                 <Button
                   variant="outline"
@@ -205,7 +205,7 @@ export default function ReportDetailPage() {
                   disabled={!!actionLoading}
                   onClick={() => handleUserAction("activate")}
                 >
-                  {actionLoading === "activate" ? "Activating..." : "Activate User"}
+                  {actionLoading === "activate" ? t("buttonActivating") : t("buttonActivateUser")}
                 </Button>
               </div>
             </CardContent>

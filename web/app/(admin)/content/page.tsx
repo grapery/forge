@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { contentApi } from "@/lib/api/admin"
@@ -44,6 +45,7 @@ const statusBadgeMap: Record<string, "default" | "secondary" | "outline"> = {
 
 export default function ContentPage() {
   const router = useRouter()
+  const t = useTranslations("content")
   const [tab, setTab] = useState("story")
   const [items, setItems] = useState<ContentItem[]>([])
   const [total, setTotal] = useState(0)
@@ -80,7 +82,7 @@ export default function ContentPage() {
     if (!actionItem || !actionType) return
     try {
       await contentApi.action(actionItem.contentType || tab, actionItem.id, { action: actionType })
-      toast.success(`Content ${actionType === "unpublish" ? "unpublished" : "deleted"}`)
+      toast.success(actionType === "unpublish" ? t("toastUnpublished") : t("toastDeleted"))
       setActionItem(null)
       setActionType(null)
       fetchData()
@@ -96,27 +98,27 @@ export default function ContentPage() {
   const columns = [
     {
       key: "title",
-      header: "Title",
+      header: t("columnTitle"),
       render: (item: ContentItem) => <span className="font-medium">{item.title || "Untitled"}</span>,
     },
     {
       key: "author",
-      header: "Author",
+      header: t("columnAuthor"),
       render: (item: ContentItem) => <span className="text-sm text-muted-foreground">{item.authorName || item.authorId}</span>,
     },
     {
       key: "status",
-      header: "Status",
+      header: t("columnStatus"),
       render: (item: ContentItem) => <Badge variant={statusBadgeMap[item.status] || "secondary"}>{item.status}</Badge>,
     },
     {
       key: "stats",
-      header: "Engagement",
-      render: (item: ContentItem) => <span className="text-xs text-muted-foreground">{item.likes} likes, {item.comments} comments</span>,
+      header: t("columnEngagement"),
+      render: (item: ContentItem) => <span className="text-xs text-muted-foreground">{t("likesComments", { likes: item.likes, comments: item.comments })}</span>,
     },
     {
       key: "created",
-      header: "Created",
+      header: t("columnCreated"),
       render: (item: ContentItem) => <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>,
     },
     {
@@ -126,11 +128,11 @@ export default function ContentPage() {
         <div className="flex gap-1">
           {isPublished(item) && (
             <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("unpublish") }}>
-              <Eye className="mr-1 h-3 w-3" />Unpublish
+              <Eye className="mr-1 h-3 w-3" />{t("buttonUnpublish")}
             </Button>
           )}
           <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("force_delete") }}>
-            <Trash2 className="mr-1 h-3 w-3" />Delete
+            <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
           </Button>
         </div>
       ),
@@ -139,25 +141,25 @@ export default function ContentPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Content" description="Review and manage stories, storyboards, and fragments" icon={FileText} />
+      <PageHeader title={t("title")} description={t("description")} icon={FileText} />
 
       {counts && (
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>Total: <strong>{counts.total}</strong></span>
-          <span>Published: <strong>{counts.published}</strong></span>
-          <span>Draft: <strong>{counts.draft}</strong></span>
+          <span>{t("filterTotal")}: <strong>{counts.total}</strong></span>
+          <span>{t("filterPublished")}: <strong>{counts.published}</strong></span>
+          <span>{t("filterDraft")}: <strong>{counts.draft}</strong></span>
         </div>
       )}
 
       <div className="w-64">
-        <SearchInput onSearch={setSearch} placeholder="Search content..." />
+        <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
       </div>
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v); setPage(1) }}>
         <TabsList>
-          <TabsTrigger value="story">Stories</TabsTrigger>
-          <TabsTrigger value="storyboard">Storyboards</TabsTrigger>
-          <TabsTrigger value="fragment">Fragments</TabsTrigger>
+          <TabsTrigger value="story">{t("tabStories")}</TabsTrigger>
+          <TabsTrigger value="storyboard">{t("tabStoryboards")}</TabsTrigger>
+          <TabsTrigger value="fragment">{t("tabFragments")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab}>
@@ -178,9 +180,9 @@ export default function ContentPage() {
       <ConfirmDialog
         open={!!actionItem && !!actionType}
         onOpenChange={(o) => { if (!o) { setActionItem(null); setActionType(null) } }}
-        title={actionType === "unpublish" ? "Unpublish Content" : "Delete Content"}
-        description={`Are you sure you want to ${actionType === "unpublish" ? "unpublish" : "permanently delete"} "${actionItem?.title || "this content"}"?`}
-        confirmLabel={actionType === "unpublish" ? "Unpublish" : "Delete"}
+        title={actionType === "unpublish" ? t("dialogUnpublishTitle") : t("dialogDeleteTitle")}
+        description={actionType === "unpublish" ? t("dialogUnpublishDescription", { title: actionItem?.title || "this content" }) : t("dialogDeleteDescription", { title: actionItem?.title || "this content" })}
+        confirmLabel={actionType === "unpublish" ? t("dialogConfirmUnpublish") : t("buttonDelete")}
         variant={actionType === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { notificationApi } from "@/lib/api/admin"
@@ -21,6 +22,7 @@ import { Bell } from "lucide-react"
 
 
 export default function NotificationsPage() {
+  const t = useTranslations("notifications")
   const [items, setItems] = useState<NotificationItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -57,22 +59,22 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Notifications" description="View notification history" icon={Bell} />
+      <PageHeader title={t("title")} description={t("description")} icon={Bell} />
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search by user ID..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={type || "all"} onValueChange={(v) => setType(v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="system">System</SelectItem>
-            <SelectItem value="promotion">Promotion</SelectItem>
-            <SelectItem value="social">Social</SelectItem>
-            <SelectItem value="content">Content</SelectItem>
+            <SelectItem value="all">{t("filterAllTypes")}</SelectItem>
+            <SelectItem value="system">{t("filterSystem")}</SelectItem>
+            <SelectItem value="promotion">{t("filterPromotion")}</SelectItem>
+            <SelectItem value="social">{t("filterSocial")}</SelectItem>
+            <SelectItem value="content">{t("filterContent")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -87,28 +89,28 @@ export default function NotificationsPage() {
           columns={[
             {
               key: "userId",
-              header: "User ID",
+              header: t("columnUserId"),
               render: (item: NotificationItem) => (
                 <span className="text-xs font-mono text-muted-foreground">{item.userId}</span>
               ),
             },
             {
               key: "type",
-              header: "Type",
+              header: t("columnType"),
               render: (item: NotificationItem) => (
                 <Badge variant="secondary">{item.type}</Badge>
               ),
             },
             {
               key: "title",
-              header: "Title",
+              header: t("columnTitle"),
               render: (item: NotificationItem) => (
                 <span className="text-sm font-medium">{item.title}</span>
               ),
             },
             {
               key: "content",
-              header: "Content",
+              header: t("columnContent"),
               render: (item: NotificationItem) => (
                 <span className="text-xs text-muted-foreground">
                   {item.content.length > 60 ? item.content.substring(0, 60) + "..." : item.content}
@@ -117,7 +119,7 @@ export default function NotificationsPage() {
             },
             {
               key: "read",
-              header: "Read",
+              header: t("columnRead"),
               render: (item: NotificationItem) => (
                 <Badge variant={item.read ? "default" : "secondary"}>
                   {item.read ? "Yes" : "No"}
@@ -126,7 +128,7 @@ export default function NotificationsPage() {
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (item: NotificationItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),

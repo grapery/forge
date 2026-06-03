@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { useSearchParams } from "next/navigation"
@@ -21,6 +22,7 @@ import { useRouter } from "next/navigation"
 
 
 export default function TopicDetailPage() {
+  const t = useTranslations("topicsDetail")
   const searchParams = useSearchParams()
   const router = useRouter()
   const topic = searchParams.get("topic") || ""
@@ -54,25 +56,25 @@ export default function TopicDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={`#${topic}`}
-        description={`Content tagged with "${topic}"`}
+        description={t("description", { topic })}
         actions={
           <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />Back
+            <ArrowLeft className="mr-2 h-4 w-4" />{t("buttonBack")}
           </Button>
         }
       />
 
       <Tabs value={tab} onValueChange={(v) => { setTab(v); setPage(1) }}>
         <TabsList>
-          <TabsTrigger value="fragments">Fragments</TabsTrigger>
-          <TabsTrigger value="stories">Stories</TabsTrigger>
+          <TabsTrigger value="fragments">{t("tabFragments")}</TabsTrigger>
+          <TabsTrigger value="stories">{t("tabStories")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab}>
           {loading ? (
             <PageSkeleton />
           ) : items.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">No content found</div>
+            <div className="py-12 text-center text-muted-foreground">{t("noContentFound")}</div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {items.map((item: any, idx: number) => (
@@ -88,9 +90,9 @@ export default function TopicDetailPage() {
           )}
           {total > pageSize && (
             <div className="flex items-center justify-center gap-2 pt-4">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</Button>
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t("buttonPrevious")}</Button>
               <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(total / pageSize)}</span>
-              <Button variant="outline" size="sm" disabled={page >= Math.ceil(total / pageSize)} onClick={() => setPage(page + 1)}>Next</Button>
+              <Button variant="outline" size="sm" disabled={page >= Math.ceil(total / pageSize)} onClick={() => setPage(page + 1)}>{t("buttonNext")}</Button>
             </div>
           )}
         </TabsContent>

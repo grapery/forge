@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { useRouter, useSearchParams } from "next/navigation"
@@ -20,13 +21,6 @@ import { Flag } from "lucide-react"
 
 const statusOptions = ["", "pending", "reviewed", "resolved", "dismissed"]
 
-const statusLabel: Record<string, string> = {
-  pending: "Pending",
-  reviewed: "Reviewed",
-  resolved: "Resolved",
-  dismissed: "Dismissed",
-}
-
 const statusColor: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   reviewed: "bg-blue-100 text-blue-800",
@@ -34,15 +28,8 @@ const statusColor: Record<string, string> = {
   dismissed: "bg-gray-100 text-gray-800",
 }
 
-function ReportStatusBadge({ status }: { status: string }) {
-  return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[status] || "bg-gray-100 text-gray-800"}`}>
-      {statusLabel[status] || status}
-    </span>
-  )
-}
-
 export default function ReportsPage() {
+  const t = useTranslations("reports")
   const router = useRouter()
   const searchParams = useSearchParams()
   const [items, setItems] = useState<Report[]>([])
@@ -53,6 +40,13 @@ export default function ReportsPage() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "")
   const pageSize = 20
+
+  const statusLabel: Record<string, string> = {
+    pending: t("statusPending"),
+    reviewed: t("statusReviewed"),
+    resolved: t("statusResolved"),
+    dismissed: t("statusDismissed"),
+  }
 
   useEffect(() => {
     reportApi.statusCounts().then(setCounts).catch(() => {})
@@ -75,11 +69,10 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="User Reports" description="Review and handle user report submissions" icon={Flag} />
+      <PageHeader title={t("title")} description={t("description")} icon={Flag} />
 
       {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
-      {/* Status summary */}
       {counts && (
         <div className="grid gap-4 md:grid-cols-4">
           {(["pending", "reviewed", "resolved", "dismissed"] as const).map((s) => (
@@ -89,7 +82,9 @@ export default function ReportsPage() {
               onClick={() => { setStatusFilter(statusFilter === s ? "" : s); setPage(1) }}
             >
               <CardContent className="flex items-center gap-3 p-4">
-                <ReportStatusBadge status={s} />
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[s] || "bg-gray-100 text-gray-800"}`}>
+                  {statusLabel[s] || s}
+                </span>
                 <span className="text-2xl font-bold">{counts[s] || 0}</span>
               </CardContent>
             </Card>
@@ -97,10 +92,9 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Status filter tabs */}
       <div className="flex gap-2">
         <Button variant={statusFilter === "" ? "default" : "outline"} size="sm" onClick={() => { setStatusFilter(""); setPage(1) }}>
-          All
+          {t("filterAll")}
         </Button>
         {statusOptions.slice(1).map((s) => (
           <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => { setStatusFilter(s); setPage(1) }}>
@@ -109,11 +103,10 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {/* Report list */}
       {loading ? (
         <PageSkeleton />
       ) : items.length === 0 ? (
-        <div className="text-muted-foreground">No reports found.</div>
+        <div className="text-muted-foreground">{t("noReportsFound")}</div>
       ) : (
         <div className="space-y-3">
           {items.map((r) => (
@@ -122,12 +115,14 @@ export default function ReportsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <ReportStatusBadge status={r.status} />
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[r.status] || "bg-gray-100 text-gray-800"}`}>
+                        {statusLabel[r.status] || r.status}
+                      </span>
                     </div>
                     <p className="text-sm line-clamp-2">{r.reason}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>Reporter: {r.reporterName || r.reporterId.slice(0, 8)}</span>
-                      <span>Target: {r.reportedName || r.reportedId.slice(0, 8)}</span>
+                      <span>{t("columnReporter")}: {r.reporterName || r.reporterId.slice(0, 8)}</span>
+                      <span>{t("columnTarget")}: {r.reportedName || r.reportedId.slice(0, 8)}</span>
                       <span>{typeof r.createdAt === "number" ? new Date(r.createdAt * 1000).toLocaleString() : new Date(r.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
@@ -138,18 +133,17 @@ export default function ReportsPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Total {total} items, page {page}/{totalPages}
+            {t("paginationInfo", { total, page, totalPages })}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-              Previous
+              {t("buttonPrevious")}
             </Button>
             <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-              Next
+              {t("buttonNext")}
             </Button>
           </div>
         </div>

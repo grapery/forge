@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { orderApi } from "@/lib/api/admin"
@@ -38,6 +39,7 @@ const statusVariant = (status: string): "default" | "secondary" | "destructive" 
 }
 
 export default function OrdersPage() {
+  const t = useTranslations("orders")
   const [items, setItems] = useState<SubscriptionOrderItem[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<OrderSummary | null>(null)
@@ -91,29 +93,29 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Orders" description="Manage subscription orders" icon={Receipt} />
+      <PageHeader title={t("title")} description={t("description")} icon={Receipt} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Total Revenue" value={summary.totalRevenue} icon={DollarSign} />
-          <StatCard title="Total Orders" value={summary.totalOrders} icon={ShoppingCart} />
-          <StatCard title="Pending" value={summary.pendingOrders} icon={Clock} />
-          <StatCard title="Paid" value={summary.paidOrders} icon={CheckCircle} />
+          <StatCard title={t("statTotalRevenue")} value={summary.totalRevenue} icon={DollarSign} />
+          <StatCard title={t("statTotalOrders")} value={summary.totalOrders} icon={ShoppingCart} />
+          <StatCard title={t("statPending")} value={summary.pendingOrders} icon={Clock} />
+          <StatCard title={t("statPaid")} value={summary.paidOrders} icon={CheckCircle} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="refunded">Refunded</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="pending">{t("filterPending")}</SelectItem>
+            <SelectItem value="paid">{t("filterPaid")}</SelectItem>
+            <SelectItem value="failed">{t("filterFailed")}</SelectItem>
+            <SelectItem value="refunded">{t("filterRefunded")}</SelectItem>
+            <SelectItem value="cancelled">{t("filterCancelled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -128,49 +130,49 @@ export default function OrdersPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (o: SubscriptionOrderItem) => (
                 <span className="text-sm font-medium">{o.userName}</span>
               ),
             },
             {
               key: "planName",
-              header: "Plan",
+              header: t("columnPlan"),
               render: (o: SubscriptionOrderItem) => (
                 <span className="text-sm">{o.planName}</span>
               ),
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (o: SubscriptionOrderItem) => (
                 <Badge variant={statusVariant(o.status)}>{o.status}</Badge>
               ),
             },
             {
               key: "paymentMethod",
-              header: "Payment",
+              header: t("columnPayment"),
               render: (o: SubscriptionOrderItem) => (
                 <span className="text-sm">{o.paymentMethod}</span>
               ),
             },
             {
               key: "amount",
-              header: "Amount",
+              header: t("columnAmount"),
               render: (o: SubscriptionOrderItem) => (
                 <span className="text-sm">{o.currency} {o.amount}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (o: SubscriptionOrderItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(o.createdAt)}</span>
               ),
             },
             {
               key: "paidAt",
-              header: "Paid At",
+              header: t("columnPaidAt"),
               render: (o: SubscriptionOrderItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(o.paidAt)}</span>
               ),
@@ -186,7 +188,7 @@ export default function OrdersPage() {
                     className="text-destructive"
                     onClick={(e) => { e.stopPropagation(); setRefundOrder(o) }}
                   >
-                    <RotateCcw className="mr-1 h-3 w-3" />Refund
+                    <RotateCcw className="mr-1 h-3 w-3" />{t("buttonRefund")}
                   </Button>
                 ) : null,
             },
@@ -197,9 +199,9 @@ export default function OrdersPage() {
       <ConfirmDialog
         open={!!refundOrder}
         onOpenChange={(o) => { if (!o) setRefundOrder(null) }}
-        title="Refund Order"
+        title={t("dialogRefundTitle")}
         description={`Are you sure you want to refund order "${refundOrder?.id}"? This action cannot be undone.`}
-        confirmLabel="Refund"
+        confirmLabel={t("buttonRefund")}
         variant="destructive"
         onConfirm={handleRefund}
       />

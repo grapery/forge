@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { promptApi } from "@/lib/api/admin"
@@ -22,6 +23,7 @@ import { useRouter } from "next/navigation"
 
 export default function PromptsPage() {
   const router = useRouter()
+  const t = useTranslations("prompts")
   const [items, setItems] = useState<PromptAuditRecord[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<PromptAuditSummary | null>(null)
@@ -55,39 +57,39 @@ export default function PromptsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Prompt Audit" description="Review AI prompt usage and audit records" icon={Terminal} />
+      <PageHeader title={t("title")} description={t("description")} icon={Terminal} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Total Records" value={summary.totalRecords} icon={FileText} />
-          <StatCard title="Total Tokens" value={summary.totalTokens.toLocaleString()} icon={Zap} />
-          <StatCard title="Providers" value={summary.topProviders.length} icon={Cpu} />
+          <StatCard title={t("statTotalRecords")} value={summary.totalRecords} icon={FileText} />
+          <StatCard title={t("statTotalTokens")} value={summary.totalTokens.toLocaleString()} icon={Zap} />
+          <StatCard title={t("statProviders")} value={summary.topProviders.length} icon={Cpu} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <Select value={provider || "all"} onValueChange={(v) => { setProvider(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Providers" />
+            <SelectValue placeholder={t("filterAllProviders")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Providers</SelectItem>
-            <SelectItem value="gemini">Gemini</SelectItem>
-            <SelectItem value="huoshan">Huoshan</SelectItem>
-            <SelectItem value="qwen">Qwen</SelectItem>
-            <SelectItem value="kling">Kling</SelectItem>
-            <SelectItem value="hailuo">Hailuo</SelectItem>
+            <SelectItem value="all">{t("filterAllProviders")}</SelectItem>
+            <SelectItem value="gemini">{t("filterGemini")}</SelectItem>
+            <SelectItem value="huoshan">{t("filterHuoshan")}</SelectItem>
+            <SelectItem value="qwen">{t("filterQwen")}</SelectItem>
+            <SelectItem value="kling">{t("filterKling")}</SelectItem>
+            <SelectItem value="hailuo">{t("filterHailuo")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={promptKind || "all"} onValueChange={(v) => { setPromptKind(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Kinds" />
+            <SelectValue placeholder={t("filterAllKinds")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Kinds</SelectItem>
-            <SelectItem value="text">Text</SelectItem>
-            <SelectItem value="image">Image</SelectItem>
-            <SelectItem value="video">Video</SelectItem>
+            <SelectItem value="all">{t("filterAllKinds")}</SelectItem>
+            <SelectItem value="text">{t("filterText")}</SelectItem>
+            <SelectItem value="image">{t("filterImage")}</SelectItem>
+            <SelectItem value="video">{t("filterVideo")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -103,38 +105,38 @@ export default function PromptsPage() {
           columns={[
             {
               key: "provider",
-              header: "Provider",
+              header: t("columnProvider"),
               render: (r: PromptAuditRecord) => <span className="font-medium">{r.provider}</span>,
             },
             {
               key: "model",
-              header: "Model",
+              header: t("columnModel"),
               render: (r: PromptAuditRecord) => <span className="text-sm">{r.model}</span>,
             },
             {
               key: "step",
-              header: "Step",
+              header: t("columnStep"),
               render: (r: PromptAuditRecord) => <span className="text-xs text-muted-foreground">{r.step}</span>,
             },
             {
               key: "tokens",
-              header: "Tokens",
+              header: t("columnTokens"),
               render: (r: PromptAuditRecord) => (
                 <span className="text-xs text-muted-foreground">
-                  {r.inputTokens} in / {r.outputTokens} out
+                  {t("tokensInOut", { input: r.inputTokens, output: r.outputTokens })}
                 </span>
               ),
             },
             {
               key: "entity",
-              header: "Entity",
+              header: t("columnEntity"),
               render: (r: PromptAuditRecord) => (
                 <span className="text-xs text-muted-foreground">{r.relatedEntityType}</span>
               ),
             },
             {
               key: "time",
-              header: "Time",
+              header: t("columnTime"),
               render: (r: PromptAuditRecord) => <span className="text-xs text-muted-foreground">{formatTime(r.createdAt)}</span>,
             },
           ]}

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Anvil } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { useAuth } from "@/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const t = useTranslations("login")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +27,7 @@ export default function LoginPage() {
       await login(username, password)
       router.push("/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed")
+      setError(err instanceof Error ? err.message : t("errorLoginFailed"))
     } finally {
       setLoading(false)
     }
@@ -41,17 +43,17 @@ export default function LoginPage() {
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow">
             <Anvil className="h-7 w-7 text-primary-foreground" />
           </div>
-          <CardTitle className="text-xl">Forge Admin</CardTitle>
-          <p className="text-sm text-muted-foreground">Sign in to manage your platform</p>
+          <CardTitle className="text-xl">{t("title")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("description")}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("labelUsername")}</Label>
               <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("labelPassword")}</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             {error && <p className="text-sm text-destructive animate-fade-in">{error}</p>}
@@ -59,9 +61,9 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                  Signing in...
+                  {t("buttonSigningIn")}
                 </span>
-              ) : "Sign In"}
+              ) : t("buttonSignIn")}
             </Button>
           </form>
         </CardContent>

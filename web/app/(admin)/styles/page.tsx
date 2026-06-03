@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { styleApi } from "@/lib/api/admin"
@@ -29,6 +30,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function StylesPage() {
+  const t = useTranslations("styles")
+  const tc = useTranslations("common")
   const [items, setItems] = useState<StyleConfigItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -36,15 +39,12 @@ export default function StylesPage() {
   const [search, setSearch] = useState("")
   const pageSize = 20
 
-  // Edit dialog
   const [editItem, setEditItem] = useState<StyleConfigItem | null>(null)
   const [editDescription, setEditDescription] = useState("")
   const [editSampleImageUrl, setEditSampleImageUrl] = useState("")
   const [saving, setSaving] = useState(false)
 
-  // Delete confirm
   const [deleteItem, setDeleteItem] = useState<StyleConfigItem | null>(null)
-  const [deleting, setDeleting] = useState(false)
 
   const fetchData = useCallback(() => {
     setLoading(true)
@@ -75,11 +75,11 @@ export default function StylesPage() {
         description: editDescription,
         sampleImageUrl: editSampleImageUrl,
       })
-      toast.success(`Style "${editItem.style}" updated`)
+      toast.success(t("toastUpdated", { style: editItem.style }))
       setEditItem(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Failed to update style")
+      toast.error(err.message || t("toastUpdateFailed"))
     } finally {
       setSaving(false)
     }
@@ -87,16 +87,13 @@ export default function StylesPage() {
 
   const handleDelete = async () => {
     if (!deleteItem) return
-    setDeleting(true)
     try {
       await styleApi.delete(deleteItem.id)
-      toast.success(`Style "${deleteItem.style}" deleted`)
+      toast.success(t("toastDeleted", { style: deleteItem.style }))
       setDeleteItem(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete style")
-    } finally {
-      setDeleting(false)
+      toast.error(err.message || t("toastDeleteFailed"))
     }
   }
 
@@ -108,11 +105,11 @@ export default function StylesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Styles" description="Manage platform style configurations" icon={Palette} />
+      <PageHeader title={t("title")} description={t("description")} icon={Palette} />
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search styles..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
       </div>
 
@@ -126,14 +123,14 @@ export default function StylesPage() {
           columns={[
             {
               key: "style",
-              header: "Style",
+              header: t("columnStyle"),
               render: (s: StyleConfigItem) => (
                 <span className="text-sm font-medium">{s.style}</span>
               ),
             },
             {
               key: "description",
-              header: "Description",
+              header: t("columnDescription"),
               render: (s: StyleConfigItem) => (
                 <span className="text-sm text-muted-foreground max-w-[200px] truncate block">
                   {s.description || "-"}
@@ -142,7 +139,7 @@ export default function StylesPage() {
             },
             {
               key: "sampleImageUrl",
-              header: "Sample Image",
+              header: t("columnSampleImage"),
               render: (s: StyleConfigItem) =>
                 s.sampleImageUrl ? (
                   <a
@@ -151,7 +148,7 @@ export default function StylesPage() {
                     rel="noopener noreferrer"
                     className="text-xs text-blue-500 hover:underline"
                   >
-                    View
+                    {t("buttonView")}
                   </a>
                 ) : (
                   <span className="text-xs text-muted-foreground">-</span>
@@ -159,21 +156,21 @@ export default function StylesPage() {
             },
             {
               key: "userId",
-              header: "User ID",
+              header: t("columnUserId"),
               render: (s: StyleConfigItem) => (
                 <span className="text-xs text-muted-foreground">{s.userId}</span>
               ),
             },
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (s: StyleConfigItem) => (
                 <span className="text-sm text-muted-foreground">{s.userName || "-"}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (s: StyleConfigItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(s.createdAt)}</span>
               ),
@@ -188,7 +185,7 @@ export default function StylesPage() {
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); openEdit(s) }}
                   >
-                    <Pencil className="mr-1 h-3 w-3" />Edit
+                    <Pencil className="mr-1 h-3 w-3" />{t("buttonEdit")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -196,7 +193,7 @@ export default function StylesPage() {
                     className="text-destructive"
                     onClick={(e) => { e.stopPropagation(); setDeleteItem(s) }}
                   >
-                    <Trash2 className="mr-1 h-3 w-3" />Delete
+                    <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
                   </Button>
                 </div>
               ),
@@ -205,46 +202,44 @@ export default function StylesPage() {
         />
       )}
 
-      {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={(o) => { if (!o) setEditItem(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Style</DialogTitle>
+            <DialogTitle>{t("dialogEditTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Edit Description</Label>
+              <Label>{t("dialogFieldDescription")}</Label>
               <Input
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Style description"
+                placeholder={t("dialogPlaceholderDescription")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Sample Image URL</Label>
+              <Label>{t("dialogFieldSampleImageUrl")}</Label>
               <Input
                 value={editSampleImageUrl}
                 onChange={(e) => setEditSampleImageUrl(e.target.value)}
-                placeholder="https://..."
+                placeholder={t("dialogPlaceholderSampleUrl")}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditItem(null)}>{tc("cancel")}</Button>
             <Button onClick={handleEdit} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? tc("processing") : tc("save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
       <ConfirmDialog
         open={!!deleteItem}
         onOpenChange={(o) => { if (!o) setDeleteItem(null) }}
-        title="Delete Style"
-        description={`Are you sure you want to delete "${deleteItem?.style}"?`}
-        confirmLabel="Delete"
+        title={t("dialogDeleteTitle")}
+        description={t("dialogDeleteDescription", { style: deleteItem?.style || "" })}
+        confirmLabel={t("buttonDelete")}
         variant="destructive"
         onConfirm={handleDelete}
       />

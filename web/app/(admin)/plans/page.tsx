@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { planApi } from "@/lib/api/admin"
@@ -64,6 +65,7 @@ const emptyForm: PlanFormData = {
 }
 
 export default function PlansPage() {
+  const t = useTranslations("plans")
   const [items, setItems] = useState<SubscriptionPlanItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -130,11 +132,11 @@ export default function PlansPage() {
       }
       if (editPlan) {
         await planApi.update(editPlan.id, data)
-        toast.success(`Plan "${form.name}" updated`)
+        toast.success(t("toastUpdated", { name: form.name }))
         setEditPlan(null)
       } else {
         await planApi.create(data)
-        toast.success(`Plan "${form.name}" created`)
+        toast.success(t("toastCreated", { name: form.name }))
         setShowCreateDialog(false)
       }
       fetchData()
@@ -149,7 +151,7 @@ export default function PlansPage() {
     if (!deletePlan) return
     try {
       await planApi.update(deletePlan.id, { isActive: false })
-      toast.success(`Plan "${deletePlan.name}" deactivated`)
+      toast.success(t("toastDeactivated", { name: deletePlan.name }))
       setDeletePlan(null)
       fetchData()
     } catch (err: any) {
@@ -167,12 +169,12 @@ export default function PlansPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Plans"
-        description="Manage subscription plans"
+        title={t("title")}
+        description={t("description")}
         icon={CreditCard}
         actions={
           <Button onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Create Plan
+            <Plus className="mr-2 h-4 w-4" /> {t("buttonCreatePlan")}
           </Button>
         }
       />
@@ -187,14 +189,14 @@ export default function PlansPage() {
           columns={[
             {
               key: "name",
-              header: "Name",
+              header: t("columnName"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm font-medium">{p.name}</span>
               ),
             },
             {
               key: "membershipTier",
-              header: "Tier",
+              header: t("columnTier"),
               render: (p: SubscriptionPlanItem) => (
                 <Badge variant={p.membershipTier === "premium" ? "default" : p.membershipTier === "basic" ? "secondary" : "outline"}>
                   {p.membershipTier}
@@ -203,51 +205,51 @@ export default function PlansPage() {
             },
             {
               key: "billingPeriod",
-              header: "Billing",
+              header: t("columnBilling"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm capitalize">{p.billingPeriod}</span>
               ),
             },
             {
               key: "price",
-              header: "Price",
+              header: t("columnPrice"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm">{p.currency} {p.price}</span>
               ),
             },
             {
               key: "tokenQuota",
-              header: "Token Quota",
+              header: t("columnTokenQuota"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm">{p.tokenQuota}</span>
               ),
             },
             {
               key: "maxStories",
-              header: "Max Stories",
+              header: t("columnMaxStories"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm">{p.maxStories}</span>
               ),
             },
             {
               key: "maxCharacters",
-              header: "Max Characters",
+              header: t("columnMaxCharacters"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm">{p.maxCharacters}</span>
               ),
             },
             {
               key: "isActive",
-              header: "Active",
+              header: t("columnActive"),
               render: (p: SubscriptionPlanItem) => (
                 <Badge variant={p.isActive ? "default" : "secondary"}>
-                  {p.isActive ? "Active" : "Inactive"}
+                  {p.isActive ? t("labelActive") : t("labelInactive")}
                 </Badge>
               ),
             },
             {
               key: "sortOrder",
-              header: "Sort",
+              header: t("columnSort"),
               render: (p: SubscriptionPlanItem) => (
                 <span className="text-sm">{p.sortOrder}</span>
               ),
@@ -262,7 +264,7 @@ export default function PlansPage() {
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); openEdit(p) }}
                   >
-                    <Pencil className="mr-1 h-3 w-3" />Edit
+                    <Pencil className="mr-1 h-3 w-3" />{t("buttonEdit")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -270,7 +272,7 @@ export default function PlansPage() {
                     className="text-destructive"
                     onClick={(e) => { e.stopPropagation(); setDeletePlan(p) }}
                   >
-                    <Trash2 className="mr-1 h-3 w-3" />Delete
+                    <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
                   </Button>
                 </div>
               ),
@@ -369,9 +371,9 @@ export default function PlansPage() {
       <ConfirmDialog
         open={!!deletePlan}
         onOpenChange={(o) => { if (!o) setDeletePlan(null) }}
-        title="Delete Plan"
-        description={`Are you sure you want to deactivate "${deletePlan?.name}"?`}
-        confirmLabel="Delete"
+        title={t("dialogDeleteTitle")}
+        description={t("dialogDeleteDescription", { name: deletePlan?.name || "" })}
+        confirmLabel={t("buttonDelete")}
         variant="destructive"
         onConfirm={handleDelete}
       />

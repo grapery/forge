@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { adminUserApi } from "@/lib/api/admin"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 interface PermissionEditorProps {
   userId: string
@@ -23,54 +24,54 @@ interface PermissionEditorProps {
 
 const permissionGroups: { label: string; permissions: { key: string; label: string }[] }[] = [
   {
-    label: "Content",
+    label: "content",
     permissions: [
-      { key: "content", label: "Content Management" },
-      { key: "characters", label: "Character Management" },
-      { key: "comments", label: "Comment Management" },
-      { key: "tags", label: "Tag Management" },
-      { key: "genres", label: "Genre Management" },
+      { key: "content", label: "contentMgmt" },
+      { key: "characters", label: "characterMgmt" },
+      { key: "comments", label: "commentMgmt" },
+      { key: "tags", label: "tagMgmt" },
+      { key: "genres", label: "genreMgmt" },
     ],
   },
   {
-    label: "AI",
+    label: "ai",
     permissions: [
-      { key: "ai-tasks", label: "AI Task Management" },
-      { key: "ai-generations", label: "AI Generation Management" },
-      { key: "agents", label: "Agent Management" },
-      { key: "prompts", label: "Prompt Management" },
-      { key: "styles", label: "Style Management" },
+      { key: "ai-tasks", label: "aiTaskMgmt" },
+      { key: "ai-generations", label: "aiGenMgmt" },
+      { key: "agents", label: "agentMgmt" },
+      { key: "prompts", label: "promptMgmt" },
+      { key: "styles", label: "styleMgmt" },
     ],
   },
   {
-    label: "Users",
+    label: "users",
     permissions: [
-      { key: "users", label: "User Management" },
-      { key: "audit-log", label: "Audit Log" },
+      { key: "users", label: "userMgmt" },
+      { key: "audit-log", label: "auditLog" },
     ],
   },
   {
-    label: "Finance",
+    label: "finance",
     permissions: [
-      { key: "memberships", label: "Membership Management" },
-      { key: "orders", label: "Order Management" },
-      { key: "tokens", label: "Token Management" },
+      { key: "memberships", label: "membershipMgmt" },
+      { key: "orders", label: "orderMgmt" },
+      { key: "tokens", label: "tokenMgmt" },
     ],
   },
   {
-    label: "Growth",
+    label: "growth",
     permissions: [
-      { key: "invitation-codes", label: "Invitation Code Management" },
-      { key: "search", label: "Search Analytics" },
+      { key: "invitation-codes", label: "inviteCodeMgmt" },
+      { key: "search", label: "searchAnalytics" },
     ],
   },
   {
-    label: "Community",
+    label: "community",
     permissions: [
-      { key: "feedback", label: "Feedback Management" },
-      { key: "reports", label: "Report Management" },
-      { key: "topics", label: "Topic Management" },
-      { key: "notifications", label: "Notification Management" },
+      { key: "feedback", label: "feedbackMgmt" },
+      { key: "reports", label: "reportMgmt" },
+      { key: "topics", label: "topicMgmt" },
+      { key: "notifications", label: "notificationMgmt" },
     ],
   },
 ]
@@ -78,6 +79,7 @@ const permissionGroups: { label: string; permissions: { key: string; label: stri
 const allPermissionKeys = permissionGroups.flatMap((g) => g.permissions.map((p) => p.key))
 
 export function PermissionEditor({ userId, open, onOpenChange, onSaved }: PermissionEditorProps) {
+  const t = useTranslations("permissions")
   const [selected, setSelected] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -92,7 +94,7 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
         setSelected(permissions || [])
       })
       .catch(() => {
-        toast.error("Failed to load permissions")
+        toast.error(t("toastLoadFailed"))
       })
       .finally(() => setLoading(false))
   }, [open, userId])
@@ -119,11 +121,11 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
     setSaving(true)
     try {
       await adminUserApi.updatePermissions(userId, selected)
-      toast.success("Permissions updated successfully")
+      toast.success(t("toastUpdated"))
       onOpenChange(false)
       onSaved()
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to update permissions")
+      toast.error(err.response?.data?.message || err.message || t("toastUpdateFailed"))
     } finally {
       setSaving(false)
     }
@@ -133,22 +135,22 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Permissions</DialogTitle>
+          <DialogTitle>{t("dialogTitle")}</DialogTitle>
           <DialogDescription>
-            Configure which sections this admin user can access.
+            {t("dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="py-8 text-center text-muted-foreground">Loading permissions...</div>
+          <div className="py-8 text-center text-muted-foreground">t("loadingPermissions")</div>
         ) : (
           <div className="space-y-6 py-4">
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={selectAll}>
-                Select All
+                {t("buttonSelectAll")}
               </Button>
               <Button variant="outline" size="sm" onClick={deselectAll}>
-                Deselect All
+                {t("buttonDeselectAll")}
               </Button>
             </div>
 
@@ -168,7 +170,7 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
                       htmlFor={`group-${group.label}`}
                       className="text-sm font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer"
                     >
-                      {group.label}
+                      {t(group.label)}
                     </label>
                   </div>
                   <div className="grid grid-cols-2 gap-2 pl-6">
@@ -183,7 +185,7 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
                           checked={selected.includes(perm.key)}
                           onChange={() => togglePermission(perm.key)}
                         />
-                        {perm.label}
+                        {t(perm.label)}
                       </label>
                     ))}
                   </div>
@@ -198,7 +200,7 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={loading || saving}>
-            {saving ? "Saving..." : "Save Permissions"}
+            {saving ? t("buttonSaving") : t("buttonSave")}
           </Button>
         </DialogFooter>
       </DialogContent>

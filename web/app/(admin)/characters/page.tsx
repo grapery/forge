@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { characterApi } from "@/lib/api/admin"
@@ -29,6 +30,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function CharactersPage() {
+  const t = useTranslations("characters")
   const [items, setItems] = useState<CharacterItem[]>([])
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<CharacterStatusCount | null>(null)
@@ -66,10 +68,10 @@ export default function CharactersPage() {
     try {
       if (actionType === "unpublish") {
         await characterApi.action(actionCharacter.id, { action: "unpublish" })
-        toast.success(`Character "${actionCharacter.name}" unpublished`)
+        toast.success(t("toastUnpublished", { name: actionCharacter.name }))
       } else {
         await characterApi.action(actionCharacter.id, { action: "force_delete" })
-        toast.success(`Character "${actionCharacter.name}" deleted`)
+        toast.success(t("toastDeleted", { name: actionCharacter.name }))
       }
       setActionCharacter(null)
       setActionType(null)
@@ -86,28 +88,28 @@ export default function CharactersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Characters" description="Manage platform characters" icon={Ghost} />
+      <PageHeader title={t("title")} description={t("description")} icon={Ghost} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Total" value={counts.total} icon={Users} />
-          <StatCard title="Public" value={counts.public} icon={Eye} />
-          <StatCard title="Private" value={counts.private} icon={EyeOff} />
+          <StatCard title={t("filterTotal")} value={counts.total} icon={Users} />
+          <StatCard title={t("filterPublic")} value={counts.public} icon={Eye} />
+          <StatCard title={t("filterPrivate")} value={counts.private} icon={EyeOff} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search characters..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={isPublic || "all"} onValueChange={(v) => setIsPublic(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Visibility" />
+            <SelectValue placeholder={t("filterAllVisibility")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Visibility</SelectItem>
-            <SelectItem value="true">Public</SelectItem>
-            <SelectItem value="false">Private</SelectItem>
+            <SelectItem value="all">{t("filterAllVisibility")}</SelectItem>
+            <SelectItem value="true">{t("filterPublic")}</SelectItem>
+            <SelectItem value="false">{t("filterPrivate")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -122,47 +124,47 @@ export default function CharactersPage() {
           columns={[
             {
               key: "name",
-              header: "Name",
+              header: t("columnName"),
               render: (c: CharacterItem) => (
                 <span className="text-sm font-medium">{c.name}</span>
               ),
             },
             {
               key: "author",
-              header: "Author",
+              header: t("columnAuthor"),
               render: (c: CharacterItem) => (
                 <span className="text-sm text-muted-foreground">{c.authorName}</span>
               ),
             },
             {
               key: "story",
-              header: "Story",
+              header: t("columnStory"),
               render: (c: CharacterItem) => (
                 <span className="text-xs text-muted-foreground">{c.storyId || "-"}</span>
               ),
             },
             {
               key: "isPublic",
-              header: "Public",
+              header: t("columnPublic"),
               render: (c: CharacterItem) => (
                 <Badge variant={c.isPublic ? "default" : "secondary"}>
-                  {c.isPublic ? "Yes" : "No"}
+                  {c.isPublic ? t("filterPublic") : t("filterPrivate")}
                 </Badge>
               ),
             },
             {
               key: "likes",
-              header: "Likes",
+              header: t("columnLikes"),
               render: (c: CharacterItem) => <span className="text-sm">{c.likes}</span>,
             },
             {
               key: "followers",
-              header: "Followers",
+              header: t("columnFollowers"),
               render: (c: CharacterItem) => <span className="text-sm">{c.followers}</span>,
             },
             {
               key: "created",
-              header: "Created",
+              header: t("columnCreated"),
               render: (c: CharacterItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(c.createdAt)}</span>
               ),
@@ -178,7 +180,7 @@ export default function CharactersPage() {
                     className="text-destructive"
                     onClick={(e) => { e.stopPropagation(); setActionCharacter(c); setActionType("unpublish") }}
                   >
-                    <EyeOff className="mr-1 h-3 w-3" />Unpublish
+                    <EyeOff className="mr-1 h-3 w-3" />{t("buttonUnpublish")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -186,7 +188,7 @@ export default function CharactersPage() {
                     className="text-destructive"
                     onClick={(e) => { e.stopPropagation(); setActionCharacter(c); setActionType("force_delete") }}
                   >
-                    <Trash2 className="mr-1 h-3 w-3" />Delete
+                    <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
                   </Button>
                 </div>
               ),
@@ -198,9 +200,9 @@ export default function CharactersPage() {
       <ConfirmDialog
         open={!!actionCharacter && !!actionType}
         onOpenChange={(o) => { if (!o) { setActionCharacter(null); setActionType(null) } }}
-        title={actionType === "unpublish" ? "Unpublish Character" : "Delete Character"}
-        description={`Are you sure you want to ${actionType === "unpublish" ? "unpublish" : "force delete"} "${actionCharacter?.name}"?`}
-        confirmLabel={actionType === "unpublish" ? "Unpublish" : "Delete"}
+        title={actionType === "unpublish" ? t("dialogUnpublishTitle") : t("dialogDeleteTitle")}
+        description={actionType === "unpublish" ? t("dialogUnpublishDescription", { name: actionCharacter?.name || "" }) : t("dialogDeleteDescription", { name: actionCharacter?.name || "" })}
+        confirmLabel={actionType === "unpublish" ? t("dialogConfirmUnpublish") : t("buttonDelete")}
         variant="destructive"
         onConfirm={handleAction}
       />

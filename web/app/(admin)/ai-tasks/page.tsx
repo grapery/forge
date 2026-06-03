@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { aiTaskApi } from "@/lib/api/admin"
@@ -37,6 +38,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 }
 
 export default function AITasksPage() {
+  const t = useTranslations("aiTasks")
   const [items, setItems] = useState<AITaskItem[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<AITaskSummary | null>(null)
@@ -72,11 +74,11 @@ export default function AITasksPage() {
     if (!cancelTask) return
     try {
       await aiTaskApi.cancel(cancelTask.id)
-      toast.success(`Task "${cancelTask.type}" cancelled`)
+      toast.success(t("toastCancelled", { type: cancelTask.type }))
       setCancelTask(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Cancel failed")
+      toast.error(err.message || t("toastCancelFailed"))
     }
   }
 
@@ -87,32 +89,32 @@ export default function AITasksPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="AI Tasks" description="Monitor and manage AI task executions" icon={Brain} />
+      <PageHeader title={t("title")} description={t("description")} icon={Brain} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Total Tasks" value={summary.totalTasks} icon={ListTodo} />
-          <StatCard title="Pending" value={summary.pendingTasks} icon={Clock} />
-          <StatCard title="Completed" value={summary.completedTasks} icon={CheckCircle} />
-          <StatCard title="Failed" value={summary.failedTasks} icon={XCircle} />
+          <StatCard title={t("statTotalTasks")} value={summary.totalTasks} icon={ListTodo} />
+          <StatCard title={t("statPending")} value={summary.pendingTasks} icon={Clock} />
+          <StatCard title={t("statCompleted")} value={summary.completedTasks} icon={CheckCircle} />
+          <StatCard title={t("statFailed")} value={summary.failedTasks} icon={XCircle} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setType} placeholder="Search by type..." />
+          <SearchInput onSearch={setType} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="running">Running</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="pending">{t("filterPending")}</SelectItem>
+            <SelectItem value="running">{t("filterRunning")}</SelectItem>
+            <SelectItem value="completed">{t("filterCompleted")}</SelectItem>
+            <SelectItem value="failed">{t("filterFailed")}</SelectItem>
+            <SelectItem value="cancelled">{t("filterCancelled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -127,103 +129,103 @@ export default function AITasksPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
-              render: (t: AITaskItem) => (
-                <span className="text-sm text-muted-foreground">{t.userName}</span>
+              header: t("columnUser"),
+              render: (item: AITaskItem) => (
+                <span className="text-sm text-muted-foreground">{item.userName}</span>
               ),
             },
             {
               key: "type",
-              header: "Type",
-              render: (t: AITaskItem) => (
-                <span className="text-sm font-medium">{t.type}</span>
+              header: t("columnType"),
+              render: (item: AITaskItem) => (
+                <span className="text-sm font-medium">{item.type}</span>
               ),
             },
             {
               key: "status",
-              header: "Status",
-              render: (t: AITaskItem) => (
-                <Badge variant={statusVariant[t.status] || "secondary"}>{t.status}</Badge>
+              header: t("columnStatus"),
+              render: (item: AITaskItem) => (
+                <Badge variant={statusVariant[item.status] || "secondary"}>{item.status}</Badge>
               ),
             },
             {
               key: "provider",
-              header: "Provider",
-              render: (t: AITaskItem) => (
-                <span className="text-sm text-muted-foreground">{t.provider || "-"}</span>
+              header: t("columnProvider"),
+              render: (item: AITaskItem) => (
+                <span className="text-sm text-muted-foreground">{item.provider || "-"}</span>
               ),
             },
             {
               key: "model",
-              header: "Model",
-              render: (t: AITaskItem) => (
-                <span className="text-sm text-muted-foreground">{t.model || "-"}</span>
+              header: t("columnModel"),
+              render: (item: AITaskItem) => (
+                <span className="text-sm text-muted-foreground">{item.model || "-"}</span>
               ),
             },
             {
               key: "tokensUsed",
-              header: "Tokens",
-              render: (t: AITaskItem) => (
-                <span className="text-sm">{t.tokensUsed || 0}</span>
+              header: t("columnTokens"),
+              render: (item: AITaskItem) => (
+                <span className="text-sm">{item.tokensUsed || 0}</span>
               ),
             },
             {
               key: "progress",
-              header: "Progress",
-              render: (t: AITaskItem) => (
-                <span className="text-sm">{t.progress != null ? `${t.progress}%` : "-"}</span>
+              header: t("columnProgress"),
+              render: (item: AITaskItem) => (
+                <span className="text-sm">{item.progress != null ? `${item.progress}%` : "-"}</span>
               ),
             },
             {
               key: "relatedEntityType",
-              header: "Entity",
-              render: (t: AITaskItem) => (
-                <span className="text-xs text-muted-foreground">{t.relatedEntityType || "-"}</span>
+              header: t("columnEntity"),
+              render: (item: AITaskItem) => (
+                <span className="text-xs text-muted-foreground">{item.relatedEntityType || "-"}</span>
               ),
             },
             {
               key: "errorMessage",
-              header: "Error",
-              render: (t: AITaskItem) => (
-                <span className="max-w-[200px] truncate text-xs text-destructive" title={t.errorMessage}>
-                  {t.errorMessage ? (t.errorMessage.length > 40 ? t.errorMessage.slice(0, 40) + "..." : t.errorMessage) : "-"}
+              header: t("columnError"),
+              render: (item: AITaskItem) => (
+                <span className="max-w-[200px] truncate text-xs text-destructive" title={item.errorMessage}>
+                  {item.errorMessage ? (item.errorMessage.length > 40 ? item.errorMessage.slice(0, 40) + "..." : item.errorMessage) : "-"}
                 </span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
-              render: (t: AITaskItem) => (
-                <span className="text-xs text-muted-foreground">{formatTime(t.createdAt)}</span>
+              header: t("columnCreated"),
+              render: (item: AITaskItem) => (
+                <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),
             },
             {
               key: "startedAt",
-              header: "Started",
-              render: (t: AITaskItem) => (
-                <span className="text-xs text-muted-foreground">{formatTime(t.startedAt)}</span>
+              header: t("columnStarted"),
+              render: (item: AITaskItem) => (
+                <span className="text-xs text-muted-foreground">{formatTime(item.startedAt)}</span>
               ),
             },
             {
               key: "completedAt",
-              header: "Completed",
-              render: (t: AITaskItem) => (
-                <span className="text-xs text-muted-foreground">{formatTime(t.completedAt)}</span>
+              header: t("columnCompletedAt"),
+              render: (item: AITaskItem) => (
+                <span className="text-xs text-muted-foreground">{formatTime(item.completedAt)}</span>
               ),
             },
             {
               key: "actions",
               header: "",
-              render: (t: AITaskItem) => (
+              render: (item: AITaskItem) => (
                 <div className="flex gap-1">
-                  {(t.status === "pending" || t.status === "running") && (
+                  {(item.status === "pending" || item.status === "running") && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-destructive"
-                      onClick={(e) => { e.stopPropagation(); setCancelTask(t) }}
+                      onClick={(e) => { e.stopPropagation(); setCancelTask(item) }}
                     >
-                      <Ban className="mr-1 h-3 w-3" />Cancel
+                      <Ban className="mr-1 h-3 w-3" />{t("buttonCancel")}
                     </Button>
                   )}
                 </div>
@@ -236,9 +238,9 @@ export default function AITasksPage() {
       <ConfirmDialog
         open={!!cancelTask}
         onOpenChange={(o) => { if (!o) setCancelTask(null) }}
-        title="Cancel Task"
-        description={`Are you sure you want to cancel this ${cancelTask?.type || ""} task?`}
-        confirmLabel="Cancel Task"
+        title={t("dialogCancelTitle")}
+        description={t("dialogCancelDescription", { type: cancelTask?.type || "" })}
+        confirmLabel={t("dialogConfirmCancel")}
         variant="destructive"
         onConfirm={handleCancel}
       />

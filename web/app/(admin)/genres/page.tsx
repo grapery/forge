@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { genreApi } from "@/lib/api/admin"
@@ -25,13 +26,14 @@ import { toast } from "sonner"
 
 
 export default function GenresPage() {
+  const t = useTranslations("genres")
+  const tc = useTranslations("common")
   const [items, setItems] = useState<GenreCatalogItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const pageSize = 20
 
-  // Edit dialog
   const [editItem, setEditItem] = useState<GenreCatalogItem | null>(null)
   const [editTitleZh, setEditTitleZh] = useState("")
   const [editTitleEn, setEditTitleEn] = useState("")
@@ -72,11 +74,11 @@ export default function GenresPage() {
         emoji: editEmoji,
         sortOrder: editSortOrder,
       })
-      toast.success(`Genre "${editTitleEn}" updated`)
+      toast.success(t("toastUpdated", { name: editTitleEn }))
       setEditItem(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Failed to update genre")
+      toast.error(err.message || t("toastUpdateFailed"))
     } finally {
       setSaving(false)
     }
@@ -93,7 +95,7 @@ export default function GenresPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Genres" description="Manage system genre catalog" icon={BookOpen} />
+      <PageHeader title={t("title")} description={t("description")} icon={BookOpen} />
 
       {loading ? (
         <PageSkeleton />
@@ -105,63 +107,63 @@ export default function GenresPage() {
           columns={[
             {
               key: "slug",
-              header: "Slug",
+              header: t("columnSlug"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm font-medium">{g.slug}</span>
               ),
             },
             {
               key: "titleZh",
-              header: "Title (ZH)",
+              header: t("columnTitleZh"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm">{g.titleZh || "-"}</span>
               ),
             },
             {
               key: "titleEn",
-              header: "Title (EN)",
+              header: t("columnTitleEn"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm">{g.titleEn || "-"}</span>
               ),
             },
             {
               key: "titleJa",
-              header: "Title (JA)",
+              header: t("columnTitleJa"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm">{g.titleJa || "-"}</span>
               ),
             },
             {
               key: "emoji",
-              header: "Emoji",
+              header: t("columnEmoji"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm">{g.emoji || "-"}</span>
               ),
             },
             {
               key: "source",
-              header: "Source",
+              header: t("columnSource"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-xs text-muted-foreground">{g.source || "-"}</span>
               ),
             },
             {
               key: "sortOrder",
-              header: "Sort Order",
+              header: t("columnSortOrder"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm">{g.sortOrder}</span>
               ),
             },
             {
               key: "pageIndex",
-              header: "Page Index",
+              header: t("columnPageIndex"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-sm">{g.pageIndex}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (g: GenreCatalogItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(g.createdAt)}</span>
               ),
@@ -176,7 +178,7 @@ export default function GenresPage() {
                     size="sm"
                     onClick={(e) => { e.stopPropagation(); openEdit(g) }}
                   >
-                    <Pencil className="mr-1 h-3 w-3" />Edit
+                    <Pencil className="mr-1 h-3 w-3" />{t("buttonEdit")}
                   </Button>
                 </div>
               ),
@@ -185,51 +187,50 @@ export default function GenresPage() {
         />
       )}
 
-      {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={(o) => { if (!o) setEditItem(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Genre</DialogTitle>
+            <DialogTitle>{t("dialogEditTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-title-zh">Title (ZH)</Label>
+              <Label htmlFor="edit-title-zh">{t("dialogFieldTitleZh")}</Label>
               <Input
                 id="edit-title-zh"
                 value={editTitleZh}
                 onChange={(e) => setEditTitleZh(e.target.value)}
-                placeholder="Chinese title"
+                placeholder={t("dialogPlaceholderTitleZh")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-title-en">Title (EN)</Label>
+              <Label htmlFor="edit-title-en">{t("dialogFieldTitleEn")}</Label>
               <Input
                 id="edit-title-en"
                 value={editTitleEn}
                 onChange={(e) => setEditTitleEn(e.target.value)}
-                placeholder="English title"
+                placeholder={t("dialogPlaceholderTitleEn")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-title-ja">Title (JA)</Label>
+              <Label htmlFor="edit-title-ja">{t("dialogFieldTitleJa")}</Label>
               <Input
                 id="edit-title-ja"
                 value={editTitleJa}
                 onChange={(e) => setEditTitleJa(e.target.value)}
-                placeholder="Japanese title"
+                placeholder={t("dialogPlaceholderTitleJa")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-emoji">Emoji</Label>
+              <Label htmlFor="edit-emoji">{t("dialogFieldEmoji")}</Label>
               <Input
                 id="edit-emoji"
                 value={editEmoji}
                 onChange={(e) => setEditEmoji(e.target.value)}
-                placeholder="Genre emoji"
+                placeholder={t("dialogPlaceholderEmoji")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-sort-order">Sort Order</Label>
+              <Label htmlFor="edit-sort-order">{t("dialogFieldSortOrder")}</Label>
               <Input
                 id="edit-sort-order"
                 type="number"
@@ -240,9 +241,9 @@ export default function GenresPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditItem(null)}>{tc("cancel")}</Button>
             <Button onClick={handleEdit} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? tc("processing") : tc("save")}
             </Button>
           </DialogFooter>
         </DialogContent>

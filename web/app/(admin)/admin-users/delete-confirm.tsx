@@ -4,6 +4,7 @@ import { adminUserApi } from "@/lib/api/admin"
 import type { AdminUser } from "@/lib/types"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 interface DeleteAdminConfirmProps {
   open: boolean
@@ -13,6 +14,7 @@ interface DeleteAdminConfirmProps {
 }
 
 export function DeleteAdminConfirm({ open, onOpenChange, admin, onSuccess }: DeleteAdminConfirmProps) {
+  const t = useTranslations("deleteAdminConfirm")
   const handleDelete = async () => {
     if (!admin) return
     try {
@@ -21,7 +23,7 @@ export function DeleteAdminConfirm({ open, onOpenChange, admin, onSuccess }: Del
       onOpenChange(false)
       onSuccess()
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete admin user")
+      toast.error(err.response?.data?.message || err.message || t("toastDeleteFailed"))
     }
   }
 
@@ -29,9 +31,9 @@ export function DeleteAdminConfirm({ open, onOpenChange, admin, onSuccess }: Del
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Delete Admin User"
+      title={t("dialogTitle")}
       description={`Are you sure you want to delete "${admin?.username}"? This action cannot be undone.`}
-      confirmLabel="Delete"
+      confirmLabel={t("buttonDelete")}
       variant="destructive"
       onConfirm={handleDelete}
     />

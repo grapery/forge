@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { adminUserApi } from "@/lib/api/admin"
@@ -33,6 +34,7 @@ import { PermissionEditor } from "@/components/admin/permission-editor"
 
 
 export default function AdminUsersPage() {
+  const t = useTranslations("adminUsers")
   const { user: currentUser } = useAuth()
   const [items, setItems] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
@@ -72,8 +74,8 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Admin Users"
-        description="Manage admin accounts and roles"
+        title={t("title")}
+        description={t("description")}
         icon={Shield}
         actions={
           isSuperAdmin ? (
@@ -95,7 +97,7 @@ export default function AdminUsersPage() {
           columns={[
             {
               key: "user",
-              header: "User",
+              header: t("columnUser"),
               render: (u: AdminUser) => (
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
@@ -110,7 +112,7 @@ export default function AdminUsersPage() {
             },
             {
               key: "role",
-              header: "Role",
+              header: t("columnRole"),
               render: (u: AdminUser) => <RoleBadge role={u.role} />,
             },
             {
@@ -120,7 +122,7 @@ export default function AdminUsersPage() {
             },
             {
               key: "lastLogin",
-              header: "Last Login",
+              header: t("columnLastLogin"),
               render: (u: AdminUser) => (
                 <span className="text-xs text-muted-foreground">{formatTime(u.lastLoginAt)}</span>
               ),

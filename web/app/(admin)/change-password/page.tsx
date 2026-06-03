@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 export default function ChangePasswordPage() {
+  const t = useTranslations("changePassword")
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
@@ -48,13 +50,13 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Change Password" description="Update your account password" />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <Card className="max-w-md">
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="old-password">Current Password</Label>
+              <Label htmlFor="old-password">{t("fieldCurrentPassword")}</Label>
               <Input
                 id="old-password"
                 type="password"
@@ -63,7 +65,7 @@ export default function ChangePasswordPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password">{t("fieldNewPassword")}</Label>
               <Input
                 id="new-password"
                 type="password"
@@ -72,7 +74,7 @@ export default function ChangePasswordPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Label htmlFor="confirm-password">{t("fieldConfirmPassword")}</Label>
               <Input
                 id="confirm-password"
                 type="password"

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { auditLogApi } from "@/lib/api/admin"
@@ -26,6 +27,7 @@ const actionColors: Record<string, string> = {
 }
 
 export default function AuditLogPage() {
+  const t = useTranslations("auditLog")
   const [items, setItems] = useState<AdminOperationLog[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -57,18 +59,18 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Audit Log" description="Track all admin operations" icon={ScrollText} />
+      <PageHeader title={t("title")} description={t("description")} icon={ScrollText} />
 
       <div className="flex items-center gap-4">
         <Select value={action || "all"} onValueChange={(v) => { setAction(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Actions" />
+            <SelectValue placeholder={t("filterAllActions")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Actions</SelectItem>
-            <SelectItem value="create">Create</SelectItem>
-            <SelectItem value="update">Update</SelectItem>
-            <SelectItem value="delete">Delete</SelectItem>
+            <SelectItem value="all">{t("filterAllActions")}</SelectItem>
+            <SelectItem value="create">{t("filterCreate")}</SelectItem>
+            <SelectItem value="update">{t("filterUpdate")}</SelectItem>
+            <SelectItem value="delete">{t("filterDelete")}</SelectItem>
             <SelectItem value="login">Login</SelectItem>
           </SelectContent>
         </Select>
@@ -99,7 +101,7 @@ export default function AuditLogPage() {
           columns={[
             {
               key: "action",
-              header: "Action",
+              header: t("columnAction"),
               render: (log: AdminOperationLog) => (
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actionColors[log.action] || "bg-gray-100 text-gray-800"}`}>
                   {log.action}
@@ -108,7 +110,7 @@ export default function AuditLogPage() {
             },
             {
               key: "resource",
-              header: "Resource",
+              header: t("columnResource"),
               render: (log: AdminOperationLog) => (
                 <div>
                   <span className="text-sm">{log.resource}</span>
@@ -120,17 +122,17 @@ export default function AuditLogPage() {
             },
             {
               key: "admin",
-              header: "Admin",
+              header: t("columnAdmin"),
               render: (log: AdminOperationLog) => <span className="text-sm">{log.adminName}</span>,
             },
             {
               key: "ip",
-              header: "IP",
+              header: t("columnIp"),
               render: (log: AdminOperationLog) => <span className="text-xs font-mono text-muted-foreground">{log.ip}</span>,
             },
             {
               key: "time",
-              header: "Time",
+              header: t("columnTime"),
               render: (log: AdminOperationLog) => (
                 <span className="text-xs text-muted-foreground">{new Date(log.createdAt * 1000).toLocaleString()}</span>
               ),

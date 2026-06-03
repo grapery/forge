@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { tokenApi } from "@/lib/api/admin"
@@ -21,6 +22,7 @@ import { Coins, ArrowDown, ArrowUp, RotateCcw, Gift } from "lucide-react"
 
 
 export default function TokensPage() {
+  const t = useTranslations("tokens")
   const [items, setItems] = useState<TokenTransactionItem[]>([])
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<TokenSummary | null>(null)
@@ -60,28 +62,28 @@ export default function TokensPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tokens" description="Token transaction history" icon={Coins} />
+      <PageHeader title={t("title")} description={t("description")} icon={Coins} />
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Consumed" value={summary.totalConsumed} icon={ArrowDown} />
-          <StatCard title="Recharged" value={summary.totalRecharged} icon={ArrowUp} />
-          <StatCard title="Refunded" value={summary.totalRefunded} icon={RotateCcw} />
-          <StatCard title="Gifted" value={summary.totalGifted} icon={Coins} />
+          <StatCard title={t("statConsumed")} value={summary.totalConsumed} icon={ArrowDown} />
+          <StatCard title={t("statRecharged")} value={summary.totalRecharged} icon={ArrowUp} />
+          <StatCard title={t("statRefunded")} value={summary.totalRefunded} icon={RotateCcw} />
+          <StatCard title={t("statGifted")} value={summary.totalGifted} icon={Coins} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <Select value={type || "all"} onValueChange={(v) => { setType(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="consumed">Consumed</SelectItem>
-            <SelectItem value="recharged">Recharged</SelectItem>
-            <SelectItem value="refunded">Refunded</SelectItem>
-            <SelectItem value="gifted">Gifted</SelectItem>
+            <SelectItem value="all">{t("filterAllTypes")}</SelectItem>
+            <SelectItem value="consumed">{t("filterConsumed")}</SelectItem>
+            <SelectItem value="recharged">{t("filterRecharged")}</SelectItem>
+            <SelectItem value="refunded">{t("filterRefunded")}</SelectItem>
+            <SelectItem value="gifted">{t("filterGifted")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -96,14 +98,14 @@ export default function TokensPage() {
           columns={[
             {
               key: "userName",
-              header: "User",
+              header: t("columnUser"),
               render: (t: TokenTransactionItem) => (
                 <span className="text-sm font-medium">{t.userName}</span>
               ),
             },
             {
               key: "type",
-              header: "Type",
+              header: t("columnType"),
               render: (t: TokenTransactionItem) => (
                 <Badge variant={t.type === "consumed" ? "secondary" : t.type === "recharged" ? "default" : t.type === "gifted" ? "outline" : "secondary"}>
                   {t.type}
@@ -112,7 +114,7 @@ export default function TokensPage() {
             },
             {
               key: "amount",
-              header: "Amount",
+              header: t("columnAmount"),
               render: (t: TokenTransactionItem) => (
                 <span className={`text-sm font-medium ${t.amount >= 0 ? "text-green-600" : "text-red-600"}`}>
                   {t.amount >= 0 ? "+" : ""}{t.amount}
@@ -121,35 +123,35 @@ export default function TokensPage() {
             },
             {
               key: "balance",
-              header: "Balance",
+              header: t("columnBalance"),
               render: (t: TokenTransactionItem) => (
                 <span className="text-sm">{t.balance}</span>
               ),
             },
             {
               key: "source",
-              header: "Source",
+              header: t("columnSource"),
               render: (t: TokenTransactionItem) => (
                 <span className="text-sm text-muted-foreground">{t.source || "-"}</span>
               ),
             },
             {
               key: "description",
-              header: "Description",
+              header: t("columnDescription"),
               render: (t: TokenTransactionItem) => (
                 <span className="text-xs text-muted-foreground">{t.description || "-"}</span>
               ),
             },
             {
               key: "relatedId",
-              header: "Related ID",
+              header: t("columnRelatedId"),
               render: (t: TokenTransactionItem) => (
                 <span className="text-xs text-muted-foreground">{t.relatedId || "-"}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (t: TokenTransactionItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(t.createdAt)}</span>
               ),

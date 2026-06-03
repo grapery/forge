@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { tagApi } from "@/lib/api/admin"
@@ -33,6 +34,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function TagsPage() {
+  const t = useTranslations("tags")
+  const tc = useTranslations("common")
   const [items, setItems] = useState<TagItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -41,21 +44,17 @@ export default function TagsPage() {
   const [category, setCategory] = useState("")
   const pageSize = 20
 
-  // Create dialog
   const [createOpen, setCreateOpen] = useState(false)
   const [createName, setCreateName] = useState("")
   const [createCategory, setCreateCategory] = useState("general")
   const [creating, setCreating] = useState(false)
 
-  // Edit dialog
   const [editItem, setEditItem] = useState<TagItem | null>(null)
   const [editName, setEditName] = useState("")
   const [editCategory, setEditCategory] = useState("")
   const [saving, setSaving] = useState(false)
 
-  // Delete confirm
   const [deleteItem, setDeleteItem] = useState<TagItem | null>(null)
-  const [deleting, setDeleting] = useState(false)
 
   const fetchData = useCallback(() => {
     setLoading(true)
@@ -83,13 +82,13 @@ export default function TagsPage() {
     setCreating(true)
     try {
       await tagApi.create({ name: createName.trim(), category: createCategory })
-      toast.success(`Tag "${createName}" created`)
+      toast.success(t("toastCreated", { name: createName }))
       setCreateOpen(false)
       setCreateName("")
       setCreateCategory("general")
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Failed to create tag")
+      toast.error(err.message || t("toastCreateFailed"))
     } finally {
       setCreating(false)
     }
@@ -100,11 +99,11 @@ export default function TagsPage() {
     setSaving(true)
     try {
       await tagApi.update(editItem.id, { name: editName.trim(), category: editCategory })
-      toast.success(`Tag "${editName}" updated`)
+      toast.success(t("toastUpdated", { name: editName }))
       setEditItem(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Failed to update tag")
+      toast.error(err.message || t("toastUpdateFailed"))
     } finally {
       setSaving(false)
     }
@@ -112,16 +111,13 @@ export default function TagsPage() {
 
   const handleDelete = async () => {
     if (!deleteItem) return
-    setDeleting(true)
     try {
       await tagApi.delete(deleteItem.id)
-      toast.success(`Tag "${deleteItem.name}" deleted`)
+      toast.success(t("toastDeleted", { name: deleteItem.name }))
       setDeleteItem(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete tag")
-    } finally {
-      setDeleting(false)
+      toast.error(err.message || t("toastDeleteFailed"))
     }
   }
 
@@ -134,29 +130,29 @@ export default function TagsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tags"
-        description="Manage platform tags"
+        title={t("title")}
+        description={t("description")}
         icon={Tags}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />Create Tag
+            <Plus className="mr-2 h-4 w-4" />{t("buttonCreateTag")}
           </Button>
         }
       />
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search tags..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={category || "all"} onValueChange={(v) => setCategory(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Categories" />
+            <SelectValue placeholder={t("filterAllCategories")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="story">Story</SelectItem>
-            <SelectItem value="character">Character</SelectItem>
-            <SelectItem value="general">General</SelectItem>
+            <SelectItem value="all">{t("filterAllCategories")}</SelectItem>
+            <SelectItem value="story">{t("filterStory")}</SelectItem>
+            <SelectItem value="character">{t("filterCharacter")}</SelectItem>
+            <SelectItem value="general">{t("filterGeneral")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -171,51 +167,51 @@ export default function TagsPage() {
           columns={[
             {
               key: "name",
-              header: "Name",
-              render: (t: TagItem) => (
-                <span className="text-sm font-medium">{t.name}</span>
+              header: t("columnName"),
+              render: (item: TagItem) => (
+                <span className="text-sm font-medium">{item.name}</span>
               ),
             },
             {
               key: "category",
-              header: "Category",
-              render: (t: TagItem) => (
-                <Badge variant="secondary">{t.category}</Badge>
+              header: t("columnCategory"),
+              render: (item: TagItem) => (
+                <Badge variant="secondary">{item.category}</Badge>
               ),
             },
             {
               key: "usageCount",
-              header: "Usage Count",
-              render: (t: TagItem) => (
-                <span className="text-sm">{t.usageCount}</span>
+              header: t("columnUsageCount"),
+              render: (item: TagItem) => (
+                <span className="text-sm">{item.usageCount}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
-              render: (t: TagItem) => (
-                <span className="text-xs text-muted-foreground">{formatTime(t.createdAt)}</span>
+              header: t("columnCreated"),
+              render: (item: TagItem) => (
+                <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),
             },
             {
               key: "actions",
               header: "",
-              render: (t: TagItem) => (
+              render: (item: TagItem) => (
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => { e.stopPropagation(); openEdit(t) }}
+                    onClick={(e) => { e.stopPropagation(); openEdit(item) }}
                   >
-                    <Pencil className="mr-1 h-3 w-3" />Edit
+                    <Pencil className="mr-1 h-3 w-3" />{t("buttonEdit")}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-destructive"
-                    onClick={(e) => { e.stopPropagation(); setDeleteItem(t) }}
+                    onClick={(e) => { e.stopPropagation(); setDeleteItem(item) }}
                   >
-                    <Trash2 className="mr-1 h-3 w-3" />Delete
+                    <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
                   </Button>
                 </div>
               ),
@@ -224,91 +220,88 @@ export default function TagsPage() {
         />
       )}
 
-      {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Tag</DialogTitle>
+            <DialogTitle>{t("dialogCreateTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="create-name">Name</Label>
+              <Label htmlFor="create-name">{t("dialogFieldName")}</Label>
               <Input
                 id="create-name"
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
-                placeholder="Tag name"
+                placeholder={t("dialogPlaceholderName")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-category">Category</Label>
+              <Label htmlFor="create-category">{t("dialogFieldCategory")}</Label>
               <Select value={createCategory} onValueChange={setCreateCategory}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t("dialogPlaceholderCategory")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="story">Story</SelectItem>
-                  <SelectItem value="character">Character</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="story">{t("filterStory")}</SelectItem>
+                  <SelectItem value="character">{t("filterCharacter")}</SelectItem>
+                  <SelectItem value="general">{t("filterGeneral")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{tc("cancel")}</Button>
             <Button onClick={handleCreate} disabled={creating || !createName.trim()}>
-              {creating ? "Creating..." : "Create"}
+              {creating ? tc("processing") : t("buttonCreateTag")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog open={!!editItem} onOpenChange={(o) => { if (!o) setEditItem(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Tag</DialogTitle>
+            <DialogTitle>{t("dialogEditTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Name</Label>
+              <Label htmlFor="edit-name">{t("dialogFieldName")}</Label>
               <Input
                 id="edit-name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder="Tag name"
+                placeholder={t("dialogPlaceholderName")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-category">Category</Label>
+              <Label htmlFor="edit-category">{t("dialogFieldCategory")}</Label>
               <Select value={editCategory} onValueChange={setEditCategory}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={t("dialogPlaceholderCategory")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="story">Story</SelectItem>
-                  <SelectItem value="character">Character</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="story">{t("filterStory")}</SelectItem>
+                  <SelectItem value="character">{t("filterCharacter")}</SelectItem>
+                  <SelectItem value="general">{t("filterGeneral")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditItem(null)}>{tc("cancel")}</Button>
             <Button onClick={handleEdit} disabled={saving || !editName.trim()}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? tc("processing") : tc("save")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
       <ConfirmDialog
         open={!!deleteItem}
         onOpenChange={(o) => { if (!o) setDeleteItem(null) }}
-        title="Delete Tag"
-        description={`Are you sure you want to delete "${deleteItem?.name}"?`}
-        confirmLabel="Delete"
+        title={t("dialogDeleteTitle")}
+        description={t("dialogDeleteDescription", { name: deleteItem?.name || "" })}
+        confirmLabel={t("buttonDelete")}
         variant="destructive"
         onConfirm={handleDelete}
       />

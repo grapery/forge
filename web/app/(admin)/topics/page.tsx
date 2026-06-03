@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { topicApi } from "@/lib/api/admin"
@@ -19,6 +20,7 @@ import { useRouter } from "next/navigation"
 
 
 export default function TopicsPage() {
+  const t = useTranslations("topics")
   const router = useRouter()
   const [items, setItems] = useState<TopicStats[]>([])
   const [total, setTotal] = useState(0)
@@ -47,10 +49,10 @@ export default function TopicsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Topics" description="Browse trending topics and hashtags" icon={Hash} />
+      <PageHeader title={t("title")} description={t("description")} icon={Hash} />
 
       <div className="w-64">
-        <SearchInput onSearch={setSearch} placeholder="Search topics..." />
+        <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
       </div>
 
       {loading ? (
@@ -64,7 +66,7 @@ export default function TopicsPage() {
           columns={[
             {
               key: "topic",
-              header: "Topic",
+              header: t("columnTopic"),
               render: (t: TopicStats) => (
                 <div className="flex items-center gap-2">
                   <Hash className="h-4 w-4 text-muted-foreground" />
@@ -74,7 +76,7 @@ export default function TopicsPage() {
             },
             {
               key: "fragments",
-              header: "Fragments",
+              header: t("columnFragments"),
               render: (t: TopicStats) => (
                 <div className="flex items-center gap-1">
                   <Layers className="h-3 w-3 text-muted-foreground" />
@@ -84,7 +86,7 @@ export default function TopicsPage() {
             },
             {
               key: "stories",
-              header: "Stories",
+              header: t("columnStories"),
               render: (t: TopicStats) => (
                 <div className="flex items-center gap-1">
                   <BookOpen className="h-3 w-3 text-muted-foreground" />

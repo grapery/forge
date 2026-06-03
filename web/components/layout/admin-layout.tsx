@@ -3,41 +3,16 @@
 import { useAuth } from "@/providers/auth-provider"
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect } from "react"
+import { useTranslations } from "next-intl"
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Shield,
-  Activity,
-  LogOut,
-  MessageSquare,
-  Hash,
-  Sparkles,
-  KeyRound,
-  Ghost,
-  Brain,
-  CreditCard,
-  Coins,
-  Tags,
-  Palette,
-  BookOpen,
-  Mail,
-  Search,
-  Megaphone,
-  UserX,
-  Smartphone,
-  Bot,
-  Terminal,
-  Receipt,
-  Flag,
-  Bell,
-  Crown,
-  UserCheck,
-  ScrollText,
-  FileSearch,
-  Anvil,
+  LayoutDashboard, Users, FileText, Shield, LogOut,
+  MessageSquare, Hash, Sparkles, KeyRound, Ghost, Brain,
+  CreditCard, Coins, Tags, Palette, BookOpen, Mail, Search,
+  UserX, Smartphone, Bot, Terminal, Receipt, Flag, Bell,
+  Crown, UserCheck, ScrollText, Anvil, Globe,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/providers/locale-provider"
 
 type NavItem = {
   href: string
@@ -49,47 +24,51 @@ type NavItem = {
 }
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "operator", "viewer"] },
-  // Content
-  { href: "/content", label: "Content", icon: FileText, roles: ["super_admin", "admin"], group: "Content", permission: "content" },
-  { href: "/characters", label: "Characters", icon: Ghost, roles: ["super_admin", "admin"], group: "Content", permission: "characters" },
-  { href: "/comments", label: "Comments", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Content", permission: "comments" },
-  { href: "/tags", label: "Tags", icon: Tags, roles: ["super_admin", "admin"], group: "Content", permission: "tags" },
-  { href: "/genres", label: "Genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "Content", permission: "genres" },
-  // AI
-  { href: "/ai-tasks", label: "AI Tasks", icon: Brain, roles: ["super_admin", "admin"], group: "AI", permission: "ai-tasks" },
-  { href: "/ai-generations", label: "AI Generations", icon: Sparkles, roles: ["super_admin", "admin"], group: "AI", permission: "ai-generations" },
-  { href: "/agents", label: "Agents", icon: Bot, roles: ["super_admin", "admin"], group: "AI", permission: "agents" },
-  { href: "/prompts", label: "Prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "AI", permission: "prompts" },
-  { href: "/styles", label: "Styles", icon: Palette, roles: ["super_admin", "admin"], group: "AI", permission: "styles" },
-  // Users
-  { href: "/users", label: "Users", icon: Users, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
-  { href: "/account-deletions", label: "Account Deletions", icon: UserX, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
-  { href: "/devices", label: "Devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "Users", permission: "users" },
-  // Finance
-  { href: "/memberships", label: "Memberships", icon: Crown, roles: ["super_admin", "admin"], group: "Finance", permission: "memberships" },
-  { href: "/orders", label: "Orders", icon: Receipt, roles: ["super_admin", "admin"], group: "Finance", permission: "orders" },
-  { href: "/tokens", label: "Tokens", icon: Coins, roles: ["super_admin", "admin"], group: "Finance", permission: "tokens" },
-  // Growth
-  { href: "/invitation-codes", label: "Invitation Codes", icon: Mail, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
-  { href: "/referrals", label: "Referrals", icon: UserCheck, roles: ["super_admin", "admin"], group: "Growth", permission: "invitation-codes" },
-  { href: "/search-analytics", label: "Search Analytics", icon: Search, roles: ["super_admin", "admin"], group: "Growth", permission: "search" },
-  // Community
-  { href: "/feedback", label: "Feedback", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "feedback" },
-  { href: "/reports", label: "Reports", icon: Flag, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "reports" },
-  { href: "/topics", label: "Topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "Community", permission: "topics" },
-  { href: "/notifications", label: "Broadcast", icon: Bell, roles: ["super_admin", "admin"], group: "Community", permission: "notifications" },
-  // System
-  { href: "/admin-users", label: "Admin Users", icon: Shield, roles: ["super_admin"], group: "System" },
-  { href: "/audit-log", label: "Audit Log", icon: ScrollText, roles: ["super_admin", "admin"], group: "System", permission: "audit-log" },
+  { href: "/dashboard", label: "dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "operator", "viewer"] },
+  // Operations
+  { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin"], group: "operations", permission: "content" },
+  { href: "/characters", label: "characters", icon: Ghost, roles: ["super_admin", "admin"], group: "operations", permission: "characters" },
+  { href: "/comments", label: "comments", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "operations", permission: "comments" },
+  { href: "/tags", label: "tags", icon: Tags, roles: ["super_admin", "admin"], group: "operations", permission: "tags" },
+  { href: "/genres", label: "genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", permission: "genres" },
+  { href: "/ai-tasks", label: "aiTasks", icon: Brain, roles: ["super_admin", "admin"], group: "operations", permission: "ai-tasks" },
+  { href: "/ai-generations", label: "aiGenerations", icon: Sparkles, roles: ["super_admin", "admin"], group: "operations", permission: "ai-generations" },
+  { href: "/agents", label: "agents", icon: Bot, roles: ["super_admin", "admin"], group: "operations", permission: "agents" },
+  { href: "/prompts", label: "prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "operations", permission: "prompts" },
+  { href: "/users", label: "users", icon: Users, roles: ["super_admin", "admin"], group: "operations", permission: "users" },
+  { href: "/account-deletions", label: "accountDeletions", icon: UserX, roles: ["super_admin", "admin"], group: "operations", permission: "users" },
+  { href: "/devices", label: "devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "operations", permission: "users" },
+  { href: "/memberships", label: "memberships", icon: Crown, roles: ["super_admin", "admin"], group: "operations", permission: "memberships" },
+  { href: "/orders", label: "orders", icon: Receipt, roles: ["super_admin", "admin"], group: "operations", permission: "orders" },
+  { href: "/tokens", label: "tokens", icon: Coins, roles: ["super_admin", "admin"], group: "operations", permission: "tokens" },
+  { href: "/invitation-codes", label: "invitationCodes", icon: Mail, roles: ["super_admin", "admin"], group: "operations", permission: "invitation-codes" },
+  { href: "/referrals", label: "referrals", icon: UserCheck, roles: ["super_admin", "admin"], group: "operations", permission: "invitation-codes" },
+  { href: "/search-analytics", label: "searchAnalytics", icon: Search, roles: ["super_admin", "admin"], group: "operations", permission: "search" },
+  { href: "/feedback", label: "feedback", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "operations", permission: "feedback" },
+  { href: "/reports", label: "reports", icon: Flag, roles: ["super_admin", "admin", "operator"], group: "operations", permission: "reports" },
+  { href: "/topics", label: "topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "operations", permission: "topics" },
+  { href: "/notifications", label: "broadcast", icon: Bell, roles: ["super_admin", "admin"], group: "operations", permission: "notifications" },
+  // Settings
+  { href: "/admin-users", label: "adminUsers", icon: Shield, roles: ["super_admin"], group: "settings" },
+  { href: "/audit-log", label: "auditLog", icon: ScrollText, roles: ["super_admin", "admin"], group: "settings", permission: "audit-log" },
+  { href: "/styles", label: "styles", icon: Palette, roles: ["super_admin", "admin"], group: "settings", permission: "styles" },
+  { href: "/change-password", label: "changePassword", icon: KeyRound, roles: ["super_admin", "admin", "operator", "viewer"], group: "settings" },
 ]
 
-const groupOrder = ["", "Content", "AI", "Users", "Finance", "Growth", "Community", "System"]
+const groupOrder = ["", "operations", "settings"]
+const groupLabels: Record<string, string> = {
+  "": "",
+  "operations": "groupOperations",
+  "settings": "groupSettings",
+}
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const t = useTranslations("nav")
+  const tc = useTranslations("common")
+  const { locale, setLocale } = useLocale()
 
   useEffect(() => {
     if (!loading && !user) {
@@ -102,7 +81,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen items-center justify-center animate-fade-in">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <p className="text-sm text-muted-foreground">{tc("loading")}</p>
         </div>
       </div>
     )
@@ -128,20 +107,19 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <aside className="w-60 border-r bg-sidebar-bg flex flex-col shadow-sm">
         <div className="flex h-14 items-center gap-2.5 border-b px-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
             <Anvil className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-semibold tracking-tight">Forge Admin</span>
+          <span className="font-semibold tracking-tight">{t("brandName")}</span>
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           {groupedNav.map((group) => (
             <div key={group.label} className="mb-2">
               {group.label && (
                 <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest">
-                  {group.label}
+                  {t(groupLabels[group.label])}
                 </div>
               )}
               {group.items.map((item) => (
@@ -156,7 +134,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <item.icon className="h-4 w-4" />
-                  {item.label}
+                  {t(item.label)}
                 </button>
               ))}
             </div>
@@ -172,18 +150,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <p className="truncate text-xs text-muted-foreground">{user.role}</p>
             </div>
           </div>
-          <button onClick={() => router.push("/change-password")} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
-            <KeyRound className="h-4 w-4" />
-            Change Password
+          <button onClick={() => setLocale(locale === "en" ? "zh" : "en")} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
+            <Globe className="h-4 w-4" />
+            {locale === "en" ? "中文" : "English"}
           </button>
           <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
             <LogOut className="h-4 w-4" />
-            Logout
+            {t("logout")}
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto">
         <div key={pathname} className="p-6 animate-fade-in-up">
           {children}

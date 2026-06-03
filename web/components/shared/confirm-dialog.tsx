@@ -1,12 +1,8 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
@@ -23,16 +19,10 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
-  variant = "default",
-  loading = false,
-  onConfirm,
+  open, onOpenChange, title, description,
+  confirmLabel, cancelLabel, variant = "default", loading = false, onConfirm,
 }: ConfirmDialogProps) {
+  const t = useTranslations("common")
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -42,14 +32,14 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {cancelLabel}
+            {cancelLabel || t("cancel")}
           </Button>
           <Button
             variant={variant === "destructive" ? "destructive" : "default"}
             onClick={onConfirm}
             disabled={loading}
           >
-            {loading ? "Processing..." : confirmLabel}
+            {loading ? t("processing") : (confirmLabel || t("confirm"))}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { invitationApi } from "@/lib/api/admin"
@@ -31,6 +32,8 @@ import { toast } from "sonner"
 
 
 export default function InvitationCodesPage() {
+  const t = useTranslations("invitationCodes")
+  const tc = useTranslations("common")
   const [items, setItems] = useState<InvitationCodeItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -74,7 +77,7 @@ export default function InvitationCodesPage() {
         expiresAt: expiresAt || undefined,
         description: description || undefined,
       })
-      toast.success("Invitation code created")
+      toast.success(t("toastCreated"))
       setCreateOpen(false)
       setMaxUses("")
       setExpiresAt("")
@@ -90,7 +93,7 @@ export default function InvitationCodesPage() {
   const handleToggle = async (item: InvitationCodeItem) => {
     try {
       await invitationApi.toggleCode(item.id, !item.isActive)
-      toast.success(`Code ${item.isActive ? "deactivated" : "activated"}`)
+      toast.success(t("toastToggled", { status: item.isActive ? t("filterInactive") : t("filterActive") }))
       fetchData()
     } catch (err: any) {
       toast.error(err.message || "Toggle failed")
@@ -105,8 +108,8 @@ export default function InvitationCodesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Invitation Codes"
-        description="Manage invitation codes for user registration"
+        title={t("title")}
+        description={t("description")}
         icon={Mail}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
@@ -117,16 +120,16 @@ export default function InvitationCodesPage() {
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search by creator..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={isActive || "all"} onValueChange={(v) => setIsActive(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="true">Active</SelectItem>
-            <SelectItem value="false">Inactive</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="true">{t("filterActive")}</SelectItem>
+            <SelectItem value="false">{t("filterInactive")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -141,58 +144,58 @@ export default function InvitationCodesPage() {
           columns={[
             {
               key: "code",
-              header: "Code",
+              header: t("columnCode"),
               render: (item: InvitationCodeItem) => (
                 <span className="font-mono text-sm font-medium">{item.code}</span>
               ),
             },
             {
               key: "createdByName",
-              header: "Created By",
+              header: t("columnCreatedBy"),
               render: (item: InvitationCodeItem) => (
                 <span className="text-sm text-muted-foreground">{item.createdByName}</span>
               ),
             },
             {
               key: "isActive",
-              header: "Status",
+              header: t("columnStatus"),
               render: (item: InvitationCodeItem) => (
                 <Badge variant={item.isActive ? "default" : "secondary"}>
-                  {item.isActive ? "Active" : "Inactive"}
+                  {item.isActive ? t("filterActive") : t("filterInactive")}
                 </Badge>
               ),
             },
             {
               key: "maxUses",
-              header: "Max Uses",
+              header: t("columnMaxUses"),
               render: (item: InvitationCodeItem) => (
-                <span className="text-sm">{item.maxUses || "Unlimited"}</span>
+                <span className="text-sm">{item.maxUses || t("labelUnlimited")}</span>
               ),
             },
             {
               key: "currentUses",
-              header: "Current Uses",
+              header: t("columnCurrentUses"),
               render: (item: InvitationCodeItem) => (
                 <span className="text-sm">{item.currentUses}</span>
               ),
             },
             {
               key: "expiresAt",
-              header: "Expires",
+              header: t("columnExpires"),
               render: (item: InvitationCodeItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.expiresAt)}</span>
               ),
             },
             {
               key: "description",
-              header: "Description",
+              header: t("columnDescription"),
               render: (item: InvitationCodeItem) => (
                 <span className="text-xs text-muted-foreground">{item.description || "-"}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (item: InvitationCodeItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),
@@ -207,9 +210,9 @@ export default function InvitationCodesPage() {
                   onClick={(e) => { e.stopPropagation(); handleToggle(item) }}
                 >
                   {item.isActive ? (
-                    <><ToggleRight className="mr-1 h-3 w-3" />Deactivate</>
+                    <><ToggleRight className="mr-1 h-3 w-3" />{t("buttonDeactivate")}</>
                   ) : (
-                    <><ToggleLeft className="mr-1 h-3 w-3" />Activate</>
+                    <><ToggleLeft className="mr-1 h-3 w-3" />{t("buttonActivate")}</>
                   )}
                 </Button>
               ),
@@ -221,22 +224,22 @@ export default function InvitationCodesPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Invitation Code</DialogTitle>
-            <DialogDescription>Generate a new invitation code for user registration.</DialogDescription>
+            <DialogTitle>{t("dialogCreateTitle")}</DialogTitle>
+            <DialogDescription>{t("dialogCreateDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="maxUses">Max Uses</Label>
+              <Label htmlFor="maxUses">{t("dialogFieldMaxUses")}</Label>
               <Input
                 id="maxUses"
                 type="number"
-                placeholder="Leave empty for unlimited"
+                placeholder={t("dialogPlaceholderMaxUses")}
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="expiresAt">Expires At</Label>
+              <Label htmlFor="expiresAt">{t("dialogFieldExpiresAt")}</Label>
               <Input
                 id="expiresAt"
                 type="date"
@@ -245,20 +248,20 @@ export default function InvitationCodesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("dialogFieldDescription")}</Label>
               <Input
                 id="description"
                 type="text"
-                placeholder="Optional description"
+                placeholder={t("dialogPlaceholderDescription")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{tc("cancel")}</Button>
             <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Creating..." : "Create"}
+              {creating ? tc("processing") : t("buttonCreateCode")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { agentApi } from "@/lib/api/admin"
@@ -31,6 +32,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 }
 
 export default function AgentsPage() {
+  const t = useTranslations("agents")
   const [items, setItems] = useState<AgentItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -61,12 +63,12 @@ export default function AgentsPage() {
     if (!actionAgent || !actionStatus) return
     try {
       await agentApi.updateStatus(actionAgent.id, { status: actionStatus })
-      toast.success(`Agent "${actionAgent.name}" set to ${actionStatus}`)
+      toast.success(t("toastStatusSet", { name: actionAgent.name, status: actionStatus }))
       setActionAgent(null)
       setActionStatus(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Status update failed")
+      toast.error(err.message || t("toastStatusFailed"))
     }
   }
 
@@ -77,18 +79,18 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Agents" description="Manage AI agents and their status" icon={Bot} />
+      <PageHeader title={t("title")} description={t("description")} icon={Bot} />
 
       <div className="flex items-center gap-4">
         <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Status" />
+            <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="error">Error</SelectItem>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="active">{t("filterActive")}</SelectItem>
+            <SelectItem value="inactive">{t("filterInactive")}</SelectItem>
+            <SelectItem value="error">{t("filterError")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -103,56 +105,56 @@ export default function AgentsPage() {
           columns={[
             {
               key: "name",
-              header: "Name",
+              header: t("columnName"),
               render: (a: AgentItem) => (
                 <span className="text-sm font-medium">{a.name}</span>
               ),
             },
             {
               key: "characterName",
-              header: "Character",
+              header: t("columnCharacter"),
               render: (a: AgentItem) => (
                 <span className="text-sm text-muted-foreground">{a.characterName || "-"}</span>
               ),
             },
             {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (a: AgentItem) => (
                 <Badge variant={statusVariant[a.status] || "secondary"}>{a.status}</Badge>
               ),
             },
             {
               key: "provider",
-              header: "Provider",
+              header: t("columnProvider"),
               render: (a: AgentItem) => (
                 <span className="text-sm text-muted-foreground">{a.provider || "-"}</span>
               ),
             },
             {
               key: "model",
-              header: "Model",
+              header: t("columnModel"),
               render: (a: AgentItem) => (
                 <span className="text-sm text-muted-foreground">{a.model || "-"}</span>
               ),
             },
             {
               key: "interactionCount",
-              header: "Interactions",
+              header: t("columnInteractions"),
               render: (a: AgentItem) => (
                 <span className="text-sm">{a.interactionCount || 0}</span>
               ),
             },
             {
               key: "skillCount",
-              header: "Skills",
+              header: t("columnSkills"),
               render: (a: AgentItem) => (
                 <span className="text-sm">{a.skillCount || 0}</span>
               ),
             },
             {
               key: "createdAt",
-              header: "Created",
+              header: t("columnCreated"),
               render: (a: AgentItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(a.createdAt)}</span>
               ),
@@ -169,7 +171,7 @@ export default function AgentsPage() {
                       className="text-muted-foreground"
                       onClick={(e) => { e.stopPropagation(); setActionAgent(a); setActionStatus("inactive") }}
                     >
-                      <PowerOff className="mr-1 h-3 w-3" />Deactivate
+                      <PowerOff className="mr-1 h-3 w-3" />{t("buttonDeactivate")}
                     </Button>
                   ) : (
                     <Button
@@ -178,7 +180,7 @@ export default function AgentsPage() {
                       className="text-green-600"
                       onClick={(e) => { e.stopPropagation(); setActionAgent(a); setActionStatus("active") }}
                     >
-                      <Power className="mr-1 h-3 w-3" />Activate
+                      <Power className="mr-1 h-3 w-3" />{t("buttonActivate")}
                     </Button>
                   )}
                 </div>
@@ -191,9 +193,9 @@ export default function AgentsPage() {
       <ConfirmDialog
         open={!!actionAgent && !!actionStatus}
         onOpenChange={(o) => { if (!o) { setActionAgent(null); setActionStatus(null) } }}
-        title={actionStatus === "active" ? "Activate Agent" : "Deactivate Agent"}
-        description={`Are you sure you want to ${actionStatus === "active" ? "activate" : "deactivate"} "${actionAgent?.name}"?`}
-        confirmLabel={actionStatus === "active" ? "Activate" : "Deactivate"}
+        title={actionStatus === "active" ? t("dialogActivateTitle") : t("dialogDeactivateTitle")}
+        description={actionStatus === "active" ? t("dialogActivateDescription", { name: actionAgent?.name || "" }) : t("dialogDeactivateDescription", { name: actionAgent?.name || "" })}
+        confirmLabel={actionStatus === "active" ? t("dialogConfirmActivate") : t("dialogConfirmDeactivate")}
         variant={actionStatus === "active" ? "default" : "destructive"}
         onConfirm={handleUpdateStatus}
       />

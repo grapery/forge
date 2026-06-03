@@ -14,7 +14,7 @@ interface SearchInputProps {
 export function SearchInput({
   value: externalValue,
   onSearch,
-  placeholder = "Search...",
+  placeholder,
   debounceMs = 300,
 }: SearchInputProps) {
   const [value, setValue] = useState(externalValue || "")

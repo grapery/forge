@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { commentApi } from "@/lib/api/admin"
@@ -29,6 +30,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function CommentsPage() {
+  const t = useTranslations("comments")
   const [items, setItems] = useState<CommentItem[]>([])
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<CommentStatusCount | null>(null)
@@ -64,11 +66,11 @@ export default function CommentsPage() {
     if (!deleteComment) return
     try {
       await commentApi.delete(deleteComment.id)
-      toast.success("Comment deleted")
+      toast.success(t("toastDeleted"))
       setDeleteComment(null)
       fetchData()
     } catch (err: any) {
-      toast.error(err.message || "Delete failed")
+      toast.error(err.message || t("toastDeleteFailed"))
     }
   }
 
@@ -84,30 +86,30 @@ export default function CommentsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Comments" description="Manage platform comments" icon={MessageSquare} />
+      <PageHeader title={t("title")} description={t("description")} icon={MessageSquare} />
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title="Total" value={counts.total} icon={MessageSquare} />
-          <StatCard title="Story" value={counts.storyComments} icon={BookOpen} />
-          <StatCard title="Fragment" value={counts.fragmentComments} icon={Puzzle} />
-          <StatCard title="Character" value={counts.characterComments} icon={Users} />
+          <StatCard title={t("statTotal")} value={counts.total} icon={MessageSquare} />
+          <StatCard title={t("statStory")} value={counts.storyComments} icon={BookOpen} />
+          <StatCard title={t("statFragment")} value={counts.fragmentComments} icon={Puzzle} />
+          <StatCard title={t("statCharacter")} value={counts.characterComments} icon={Users} />
         </div>
       )}
 
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder="Search comments..." />
+          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
         <Select value={targetType || "all"} onValueChange={(v) => setTargetType(v === "all" ? "" : v)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="story">Story</SelectItem>
-            <SelectItem value="fragment">Fragment</SelectItem>
-            <SelectItem value="character">Character</SelectItem>
+            <SelectItem value="all">{t("filterAllTypes")}</SelectItem>
+            <SelectItem value="story">{t("filterStory")}</SelectItem>
+            <SelectItem value="fragment">{t("filterFragment")}</SelectItem>
+            <SelectItem value="character">{t("filterCharacter")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -122,50 +124,50 @@ export default function CommentsPage() {
           columns={[
             {
               key: "content",
-              header: "Content",
+              header: t("columnContent"),
               render: (c: CommentItem) => (
                 <span className="text-sm" title={c.content}>{truncate(c.content, 60)}</span>
               ),
             },
             {
               key: "author",
-              header: "Author",
+              header: t("columnAuthor"),
               render: (c: CommentItem) => (
                 <span className="text-sm text-muted-foreground">{c.authorName}</span>
               ),
             },
             {
               key: "targetType",
-              header: "Target Type",
+              header: t("columnTargetType"),
               render: (c: CommentItem) => (
                 <Badge variant="secondary">{c.targetType}</Badge>
               ),
             },
             {
               key: "targetId",
-              header: "Target ID",
+              header: t("columnTargetId"),
               render: (c: CommentItem) => (
                 <span className="text-xs text-muted-foreground font-mono">{c.targetId}</span>
               ),
             },
             {
               key: "likes",
-              header: "Likes",
+              header: t("columnLikes"),
               render: (c: CommentItem) => <span className="text-sm">{c.likes}</span>,
             },
             {
               key: "dislikes",
-              header: "Dislikes",
+              header: t("columnDislikes"),
               render: (c: CommentItem) => <span className="text-sm">{c.dislikes}</span>,
             },
             {
               key: "replies",
-              header: "Replies",
+              header: t("columnReplies"),
               render: (c: CommentItem) => <span className="text-sm">{c.replyCount}</span>,
             },
             {
               key: "created",
-              header: "Created",
+              header: t("columnCreated"),
               render: (c: CommentItem) => (
                 <span className="text-xs text-muted-foreground">{formatTime(c.createdAt)}</span>
               ),
@@ -180,7 +182,7 @@ export default function CommentsPage() {
                   className="text-destructive"
                   onClick={(e) => { e.stopPropagation(); setDeleteComment(c) }}
                 >
-                  <Trash2 className="mr-1 h-3 w-3" />Delete
+                  <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
                 </Button>
               ),
             },
@@ -191,9 +193,9 @@ export default function CommentsPage() {
       <ConfirmDialog
         open={!!deleteComment}
         onOpenChange={(o) => { if (!o) setDeleteComment(null) }}
-        title="Delete Comment"
-        description={`Are you sure you want to delete this comment? This action cannot be undone.`}
-        confirmLabel="Delete"
+        title={t("dialogDeleteTitle")}
+        description={t("dialogDeleteDescription")}
+        confirmLabel={t("buttonDelete")}
         variant="destructive"
         onConfirm={handleDelete}
       />

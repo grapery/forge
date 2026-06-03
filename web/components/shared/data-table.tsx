@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import { cn } from "@/lib/utils"
@@ -31,6 +32,7 @@ export function DataTable<T>({
   onRowClick,
 }: DataTableProps<T>) {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize)
+  const t = useTranslations("common")
 
   return (
     <div className="animate-fade-in">
@@ -77,7 +79,11 @@ export function DataTable<T>({
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2 py-4">
           <p className="text-sm text-muted-foreground">
-            Showing {(pagination.page - 1) * pagination.pageSize + 1}-{Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}
+            {t("showing", {
+              from: (pagination.page - 1) * pagination.pageSize + 1,
+              to: Math.min(pagination.page * pagination.pageSize, pagination.total),
+              total: pagination.total,
+            })}
           </p>
           <div className="flex items-center gap-2">
             <Button

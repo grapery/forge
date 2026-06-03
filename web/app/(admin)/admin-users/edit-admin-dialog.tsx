@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { adminUserApi } from "@/lib/api/admin"
 import type { AdminUser } from "@/lib/types"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 interface EditAdminDialogProps {
   open: boolean
@@ -25,6 +26,7 @@ interface EditAdminDialogProps {
 }
 
 export function EditAdminDialog({ open, onOpenChange, admin, onSuccess }: EditAdminDialogProps) {
+  const t = useTranslations("editAdminDialog")
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     displayName: admin?.displayName || "",
@@ -48,11 +50,11 @@ export function EditAdminDialog({ open, onOpenChange, admin, onSuccess }: EditAd
     setLoading(true)
     try {
       await adminUserApi.update(admin.id, form)
-      toast.success("Admin user updated successfully")
+      toast.success(t("toastUpdated"))
       onOpenChange(false)
       onSuccess()
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to update admin user")
+      toast.error(err.response?.data?.message || err.message || t("toastUpdateFailed"))
     } finally {
       setLoading(false)
     }
@@ -62,7 +64,7 @@ export function EditAdminDialog({ open, onOpenChange, admin, onSuccess }: EditAd
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Admin User</DialogTitle>
+          <DialogTitle>{t("dialogTitle")}</DialogTitle>
           <DialogDescription>Update {admin?.username}&apos;s information.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -76,7 +78,7 @@ export function EditAdminDialog({ open, onOpenChange, admin, onSuccess }: EditAd
               id="edit-displayName"
               value={form.displayName}
               onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-              placeholder="Enter display name"
+              placeholder={t("placeholderDisplayName")}
             />
           </div>
           <div className="grid gap-2">
@@ -111,7 +113,7 @@ export function EditAdminDialog({ open, onOpenChange, admin, onSuccess }: EditAd
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
+            {loading ? t("buttonSaving") : t("buttonSave")}
           </Button>
         </DialogFooter>
       </DialogContent>

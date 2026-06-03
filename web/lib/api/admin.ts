@@ -31,8 +31,8 @@ export const authApi = {
 }
 
 export const dashboardApi = {
-  getOverview: () =>
-    forgeClient.get<any, OverviewStats>("/api/admin/dashboard/overview"),
+  getOverview: (range?: "7d" | "30d" | "90d") =>
+    forgeClient.get<any, OverviewStats>("/api/admin/dashboard/overview", { params: range ? { range } : undefined }),
   collectStats: (date?: string) =>
     forgeClient.post<any, { code: number; message: string }>("/api/admin/dashboard/collect-stats" + (date ? `?date=${date}` : "")),
 }
