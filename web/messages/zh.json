@@ -60,7 +60,10 @@
     "storyboard": "故事板",
     "untitled": "无标题",
     "unlimited": "不限",
-    "toastActionFailed": "操作失败"
+    "toastActionFailed": "操作失败",
+    "noPermission": "无权限",
+    "noPermissionDesc": "您没有权限访问此页面，请联系管理员。",
+    "backToDashboard": "返回仪表盘"
   },
   "nav": {
     "brandName": "Forge 管理后台",
@@ -93,7 +96,12 @@
     "changePassword": "修改密码",
     "logout": "退出登录",
     "groupOperations": "运营",
-    "groupSettings": "设置"
+    "groupSettings": "设置",
+    "roleSuper_admin": "超级管理员",
+    "roleAdmin": "管理员",
+    "roleOperator": "运营",
+    "roleViewer": "观察者",
+    "permissionsLabel": "项权限"
   },
   "login": {
     "title": "Forge 管理后台",
@@ -894,7 +902,15 @@
     "dropdownEdit": "编辑",
     "dropdownResetPassword": "重置密码",
     "dropdownPermissions": "权限",
-    "dropdownDelete": "删除"
+    "dropdownDelete": "删除",
+    "columnPermissions": "权限",
+    "fullAccess": "全部权限",
+    "permissionCount": "{count} 项权限",
+    "buttonCreate": "创建管理员",
+    "buttonEdit": "编辑",
+    "buttonResetPassword": "重置密码",
+    "buttonPermissions": "编辑权限",
+    "buttonDelete": "删除"
   },
   "createAdminDialog": {
     "dialogTitle": "创建管理员",
@@ -1034,6 +1050,7 @@
     "feedbackMgmt": "反馈管理",
     "reportMgmt": "举报管理",
     "topicMgmt": "话题管理",
-    "notificationMgmt": "通知管理"
+    "notificationMgmt": "通知管理",
+    "selectedCount": "已选 {count} / {total} 项"
   }
 }

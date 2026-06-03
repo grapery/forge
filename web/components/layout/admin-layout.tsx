@@ -147,7 +147,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-medium">{user.displayName || user.username}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.role}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {(user.role === "operator" || user.role === "viewer") && user.permissions
+                  ? `${t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1))} · ${user.permissions.length} ${t("permissionsLabel")}`
+                  : t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase()))}
+              </p>
             </div>
           </div>
           <button onClick={() => setLocale(locale === "en" ? "zh" : "en")} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">

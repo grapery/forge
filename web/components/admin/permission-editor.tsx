@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl"
 
 interface PermissionEditorProps {
   userId: string
+  username: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
@@ -78,8 +79,9 @@ const permissionGroups: { label: string; permissions: { key: string; label: stri
 
 const allPermissionKeys = permissionGroups.flatMap((g) => g.permissions.map((p) => p.key))
 
-export function PermissionEditor({ userId, open, onOpenChange, onSaved }: PermissionEditorProps) {
+export function PermissionEditor({ userId, username, open, onOpenChange, onSaved }: PermissionEditorProps) {
   const t = useTranslations("permissions")
+  const tc = useTranslations("common")
   const [selected, setSelected] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -135,23 +137,26 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("dialogTitle")}</DialogTitle>
+          <DialogTitle>{t("dialogTitle")} — {username}</DialogTitle>
           <DialogDescription>
             {t("dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="py-8 text-center text-muted-foreground">t("loadingPermissions")</div>
+          <div className="py-8 text-center text-muted-foreground">{t("loadingPermissions")}</div>
         ) : (
           <div className="space-y-6 py-4">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAll}>
-                {t("buttonSelectAll")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={deselectAll}>
-                {t("buttonDeselectAll")}
-              </Button>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">{t("selectedCount", { count: selected.length, total: allPermissionKeys.length })}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={selectAll}>
+                  {t("buttonSelectAll")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={deselectAll}>
+                  {t("buttonDeselectAll")}
+                </Button>
+              </div>
             </div>
 
             {permissionGroups.map((group) => {
@@ -197,10 +202,10 @@ export function PermissionEditor({ userId, open, onOpenChange, onSaved }: Permis
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
+            {tc("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={loading || saving}>
-            {saving ? t("buttonSaving") : t("buttonSave")}
+            {saving ? tc("processing") : tc("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

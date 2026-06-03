@@ -72,7 +72,10 @@ forgeClient.interceptors.response.use(
       window.location.href = "/forge/login"
     }
     const msg = error.response?.data?.message || error.message || "Request failed"
-    return Promise.reject(new Error(msg))
+    const err = new Error(msg) as Error & { status?: number; isForbidden?: boolean }
+    err.status = error.response?.status
+    err.isForbidden = error.response?.status === 403
+    return Promise.reject(err)
   },
 )
 

@@ -18,6 +18,8 @@ import { RoleBadge, StatusBadge } from "@/components/shared/status-badge"
 
 import { Button } from "@/components/ui/button"
 
+import { Badge } from "@/components/ui/badge"
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 import { MoreHorizontal, Plus, KeyRound, Pencil, Trash2, Shield } from "lucide-react"
@@ -32,9 +34,11 @@ import { DeleteAdminConfirm } from "./delete-confirm"
 
 import { PermissionEditor } from "@/components/admin/permission-editor"
 
+const TOTAL_PERMISSIONS = 18
 
 export default function AdminUsersPage() {
   const t = useTranslations("adminUsers")
+  const tc = useTranslations("common")
   const { user: currentUser } = useAuth()
   const [items, setItems] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
@@ -71,6 +75,22 @@ export default function AdminUsersPage() {
     return new Date(ts * 1000).toLocaleDateString()
   }
 
+  const renderPermissions = (u: AdminUser) => {
+    if (u.role === "super_admin" || u.role === "admin") {
+      return <Badge variant="default">{t("fullAccess")}</Badge>
+    }
+    const count = u.permissions?.length || 0
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); setPermissionsAdmin(u) }}
+        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors cursor-pointer"
+      >
+        <Shield className="h-3 w-3" />
+        {t("permissionCount", { count })}
+      </button>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -81,7 +101,7 @@ export default function AdminUsersPage() {
           isSuperAdmin ? (
             <Button onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Create Admin
+              {t("buttonCreate")}
             </Button>
           ) : undefined
         }
@@ -116,8 +136,13 @@ export default function AdminUsersPage() {
               render: (u: AdminUser) => <RoleBadge role={u.role} />,
             },
             {
+              key: "permissions",
+              header: t("columnPermissions"),
+              render: (u: AdminUser) => renderPermissions(u),
+            },
+            {
               key: "status",
-              header: "Status",
+              header: t("columnStatus"),
               render: (u: AdminUser) => <StatusBadge status={u.status} />,
             },
             {
@@ -141,22 +166,22 @@ export default function AdminUsersPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setEditAdmin(u)}>
                         <Pencil className="mr-2 h-4 w-4" />
-                        Edit
+                        {t("buttonEdit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setResetAdmin(u)}>
                         <KeyRound className="mr-2 h-4 w-4" />
-                        Reset Password
+                        {t("buttonResetPassword")}
                       </DropdownMenuItem>
                       {(u.role === "operator" || u.role === "viewer") && (
-							<DropdownMenuItem onClick={() => setPermissionsAdmin(u)}>
-								<Shield className="mr-2 h-4 w-4" />
-								Permissions
-							</DropdownMenuItem>
-						)}
+                        <DropdownMenuItem onClick={() => setPermissionsAdmin(u)}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          {t("buttonPermissions")}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-destructive" onClick={() => setDeleteAdmin(u)}>
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {t("buttonDelete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -173,6 +198,7 @@ export default function AdminUsersPage() {
       {permissionsAdmin && (
         <PermissionEditor
           userId={permissionsAdmin.id}
+          username={permissionsAdmin.displayName || permissionsAdmin.username}
           open={!!permissionsAdmin}
           onOpenChange={(o) => setPermissionsAdmin(o ? permissionsAdmin : null)}
           onSaved={fetchData}

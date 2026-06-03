@@ -60,7 +60,10 @@
     "storyboard": "Storyboard",
     "untitled": "Untitled",
     "unlimited": "Unlimited",
-    "toastActionFailed": "Action failed"
+    "toastActionFailed": "Action failed",
+    "noPermission": "No Permission",
+    "noPermissionDesc": "You don't have permission to access this page. Please contact the administrator.",
+    "backToDashboard": "Back to Dashboard"
   },
   "nav": {
     "brandName": "Forge Admin",
@@ -93,7 +96,12 @@
     "changePassword": "Change Password",
     "logout": "Logout",
     "groupOperations": "Operations",
-    "groupSettings": "Settings"
+    "groupSettings": "Settings",
+    "roleSuper_admin": "Super Admin",
+    "roleAdmin": "Admin",
+    "roleOperator": "Operator",
+    "roleViewer": "Viewer",
+    "permissionsLabel": "permissions"
   },
   "login": {
     "title": "Forge Admin",
@@ -894,7 +902,15 @@
     "dropdownEdit": "Edit",
     "dropdownResetPassword": "Reset Password",
     "dropdownPermissions": "Permissions",
-    "dropdownDelete": "Delete"
+    "dropdownDelete": "Delete",
+    "columnPermissions": "Permissions",
+    "fullAccess": "Full Access",
+    "permissionCount": "{count} permissions",
+    "buttonCreate": "Create Admin",
+    "buttonEdit": "Edit",
+    "buttonResetPassword": "Reset Password",
+    "buttonPermissions": "Edit Permissions",
+    "buttonDelete": "Delete"
   },
   "createAdminDialog": {
     "dialogTitle": "Create Admin User",
@@ -1034,6 +1050,7 @@
     "feedbackMgmt": "Feedback Management",
     "reportMgmt": "Report Management",
     "topicMgmt": "Topic Management",
-    "notificationMgmt": "Notification Management"
+    "notificationMgmt": "Notification Management",
+    "selectedCount": "{count} / {total} selected"
   }
 }
