@@ -9,10 +9,18 @@ import {
   MessageSquare, Hash, Sparkles, KeyRound, Ghost, Brain,
   CreditCard, Coins, Tags, Palette, BookOpen, Mail, Search,
   UserX, Smartphone, Bot, Terminal, Receipt, Flag, Bell,
-  Crown, UserCheck, ScrollText, Anvil, Globe,
+  Crown, UserCheck, ScrollText, Anvil, Globe, ChevronsUpDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/providers/locale-provider"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type NavItem = {
   href: string
@@ -105,6 +113,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const roleLabel = (user.role === "operator" || user.role === "viewer") && user.permissions
+    ? `${t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1))} · ${user.permissions.length} ${t("permissionsLabel")}`
+    : t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase()))
+
   return (
     <div className="flex min-h-screen">
       <aside className="w-60 border-r bg-sidebar-bg flex flex-col shadow-sm">
@@ -140,36 +152,48 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="border-t p-2 bg-muted/30">
-          <div className="flex items-center gap-2 px-3 py-2 text-sm">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground text-xs font-medium ring-2 ring-primary/20">
-              {user.username.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium">{user.displayName || user.username}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {(user.role === "operator" || user.role === "viewer") && user.permissions
-                  ? `${t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1))} · ${user.permissions.length} ${t("permissionsLabel")}`
-                  : t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1).replace(/_([a-z])/g, (_, c) => c.toUpperCase()))}
-              </p>
-            </div>
-          </div>
-          <button onClick={() => setLocale(locale === "en" ? "zh" : "en")} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
-            <Globe className="h-4 w-4" />
-            {locale === "en" ? "中文" : "English"}
-          </button>
-          <button onClick={logout} className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-150">
-            <LogOut className="h-4 w-4" />
-            {t("logout")}
-          </button>
-        </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div key={pathname} className="p-6 animate-fade-in-up">
-          {children}
-        </div>
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="flex h-14 items-center justify-between border-b px-6 bg-background">
+          <div />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 px-2 h-9">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground text-xs font-medium">
+                  {user.username.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className="text-sm font-medium leading-none">{user.displayName || user.username}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{roleLabel}</p>
+                </div>
+                <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setLocale(locale === "en" ? "zh" : "en")}>
+                <Globe className="mr-2 h-4 w-4" />
+                {locale === "en" ? "中文" : "English"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/change-password")}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                {t("changePassword")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                {t("logout")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <div key={pathname} className="p-6 animate-fade-in-up">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
