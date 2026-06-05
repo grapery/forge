@@ -2,9 +2,9 @@ package mysql
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
+	"gorm.io/gorm"
 )
 
 func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain.ContentItem, int64, error) {
@@ -13,7 +13,6 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 		return nil, 0, fmt.Errorf("invalid content type: %s", query.ContentType)
 	}
 
-	// Column mapping per content type
 	var userCol, statusCol, titleCol string
 	switch query.ContentType {
 	case "story":
@@ -47,23 +46,47 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 		return nil, 0, fmt.Errorf("count content: %w", err)
 	}
 
-	// Use raw scan struct to handle differing column names
-	type row struct {
-		ID        string    `gorm:"column:id"`
-		UserID    string    `gorm:"column:user_id"`
-		Title     string    `gorm:"column:title"`
-		Status    string    `gorm:"column:status"`
-		Visibility string   `gorm:"column:visibility"`
-		Likes     int       `gorm:"column:likes"`
-		Comments  int       `gorm:"column:comments"`
-		CreatedAt time.Time `gorm:"column:created_at"`
-		UpdatedAt time.Time `gorm:"column:updated_at"`
+	// Build SELECT columns based on actual table schema:
+	// stories: has visibility+likes, NO comments column. created_at is datetime.
+	// storyboards: has likes+comments, NO visibility column. created_at is datetime.
+	// fragments: has visibility+likes+comments. created_at is bigint (unix timestamp).
+	var selectCols string
+	switch query.ContentType {
+	case "story":
+		selectCols = fmt.Sprintf(
+			"id, %s as user_id, %s as title, %s as status, "+
+				"COALESCE(visibility, '') as visibility, "+
+				"COALESCE(likes, 0) as likes, "+
+				"0 as comments, "+
+				"UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at",
+			userCol, titleCol, statusCol)
+	case "storyboard":
+		selectCols = fmt.Sprintf(
+			"id, %s as user_id, %s as title, %s as status, "+
+				"'' as visibility, "+
+				"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, "+
+				"UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at",
+			userCol, titleCol, statusCol)
+	case "fragment":
+		selectCols = fmt.Sprintf(
+			"id, %s as user_id, %s as title, %s as status, "+
+				"COALESCE(visibility, '') as visibility, "+
+				"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, "+
+				"created_at, updated_at",
+			userCol, titleCol, statusCol)
 	}
 
-	selectCols := fmt.Sprintf("id, %s as user_id, %s as title, %s as status, "+
-		"COALESCE(visibility, '') as visibility, "+
-		"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, "+
-		"created_at, updated_at", userCol, titleCol, statusCol)
+	type row struct {
+		ID         string `gorm:"column:id"`
+		UserID     string `gorm:"column:user_id"`
+		Title      string `gorm:"column:title"`
+		Status     string `gorm:"column:status"`
+		Visibility string `gorm:"column:visibility"`
+		Likes      int    `gorm:"column:likes"`
+		Comments   int    `gorm:"column:comments"`
+		CreatedAt  int64  `gorm:"column:created_at"`
+		UpdatedAt  int64  `gorm:"column:updated_at"`
+	}
 
 	offset := (query.Page - 1) * query.PageSize
 	var rows []row
@@ -81,17 +104,9 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 
 	items := make([]*domain.ContentItem, len(rows))
 	for i, r := range rows {
-		status := r.Status
-		visibility := r.Visibility
 		title := r.Title
 		if title == "" {
 			title = "Untitled"
-		}
-
-		// Normalize status display: for fragments, the "status" column is visibility
-		displayStatus := status
-		if query.ContentType == "fragment" {
-			displayStatus = status // public/followers_only/private
 		}
 
 		items[i] = &domain.ContentItem{
@@ -100,12 +115,12 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 			ContentType: query.ContentType,
 			AuthorID:    r.UserID,
 			AuthorName:  names[r.UserID],
-			Status:      displayStatus,
-			Visibility:  visibility,
+			Status:      r.Status,
+			Visibility:  r.Visibility,
 			Likes:       r.Likes,
 			Comments:    r.Comments,
-			CreatedAt:   r.CreatedAt.Unix(),
-			UpdatedAt:   r.UpdatedAt.Unix(),
+			CreatedAt:   r.CreatedAt,
+			UpdatedAt:   r.UpdatedAt,
 		}
 	}
 
@@ -133,22 +148,25 @@ func (rr *ReadRepository) CountContentByStatus(contentType string) (*domain.Cont
 		return nil, fmt.Errorf("invalid content type: %s", contentType)
 	}
 
-	base := rr.db.Table(tableName).Where("deleted_at IS NULL")
+	newSession := func() *gorm.DB {
+		return rr.db.Table(tableName).Where("deleted_at IS NULL")
+	}
+
 	var counts domain.ContentStatusCount
-	base.Count(&counts.Total)
+	newSession().Count(&counts.Total)
 
 	switch contentType {
 	case "story":
-		base.Where("status = ?", "published").Count(&counts.Published)
-		base.Where("status = ?", "draft").Count(&counts.Draft)
-		base.Where("status NOT IN ?", []string{"published", "draft"}).Count(&counts.Other)
+		newSession().Where("status = ?", "published").Count(&counts.Published)
+		newSession().Where("status = ?", "draft").Count(&counts.Draft)
+		newSession().Where("status NOT IN ?", []string{"published", "draft"}).Count(&counts.Other)
 	case "storyboard":
-		base.Where("workflow_status = ?", "published").Count(&counts.Published)
-		base.Where("workflow_status = ?", "draft").Count(&counts.Draft)
-		base.Where("workflow_status NOT IN ?", []string{"published", "draft"}).Count(&counts.Other)
+		newSession().Where("workflow_status = ?", "published").Count(&counts.Published)
+		newSession().Where("workflow_status = ?", "draft").Count(&counts.Draft)
+		newSession().Where("workflow_status NOT IN ?", []string{"published", "draft"}).Count(&counts.Other)
 	case "fragment":
-		base.Where("visibility = ?", "public").Count(&counts.Published)
-		base.Where("visibility IN ?", []string{"private", "followers_only"}).Count(&counts.Draft)
+		newSession().Where("visibility = ?", "public").Count(&counts.Published)
+		newSession().Where("visibility IN ?", []string{"private", "followers_only"}).Count(&counts.Draft)
 	}
 
 	return &counts, nil
@@ -169,6 +187,9 @@ func contentTableName(contentType string) string {
 
 func batchUserNames(rr *ReadRepository, ids []string) (map[string]string, error) {
 	names := make(map[string]string)
+	if len(ids) == 0 {
+		return names, nil
+	}
 	type nameRow struct {
 		ID          string `gorm:"column:id"`
 		DisplayName string `gorm:"column:display_name"`

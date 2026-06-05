@@ -97,7 +97,7 @@
     "logout": "Logout",
     "groupOperations": "Operations",
     "groupSettings": "Settings",
-    "roleSuper_admin": "Super Admin",
+    "roleSuperAdmin": "Super Admin",
     "roleAdmin": "Admin",
     "roleOperator": "Operator",
     "roleViewer": "Viewer",

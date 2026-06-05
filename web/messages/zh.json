@@ -97,7 +97,7 @@
     "logout": "退出登录",
     "groupOperations": "运营",
     "groupSettings": "设置",
-    "roleSuper_admin": "超级管理员",
+    "roleSuperAdmin": "超级管理员",
     "roleAdmin": "管理员",
     "roleOperator": "运营",
     "roleViewer": "观察者",

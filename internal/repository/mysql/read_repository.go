@@ -31,7 +31,7 @@ func (rr *ReadRepository) CountStoryboards() (int64, error) {
 
 func (rr *ReadRepository) CountFragments() (int64, error) {
 	var count int64
-	err := rr.db.Table("fragments").Where("deleted_at IS NULL").Count(&count).Error
+	err := rr.db.Table("fragments").Where("deleted_at IS NULL OR deleted_at = 0").Count(&count).Error
 	return count, err
 }
 
