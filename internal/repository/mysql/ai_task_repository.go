@@ -9,7 +9,9 @@ import (
 func (rr *ReadRepository) ListAITasks(query *domain.AITaskListQuery) ([]*domain.AITaskItem, int64, error) {
 	var total int64
 
-	q := rr.db.Table("ai_tasks")
+	q := rr.db.Table("ai_tasks").
+		Where("deleted_at IS NULL OR deleted_at = 0")
+
 	if query.Type != "" {
 		q = q.Where("type = ?", query.Type)
 	}
@@ -61,7 +63,7 @@ func (rr *ReadRepository) ListAITasks(query *domain.AITaskListQuery) ([]*domain.
 		"COALESCE(related_entity_id, '') as related_entity_id, "+
 		"COALESCE(related_entity_type, '') as related_entity_type, "+
 		"COALESCE(error_message, '') as error_message, "+
-		"created_at, UNIX_TIMESTAMP(started_at) as started_at, UNIX_TIMESTAMP(completed_at) as completed_at").
+		"UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(started_at) as started_at, UNIX_TIMESTAMP(completed_at) as completed_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list ai tasks: %w", err)
@@ -108,22 +110,24 @@ func (rr *ReadRepository) GetAITaskDetail(id string) (map[string]any, error) {
 func (rr *ReadRepository) GetAITaskSummary() (*domain.AITaskSummary, error) {
 	summary := &domain.AITaskSummary{}
 
-	rr.db.Table("ai_tasks").Count(&summary.TotalTasks)
-	rr.db.Table("ai_tasks").Where("status = ?", "pending").Count(&summary.PendingTasks)
-	rr.db.Table("ai_tasks").Where("status = ?", "completed").Count(&summary.CompletedTasks)
-	rr.db.Table("ai_tasks").Where("status = ?", "failed").Count(&summary.FailedTasks)
+	rr.db.Table("ai_tasks").Where("deleted_at IS NULL OR deleted_at = 0").Count(&summary.TotalTasks)
+	rr.db.Table("ai_tasks").Where("deleted_at IS NULL OR deleted_at = 0").Where("status = ?", "pending").Count(&summary.PendingTasks)
+	rr.db.Table("ai_tasks").Where("deleted_at IS NULL OR deleted_at = 0").Where("status = ?", "completed").Count(&summary.CompletedTasks)
+	rr.db.Table("ai_tasks").Where("deleted_at IS NULL OR deleted_at = 0").Where("status = ?", "failed").Count(&summary.FailedTasks)
 
 	type tokenSum struct {
 		Total int64 `gorm:"column:total"`
 	}
 	var ts tokenSum
 	rr.db.Table("ai_tasks").
+		Where("deleted_at IS NULL OR deleted_at = 0").
 		Select("COALESCE(SUM(tokens_used), 0) as total").
 		Take(&ts)
 	summary.TotalTokens = ts.Total
 
 	var providers []domain.ProviderStat
 	rr.db.Table("ai_tasks").
+		Where("deleted_at IS NULL OR deleted_at = 0").
 		Select("provider, COUNT(*) as count").
 		Group("provider").
 		Order("count DESC").
@@ -137,7 +141,9 @@ func (rr *ReadRepository) GetAITaskSummary() (*domain.AITaskSummary, error) {
 func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationListQuery) ([]*domain.AIGenerationRecordItem, int64, error) {
 	var total int64
 
-	q := rr.db.Table("ai_generation_records")
+	q := rr.db.Table("ai_generation_records").
+		Where("deleted_at IS NULL OR deleted_at = 0")
+
 	if query.Type != "" {
 		q = q.Where("type = ?", query.Type)
 	}
@@ -165,16 +171,22 @@ func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationList
 	}
 
 	type row struct {
-		ID           string `gorm:"column:id"`
-		Type         string `gorm:"column:type"`
-		Status       string `gorm:"column:status"`
-		Provider     string `gorm:"column:provider"`
-		Model        string `gorm:"column:model"`
-		UserID       string `gorm:"column:user_id"`
-		InputTokens  int    `gorm:"column:input_tokens"`
-		OutputTokens int    `gorm:"column:output_tokens"`
-		TotalTokens  int    `gorm:"column:total_tokens"`
-		CreatedAt    int64  `gorm:"column:created_at"`
+		ID                string `gorm:"column:id"`
+		Type              string `gorm:"column:type"`
+		Status            string `gorm:"column:status"`
+		Provider          string `gorm:"column:provider"`
+		Model             string `gorm:"column:model"`
+		UserID            string `gorm:"column:user_id"`
+		InputTokens       int    `gorm:"column:input_tokens"`
+		OutputTokens      int    `gorm:"column:output_tokens"`
+		TotalTokens       int    `gorm:"column:total_tokens"`
+		ImageCount        int    `gorm:"column:image_count"`
+		VideoCount        int    `gorm:"column:video_count"`
+		DurationMs        int64  `gorm:"column:duration_ms"`
+		RelatedEntityID   string `gorm:"column:related_entity_id"`
+		RelatedEntityType string `gorm:"column:related_entity_type"`
+		Error             string `gorm:"column:error_message"`
+		CreatedAt         int64  `gorm:"column:created_at"`
 	}
 
 	offset := (query.Page - 1) * query.PageSize
@@ -182,7 +194,12 @@ func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationList
 	if err := q.Select("id, type, status, provider, model, user_id, "+
 		"COALESCE(input_tokens, 0) as input_tokens, COALESCE(output_tokens, 0) as output_tokens, "+
 		"COALESCE(total_tokens, 0) as total_tokens, "+
-		"created_at").
+		"COALESCE(image_count, 0) as image_count, COALESCE(video_count, 0) as video_count, "+
+		"COALESCE(duration_ms, 0) as duration_ms, "+
+		"COALESCE(related_entity_id, '') as related_entity_id, "+
+		"COALESCE(related_entity_type, '') as related_entity_type, "+
+		"COALESCE(error_message, '') as error_message, "+
+		"UNIX_TIMESTAMP(created_at) as created_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list ai generation records: %w", err)
@@ -197,17 +214,23 @@ func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationList
 	items := make([]*domain.AIGenerationRecordItem, len(rows))
 	for i, r := range rows {
 		items[i] = &domain.AIGenerationRecordItem{
-			ID:           r.ID,
-			Type:         r.Type,
-			Status:       r.Status,
-			Provider:     r.Provider,
-			Model:        r.Model,
-			UserID:       r.UserID,
-			UserName:     names[r.UserID],
-			InputTokens:  r.InputTokens,
-			OutputTokens: r.OutputTokens,
-			TotalTokens:  r.TotalTokens,
-			CreatedAt:    r.CreatedAt,
+			ID:                r.ID,
+			Type:              r.Type,
+			Status:            r.Status,
+			Provider:          r.Provider,
+			Model:             r.Model,
+			UserID:            r.UserID,
+			UserName:          names[r.UserID],
+			InputTokens:       r.InputTokens,
+			OutputTokens:      r.OutputTokens,
+			TotalTokens:       r.TotalTokens,
+			ImageCount:        r.ImageCount,
+			VideoCount:        r.VideoCount,
+			DurationMs:        r.DurationMs,
+			RelatedEntityID:   r.RelatedEntityID,
+			RelatedEntityType: r.RelatedEntityType,
+			ErrorMessage:      r.Error,
+			CreatedAt:         r.CreatedAt,
 		}
 	}
 
@@ -225,19 +248,38 @@ func (rr *ReadRepository) GetAIGenerationDetail(id string) (map[string]any, erro
 func (rr *ReadRepository) GetAIGenerationSummary() (*domain.AIGenerationSummary, error) {
 	summary := &domain.AIGenerationSummary{}
 
-	rr.db.Table("ai_generation_records").Count(&summary.TotalRecords)
+	rr.db.Table("ai_generation_records").Where("deleted_at IS NULL OR deleted_at = 0").Count(&summary.TotalRecords)
+
+	type imageVideoSum struct {
+		Total int64 `gorm:"column:total"`
+	}
+	var imgSum imageVideoSum
+	rr.db.Table("ai_generation_records").
+		Where("deleted_at IS NULL OR deleted_at = 0").
+		Select("COALESCE(SUM(image_count), 0) as total").
+		Take(&imgSum)
+	summary.TotalImages = imgSum.Total
+
+	var vidSum imageVideoSum
+	rr.db.Table("ai_generation_records").
+		Where("deleted_at IS NULL OR deleted_at = 0").
+		Select("COALESCE(SUM(video_count), 0) as total").
+		Take(&vidSum)
+	summary.TotalVideos = vidSum.Total
 
 	type tokenSum struct {
 		Total int64 `gorm:"column:total"`
 	}
 	var ts tokenSum
 	rr.db.Table("ai_generation_records").
+		Where("deleted_at IS NULL OR deleted_at = 0").
 		Select("COALESCE(SUM(total_tokens), 0) as total").
 		Take(&ts)
 	summary.TotalTokens = ts.Total
 
 	var providers []domain.ProviderStat
 	rr.db.Table("ai_generation_records").
+		Where("deleted_at IS NULL OR deleted_at = 0").
 		Select("provider, COUNT(*) as count").
 		Group("provider").
 		Order("count DESC").

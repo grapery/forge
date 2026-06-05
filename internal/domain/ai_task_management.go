@@ -40,17 +40,23 @@ type AITaskSummary struct {
 }
 
 type AIGenerationRecordItem struct {
-	ID           string `json:"id"`
-	Type         string `json:"type"`
-	Status       string `json:"status"`
-	Provider     string `json:"provider"`
-	Model        string `json:"model"`
-	UserID       string `json:"userId"`
-	UserName     string `json:"userName"`
-	InputTokens  int    `json:"inputTokens"`
-	OutputTokens int    `json:"outputTokens"`
-	TotalTokens  int    `json:"totalTokens"`
-	CreatedAt    int64  `json:"createdAt"`
+	ID                string `json:"id"`
+	Type              string `json:"type"`
+	Status            string `json:"status"`
+	Provider          string `json:"provider"`
+	Model             string `json:"model"`
+	UserID            string `json:"userId"`
+	UserName          string `json:"userName"`
+	InputTokens       int    `json:"inputTokens"`
+	OutputTokens      int    `json:"outputTokens"`
+	TotalTokens       int    `json:"totalTokens"`
+	ImageCount        int    `json:"imageCount"`
+	VideoCount        int    `json:"videoCount"`
+	DurationMs        int64  `json:"durationMs"`
+	RelatedEntityID   string `json:"relatedEntityId"`
+	RelatedEntityType string `json:"relatedEntityType"`
+	ErrorMessage      string `json:"errorMessage"`
+	CreatedAt         int64  `json:"createdAt"`
 }
 
 type AIGenerationListQuery struct {
@@ -68,5 +74,7 @@ type AIGenerationListQuery struct {
 type AIGenerationSummary struct {
 	TotalRecords int64         `json:"totalRecords"`
 	TotalTokens  int64         `json:"totalTokens"`
+	TotalImages  int64         `json:"totalImages"`
+	TotalVideos  int64         `json:"totalVideos"`
 	TopProviders []ProviderStat `json:"topProviders"`
 }

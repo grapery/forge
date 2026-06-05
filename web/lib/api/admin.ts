@@ -214,6 +214,8 @@ export const aiTaskApi = {
 export const aiGenerationApi = {
   list: (params: { page?: number; pageSize?: number; type?: string }) =>
     forgeClient.get<any, PaginatedData<AIGenerationRecordItem>>("/api/admin/ai-generations", { params }),
+  get: (id: string) =>
+    forgeClient.get<any, Record<string, any>>(`/api/admin/ai-generations/${id}`),
   summary: () =>
     forgeClient.get<any, AIGenerationSummary>("/api/admin/ai-generations/summary"),
 }

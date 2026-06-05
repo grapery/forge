@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
@@ -29,6 +30,7 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
 }
 
 export default function AIGenerationsPage() {
+  const router = useRouter()
   const t = useTranslations("aiGenerations")
   const [items, setItems] = useState<AIGenerationRecordItem[]>([])
   const [total, setTotal] = useState(0)
@@ -97,6 +99,7 @@ export default function AIGenerationsPage() {
           data={items}
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
+          onRowClick={(item) => router.push(`/ai-generations/detail?id=${item.id}`)}
           columns={[
             {
               key: "userName",

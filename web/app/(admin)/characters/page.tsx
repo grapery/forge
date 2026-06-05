@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
@@ -30,6 +31,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 
 export default function CharactersPage() {
+  const router = useRouter()
   const t = useTranslations("characters")
   const [items, setItems] = useState<CharacterItem[]>([])
   const [total, setTotal] = useState(0)
@@ -121,6 +123,7 @@ export default function CharactersPage() {
           data={items}
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
+          onRowClick={(item) => router.push(`/characters/detail?id=${item.id}`)}
           columns={[
             {
               key: "name",

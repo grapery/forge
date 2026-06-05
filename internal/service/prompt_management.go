@@ -23,7 +23,7 @@ func (s *PromptService) ListRecords(query *domain.PromptAuditQuery) ([]*domain.P
 	return s.readRepo.ListPromptAuditRecords(query)
 }
 
-func (s *PromptService) GetRecord(id string) (*domain.PromptAuditRecord, error) {
+func (s *PromptService) GetRecord(id string) (map[string]any, error) {
 	return s.readRepo.GetPromptAuditRecord(id)
 }
 

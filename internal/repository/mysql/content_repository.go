@@ -29,7 +29,7 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 		titleCol = "caption"
 	}
 
-	base := rr.db.Table(tableName).Where("deleted_at IS NULL")
+	base := rr.db.Table(tableName).Where("deleted_at IS NULL OR deleted_at = 0")
 
 	if query.Search != "" {
 		base = base.Where(fmt.Sprintf("%s LIKE ?", titleCol), "%"+query.Search+"%")
@@ -149,7 +149,7 @@ func (rr *ReadRepository) CountContentByStatus(contentType string) (*domain.Cont
 	}
 
 	newSession := func() *gorm.DB {
-		return rr.db.Table(tableName).Where("deleted_at IS NULL")
+		return rr.db.Table(tableName).Where("deleted_at IS NULL OR deleted_at = 0")
 	}
 
 	var counts domain.ContentStatusCount
