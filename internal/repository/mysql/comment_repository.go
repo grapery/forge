@@ -9,29 +9,28 @@ import (
 )
 
 func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domain.CommentItem, int64, error) {
+	applyFilters := func(db *gorm.DB) *gorm.DB {
+		db = db.Where("deleted_at IS NULL")
+		if query.TargetType != "" {
+			db = db.Where("target_type = ?", query.TargetType)
+		}
+		if query.TargetID != "" {
+			db = db.Where("target_id = ?", query.TargetID)
+		}
+		if query.AuthorID != "" {
+			db = db.Where("author_id = ?", query.AuthorID)
+		}
+		if query.Search != "" {
+			db = db.Where("content LIKE ?", "%"+query.Search+"%")
+		}
+		return db
+	}
+
 	var total int64
-
-	q := rr.db.Table("comments").
-		Where("deleted_at IS NULL")
-
-	if query.TargetType != "" {
-		q = q.Where("target_type = ?", query.TargetType)
-	}
-	if query.TargetID != "" {
-		q = q.Where("target_id = ?", query.TargetID)
-	}
-	if query.AuthorID != "" {
-		q = q.Where("author_id = ?", query.AuthorID)
-	}
-	if query.Search != "" {
-		q = q.Where("content LIKE ?", "%"+query.Search+"%")
-	}
-
-	if err := q.Count(&total).Error; err != nil {
+	if err := applyFilters(rr.db.Table("comments")).Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count comments: %w", err)
 	}
 
-	offset := (query.Page - 1) * query.PageSize
 	type row struct {
 		ID         string    `gorm:"column:id"`
 		UserID     string    `gorm:"column:author_id"`
@@ -46,8 +45,9 @@ func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domai
 		CreatedAt  time.Time `gorm:"column:created_at"`
 	}
 
+	offset := (query.Page - 1) * query.PageSize
 	var rows []row
-	if err := q.Select("id, author_id, content, target_type, target_id, "+
+	if err := applyFilters(rr.db.Table("comments")).Select("id, author_id, content, target_type, target_id, "+
 		"COALESCE(parent_id, '') as parent_id, COALESCE(root_id, '') as root_id, "+
 		"COALESCE(likes, 0) as likes, COALESCE(dislikes, 0) as dislikes, "+
 		"COALESCE(reply_count, 0) as reply_count, created_at").

@@ -4,37 +4,64 @@ import (
 	"fmt"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
+	"gorm.io/gorm"
 )
 
+func applyAITaskFilters(db *gorm.DB, query interface{}) *gorm.DB {
+	db = db.Where("deleted_at IS NULL OR deleted_at = 0")
+	switch q := query.(type) {
+	case *domain.AITaskListQuery:
+		if q.Type != "" {
+			db = db.Where("type = ?", q.Type)
+		}
+		if q.Status != "" {
+			db = db.Where("status = ?", q.Status)
+		}
+		if q.Provider != "" {
+			db = db.Where("provider = ?", q.Provider)
+		}
+		if q.Model != "" {
+			db = db.Where("model = ?", q.Model)
+		}
+		if q.UserID != "" {
+			db = db.Where("user_id = ?", q.UserID)
+		}
+		if q.DateFrom != "" {
+			db = db.Where("created_at >= ?", q.DateFrom)
+		}
+		if q.DateTo != "" {
+			db = db.Where("created_at <= ?", q.DateTo)
+		}
+	case *domain.AIGenerationListQuery:
+		if q.Type != "" {
+			db = db.Where("type = ?", q.Type)
+		}
+		if q.Status != "" {
+			db = db.Where("status = ?", q.Status)
+		}
+		if q.Provider != "" {
+			db = db.Where("provider = ?", q.Provider)
+		}
+		if q.Model != "" {
+			db = db.Where("model = ?", q.Model)
+		}
+		if q.UserID != "" {
+			db = db.Where("user_id = ?", q.UserID)
+		}
+		if q.DateFrom != "" {
+			db = db.Where("created_at >= ?", q.DateFrom)
+		}
+		if q.DateTo != "" {
+			db = db.Where("created_at <= ?", q.DateTo)
+		}
+	}
+	return db
+}
+
 func (rr *ReadRepository) ListAITasks(query *domain.AITaskListQuery) ([]*domain.AITaskItem, int64, error) {
+	// Count — fresh builder
 	var total int64
-
-	q := rr.db.Table("ai_tasks").
-		Where("deleted_at IS NULL OR deleted_at = 0")
-
-	if query.Type != "" {
-		q = q.Where("type = ?", query.Type)
-	}
-	if query.Status != "" {
-		q = q.Where("status = ?", query.Status)
-	}
-	if query.Provider != "" {
-		q = q.Where("provider = ?", query.Provider)
-	}
-	if query.Model != "" {
-		q = q.Where("model = ?", query.Model)
-	}
-	if query.UserID != "" {
-		q = q.Where("user_id = ?", query.UserID)
-	}
-	if query.DateFrom != "" {
-		q = q.Where("created_at >= ?", query.DateFrom)
-	}
-	if query.DateTo != "" {
-		q = q.Where("created_at <= ?", query.DateTo)
-	}
-
-	if err := q.Count(&total).Error; err != nil {
+	if err := applyAITaskFilters(rr.db.Table("ai_tasks"), query).Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count ai tasks: %w", err)
 	}
 
@@ -55,9 +82,10 @@ func (rr *ReadRepository) ListAITasks(query *domain.AITaskListQuery) ([]*domain.
 		CompletedAt       *int64 `gorm:"column:completed_at"`
 	}
 
+	// List — fresh builder
 	offset := (query.Page - 1) * query.PageSize
 	var rows []row
-	if err := q.Select("id, type, status, provider, model, user_id, "+
+	if err := applyAITaskFilters(rr.db.Table("ai_tasks"), query).Select("id, type, status, provider, model, user_id, "+
 		"COALESCE(tokens_used, 0) as tokens_used, "+
 		"COALESCE(progress, 0) as progress, "+
 		"COALESCE(related_entity_id, '') as related_entity_id, "+
@@ -139,34 +167,9 @@ func (rr *ReadRepository) GetAITaskSummary() (*domain.AITaskSummary, error) {
 }
 
 func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationListQuery) ([]*domain.AIGenerationRecordItem, int64, error) {
+	// Count — fresh builder
 	var total int64
-
-	q := rr.db.Table("ai_generation_records").
-		Where("deleted_at IS NULL OR deleted_at = 0")
-
-	if query.Type != "" {
-		q = q.Where("type = ?", query.Type)
-	}
-	if query.Status != "" {
-		q = q.Where("status = ?", query.Status)
-	}
-	if query.Provider != "" {
-		q = q.Where("provider = ?", query.Provider)
-	}
-	if query.Model != "" {
-		q = q.Where("model = ?", query.Model)
-	}
-	if query.UserID != "" {
-		q = q.Where("user_id = ?", query.UserID)
-	}
-	if query.DateFrom != "" {
-		q = q.Where("created_at >= ?", query.DateFrom)
-	}
-	if query.DateTo != "" {
-		q = q.Where("created_at <= ?", query.DateTo)
-	}
-
-	if err := q.Count(&total).Error; err != nil {
+	if err := applyAITaskFilters(rr.db.Table("ai_generation_records"), query).Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count ai generation records: %w", err)
 	}
 
@@ -189,9 +192,10 @@ func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationList
 		CreatedAt         int64  `gorm:"column:created_at"`
 	}
 
+	// List — fresh builder
 	offset := (query.Page - 1) * query.PageSize
 	var rows []row
-	if err := q.Select("id, type, status, provider, model, user_id, "+
+	if err := applyAITaskFilters(rr.db.Table("ai_generation_records"), query).Select("id, type, status, provider, model, user_id, "+
 		"COALESCE(input_tokens, 0) as input_tokens, COALESCE(output_tokens, 0) as output_tokens, "+
 		"COALESCE(total_tokens, 0) as total_tokens, "+
 		"COALESCE(image_count, 0) as image_count, COALESCE(video_count, 0) as video_count, "+

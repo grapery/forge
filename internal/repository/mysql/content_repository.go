@@ -29,20 +29,24 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 		titleCol = "caption"
 	}
 
-	base := rr.db.Table(tableName).Where("deleted_at IS NULL OR deleted_at = 0")
+	// Apply filters to a fresh query builder each time to avoid GORM state corruption
+	applyFilters := func(db *gorm.DB) *gorm.DB {
+		db = db.Where("deleted_at IS NULL OR deleted_at = 0")
+		if query.Search != "" {
+			db = db.Where(fmt.Sprintf("%s LIKE ?", titleCol), "%"+query.Search+"%")
+		}
+		if query.Status != "" {
+			db = db.Where(fmt.Sprintf("%s = ?", statusCol), query.Status)
+		}
+		if query.AuthorID != "" {
+			db = db.Where(fmt.Sprintf("%s = ?", userCol), query.AuthorID)
+		}
+		return db
+	}
 
-	if query.Search != "" {
-		base = base.Where(fmt.Sprintf("%s LIKE ?", titleCol), "%"+query.Search+"%")
-	}
-	if query.Status != "" {
-		base = base.Where(fmt.Sprintf("%s = ?", statusCol), query.Status)
-	}
-	if query.AuthorID != "" {
-		base = base.Where(fmt.Sprintf("%s = ?", userCol), query.AuthorID)
-	}
-
+	// Count query — independent builder
 	var total int64
-	if err := base.Count(&total).Error; err != nil {
+	if err := applyFilters(rr.db.Table(tableName)).Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count content: %w", err)
 	}
 
@@ -88,9 +92,11 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 		UpdatedAt  int64  `gorm:"column:updated_at"`
 	}
 
+	// List query — fresh builder, independent from count
 	offset := (query.Page - 1) * query.PageSize
 	var rows []row
-	if err := base.Select(selectCols).
+	if err := applyFilters(rr.db.Table(tableName)).
+		Select(selectCols).
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list content: %w", err)
@@ -135,7 +141,7 @@ func (rr *ReadRepository) GetContentDetail(contentType, id string) (map[string]a
 
 	var result map[string]any
 	if err := rr.db.Table(tableName).
-		Where("id = ? AND deleted_at IS NULL", id).
+		Where("id = ? AND (deleted_at IS NULL OR deleted_at = 0)", id).
 		Take(&result).Error; err != nil {
 		return nil, fmt.Errorf("get content detail: %w", err)
 	}
