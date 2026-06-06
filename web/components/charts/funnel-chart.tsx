@@ -24,6 +24,9 @@ export function FunnelChart({ data, title, height = 200, className }: FunnelChar
     const container = containerRef.current
     if (!container || data.length === 0) return
 
+    const validData = data.filter((d) => d.value != null && !isNaN(d.value) && d.value > 0)
+    if (validData.length === 0) return
+
     const colors = getThemeColors()
     const rect = container.getBoundingClientRect()
     const W = Math.floor(rect.width)
@@ -33,17 +36,17 @@ export function FunnelChart({ data, title, height = 200, className }: FunnelChar
     container.innerHTML = ""
     const svg = d3.select(container).append("svg").attr("width", W).attr("height", H)
 
-    const maxVal = data[0].value || 1
+    const maxVal = validData[0].value || 1
     const gap = 4
-    const stepH = (H - gap * (data.length - 1)) / data.length
+    const stepH = (H - gap * (validData.length - 1)) / validData.length
     const centerX = W / 2
 
-    data.forEach((d, i) => {
+    validData.forEach((d, i) => {
       const ratio = d.value / maxVal
       const barW = Math.max(ratio * (W - 80), 20)
       const x = centerX - barW / 2
       const y = i * (stepH + gap)
-      const pct = ((d.value / data[0].value) * 100).toFixed(1)
+      const pct = maxVal > 0 ? ((d.value / maxVal) * 100).toFixed(1) : "0.0"
 
       svg
         .append("rect")
@@ -64,7 +67,7 @@ export function FunnelChart({ data, title, height = 200, className }: FunnelChar
         .attr("fill", "#ffffff")
         .attr("font-size", "12px")
         .attr("font-weight", "bold")
-        .text(`${d.label}  ${d.value.toLocaleString()} (${pct}%)`)
+        .text(`${d.label}  ${(d.value ?? 0).toLocaleString()} (${pct}%)`)
     })
   }, [data, height])
 

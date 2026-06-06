@@ -63,7 +63,7 @@ export function TreemapChart({ data, title, height = 300, className }: TreemapCh
       .attr("rx", 3)
       .style("cursor", "pointer")
       .append("title")
-      .text((d) => `${(d.data as any).label}: ${(d.data as any).value.toLocaleString()}`)
+      .text((d) => `${(d.data as any).label}: ${((d.data as any).value ?? 0).toLocaleString()}`)
 
     cell.each(function (d) {
       const w = d.x1 - d.x0
@@ -84,7 +84,7 @@ export function TreemapChart({ data, title, height = 300, className }: TreemapCh
           .attr("y", 28)
           .attr("fill", "rgba(255,255,255,0.8)")
           .attr("font-size", "10px")
-          .text((d.data as any).value.toLocaleString())
+          .text(((d.data as any).value ?? 0).toLocaleString())
       }
     })
   }, [data, height])

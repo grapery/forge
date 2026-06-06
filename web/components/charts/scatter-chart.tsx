@@ -30,6 +30,9 @@ export function ScatterChart({ data, title, height = 300, xLabel, yLabel, classN
     const container = containerRef.current
     if (!container || data.length === 0) return
 
+    const validData = data.filter((d) => d.x != null && !isNaN(d.x) && d.y != null && !isNaN(d.y))
+    if (validData.length === 0) return
+
     const colors = getThemeColors()
     const rect = container.getBoundingClientRect()
     const W = Math.floor(rect.width)
@@ -46,15 +49,17 @@ export function ScatterChart({ data, title, height = 300, xLabel, yLabel, classN
     const svg = d3.select(container).append("svg").attr("width", W).attr("height", H)
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`)
 
-    const xExt = d3.extent(data, (d) => d.x) as [number, number]
-    const yExt = d3.extent(data, (d) => d.y) as [number, number]
-    const sizeMax = d3.max(data, (d) => d.size) || 1
+    const xExt = d3.extent(validData, (d) => d.x) as [number, number]
+    const yExt = d3.extent(validData, (d) => d.y) as [number, number]
+    if (xExt[0] == null || xExt[1] == null || yExt[0] == null || yExt[1] == null) return
+
+    const sizeMax = d3.max(validData, (d) => d.size) || 1
 
     const x = d3.scaleLinear().domain([xExt[0] * 0.9, xExt[1] * 1.1]).range([0, w]).nice()
     const y = d3.scaleLinear().domain([yExt[0] * 0.9, yExt[1] * 1.1]).range([h, 0]).nice()
     const r = d3.scaleLinear().domain([0, sizeMax]).range([4, 24])
 
-    const groups = [...new Set(data.map((d) => d.group || "default"))]
+    const groups = [...new Set(validData.map((d) => d.group || "default"))]
     const colorScale = d3.scaleOrdinal<string>().domain(groups).range(SERIES_COLORS as unknown as string[])
 
     g.append("g")
@@ -80,11 +85,11 @@ export function ScatterChart({ data, title, height = 300, xLabel, yLabel, classN
     const tooltipDiv = tooltipRef.current
 
     g.selectAll("circle")
-      .data(data)
+      .data(validData)
       .join("circle")
       .attr("cx", (d) => x(d.x))
       .attr("cy", (d) => y(d.y))
-      .attr("r", (d) => r(d.size))
+      .attr("r", (d) => r(d.size ?? 0))
       .attr("fill", (d) => colorScale(d.group || "default") as string)
       .attr("fill-opacity", 0.65)
       .attr("stroke", (d) => colorScale(d.group || "default") as string)
@@ -94,8 +99,8 @@ export function ScatterChart({ data, title, height = 300, xLabel, yLabel, classN
         d3.select(this).attr("fill-opacity", 0.9)
         if (tooltipDiv) {
           tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:2px;font-weight:600;color:${colors.text}">${d.label}</div>
-            <div style="font-size:10px;color:${colors.text}">${xLabel || "X"}: ${d.x.toLocaleString()}</div>
-            <div style="font-size:10px;color:${colors.text}">${yLabel || "Y"}: ${d.y.toLocaleString()}</div>`
+            <div style="font-size:10px;color:${colors.text}">${xLabel || "X"}: ${(d.x ?? 0).toLocaleString()}</div>
+            <div style="font-size:10px;color:${colors.text}">${yLabel || "Y"}: ${(d.y ?? 0).toLocaleString()}</div>`
           tooltipDiv.style.opacity = "1"
           const svgRect = container.getBoundingClientRect()
           tooltipDiv.style.left = `${Math.min(x(d.x) + margin.left + 12, svgRect.width - 140)}px`

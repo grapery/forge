@@ -101,7 +101,7 @@ export function SankeyChart({ nodes, links, title, height = 300, className }: Sa
       .attr("text-anchor", (d: any) => (d.x0 < W / 2 ? "start" : "end"))
       .attr("fill", colors.text)
       .attr("font-size", "11px")
-      .text((d: any) => `${d.name} (${d.value.toLocaleString()})`)
+      .text((d: any) => `${d.name} (${(d.value ?? 0).toLocaleString()})`)
   }, [nodes, links, height])
 
   useEffect(() => {
