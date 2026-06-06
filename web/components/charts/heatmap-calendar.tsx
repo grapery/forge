@@ -24,6 +24,9 @@ export function HeatmapCalendar({ data, title, weeks = 12, className }: HeatmapC
     const container = containerRef.current
     if (!container || data.length === 0) return
 
+    const validData = data.filter((d) => d.date && !isNaN(new Date(d.date).getTime()))
+    if (validData.length === 0) return
+
     const colors = getThemeColors()
     const rect = container.getBoundingClientRect()
     const W = Math.floor(rect.width)
@@ -36,10 +39,10 @@ export function HeatmapCalendar({ data, title, weeks = 12, className }: HeatmapC
     container.innerHTML = ""
     const svg = d3.select(container).append("svg").attr("width", W).attr("height", H)
 
-    const dataMap = new Map(data.map((d) => [d.date, d.value]))
-    const maxVal = d3.max(data, (d) => d.value) || 1
+    const dataMap = new Map(validData.map((d) => [d.date, d.value]))
+    const maxVal = d3.max(validData, (d) => d.value) || 1
 
-    const endDate = new Date(data[data.length - 1].date)
+    const endDate = new Date(validData[validData.length - 1].date)
     const startDate = d3.timeDay.offset(endDate, -(weeks * 7))
 
     const colorScale = d3.scaleLinear<string>()

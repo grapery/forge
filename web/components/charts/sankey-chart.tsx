@@ -42,11 +42,14 @@ export function SankeyChart({ nodes, links, title, height = 300, className }: Sa
     const svg = d3.select(container).append("svg").attr("width", W).attr("height", H)
 
     const nameMap = new Map(nodes.map((n, i) => [n.name, i]))
-    const indexedLinks = links.map((l) => ({
-      source: nameMap.get(l.source) ?? 0,
-      target: nameMap.get(l.target) ?? 0,
-      value: l.value,
-    }))
+    const indexedLinks = links
+      .filter((l) => l.value > 0 && nameMap.has(l.source) && nameMap.has(l.target))
+      .map((l) => ({
+        source: nameMap.get(l.source) ?? 0,
+        target: nameMap.get(l.target) ?? 0,
+        value: l.value,
+      }))
+    if (indexedLinks.length === 0) return
 
     const sankeyLayout = d3Sankey<{ nodes: SankeyNode[]; links: typeof indexedLinks }, SankeyNode, typeof indexedLinks[0]>()
       .nodeWidth(16)

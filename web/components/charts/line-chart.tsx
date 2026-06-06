@@ -53,8 +53,10 @@ export function LineChart({
     const svg = d3.select(container).append("svg").attr("width", W).attr("height", H)
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`)
 
-    const allValues = visible.flatMap((s) => s.values)
+    const allValues = visible.flatMap((s) => s.values).filter((v) => v.date instanceof Date && !isNaN(v.date.getTime()))
+    if (allValues.length === 0) return
     const xDomain = d3.extent(allValues, (d) => d.date) as [Date, Date]
+    if (!xDomain[0] || !xDomain[1]) return
     const yMax = d3.max(allValues, (d) => d.value) || 1
 
     const x = d3.scaleTime().domain(xDomain).range([0, w])

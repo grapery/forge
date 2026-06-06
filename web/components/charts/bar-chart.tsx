@@ -35,6 +35,9 @@ export function BarChart({
     const container = containerRef.current
     if (!container || data.length === 0) return
 
+    const validData = data.filter((d) => d.value != null && !isNaN(d.value))
+    if (validData.length === 0) return
+
     const colors = getThemeColors()
     const rect = container.getBoundingClientRect()
     const W = Math.floor(rect.width)
@@ -53,13 +56,13 @@ export function BarChart({
       const h = H - margin.top - margin.bottom
       const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`)
 
-      const y = d3.scaleBand().domain(data.map((d) => d.label)).range([0, h]).padding(0.25)
+      const y = d3.scaleBand().domain(validData.map((d) => d.label)).range([0, h]).padding(0.25)
       const x = d3.scaleLinear()
-        .domain([0, d3.max(data, (d) => d.value) || 1])
+        .domain([0, d3.max(validData, (d) => d.value) || 1])
         .range([0, w])
 
       g.selectAll("rect")
-        .data(data)
+        .data(validData)
         .join("rect")
         .attr("y", (d) => y(d.label)!)
         .attr("height", y.bandwidth())
@@ -69,21 +72,21 @@ export function BarChart({
         .attr("rx", 3)
         .transition()
         .duration(500)
-        .attr("width", (d) => x(d.value))
+        .attr("width", (d) => x(d.value ?? 0))
 
       g.selectAll(".bar-label")
-        .data(data)
+        .data(validData)
         .join("text")
         .attr("class", "bar-label")
-        .attr("x", (d) => x(d.value) + 6)
+        .attr("x", (d) => x(d.value ?? 0) + 6)
         .attr("y", (d) => y(d.label)! + y.bandwidth() / 2)
         .attr("dy", "0.35em")
         .attr("fill", colors.text)
         .attr("font-size", "11px")
-        .text((d) => valueFormatter ? valueFormatter(d.value) : d.value.toLocaleString())
+        .text((d) => valueFormatter ? valueFormatter(d.value ?? 0) : (d.value ?? 0).toLocaleString())
 
       g.selectAll(".bar-name")
-        .data(data)
+        .data(validData)
         .join("text")
         .attr("class", "bar-name")
         .attr("x", -6)
@@ -99,9 +102,9 @@ export function BarChart({
       const h = H - margin.top - margin.bottom
       const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`)
 
-      const x = d3.scaleBand().domain(data.map((d) => d.label)).range([0, w]).padding(0.3)
+      const x = d3.scaleBand().domain(validData.map((d) => d.label)).range([0, w]).padding(0.3)
       const y = d3.scaleLinear()
-        .domain([0, d3.max(data, (d) => d.value) || 1])
+        .domain([0, d3.max(validData, (d) => d.value) || 1])
         .range([h, 0])
         .nice()
 
@@ -118,7 +121,7 @@ export function BarChart({
         .call((g) => g.selectAll(".tick line").attr("stroke", colors.grid).attr("stroke-opacity", 0.3))
 
       g.selectAll("rect")
-        .data(data)
+        .data(validData)
         .join("rect")
         .attr("x", (d) => x(d.label)!)
         .attr("width", x.bandwidth())
@@ -128,19 +131,19 @@ export function BarChart({
         .attr("rx", 2)
         .transition()
         .duration(500)
-        .attr("y", (d) => y(d.value))
-        .attr("height", (d) => h - y(d.value))
+        .attr("y", (d) => y(d.value ?? 0))
+        .attr("height", (d) => h - y(d.value ?? 0))
 
       g.selectAll(".bar-label")
-        .data(data)
+        .data(validData)
         .join("text")
         .attr("class", "bar-label")
         .attr("x", (d) => x(d.label)! + x.bandwidth() / 2)
-        .attr("y", (d) => y(d.value) - 4)
+        .attr("y", (d) => y(d.value ?? 0) - 4)
         .attr("text-anchor", "middle")
         .attr("fill", colors.text)
         .attr("font-size", "10px")
-        .text((d) => valueFormatter ? valueFormatter(d.value) : d.value.toLocaleString())
+        .text((d) => valueFormatter ? valueFormatter(d.value ?? 0) : (d.value ?? 0).toLocaleString())
     }
   }, [data, height, horizontal, color, valueFormatter])
 

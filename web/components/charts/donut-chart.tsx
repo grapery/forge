@@ -26,6 +26,9 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
     const container = containerRef.current
     if (!container || data.length === 0) return
 
+    const validData = data.filter((d) => d.value != null && !isNaN(d.value))
+    if (validData.length === 0) return
+
     const colors = getThemeColors()
     const rect = container.getBoundingClientRect()
     const W = Math.floor(rect.width)
@@ -42,7 +45,7 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
     const g = svg.append("g").attr("transform", `translate(${W / 2},${H / 2})`)
 
     const color = d3.scaleOrdinal<string>()
-      .domain(data.map((d) => d.label))
+      .domain(validData.map((d) => d.label))
       .range(SERIES_COLORS as unknown as string[])
 
     const arcGen = d3.arc<any>()
@@ -52,7 +55,7 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
 
     const pieData = d3.pie<DonutData>()
       .value((d) => d.value)
-      .sort(null)(data)
+      .sort(null)(validData)
 
     g.selectAll("path")
       .data(pieData)
@@ -69,7 +72,7 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
         d3.select(this).transition().duration(150).attr("d", arcGen.outerRadius(radius))
       })
 
-    const total = data.reduce((sum, d) => sum + d.value, 0)
+    const total = validData.reduce((sum, d) => sum + (d.value ?? 0), 0)
 
     g.append("text")
       .attr("text-anchor", "middle")
@@ -89,8 +92,8 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
     }
 
     const legend = svg.append("g").attr("transform", `translate(${W / 2 - 60}, ${H - 16})`)
-    const itemsPerRow = Math.floor(W / 120)
-    data.forEach((d, i) => {
+    const itemsPerRow = Math.max(1, Math.floor(W / 120))
+    validData.forEach((d, i) => {
       const row = Math.floor(i / itemsPerRow)
       const col = i % itemsPerRow
       const x = col * 120
@@ -107,7 +110,7 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
         .attr("y", y + 4)
         .attr("fill", colors.text)
         .attr("font-size", "10px")
-        .text(`${d.label} ${((d.value / total) * 100).toFixed(0)}%`)
+        .text(`${d.label} ${total > 0 ? ((d.value / total) * 100).toFixed(0) : 0}%`)
     })
   }, [data, height, centerLabel, centerValue])
 

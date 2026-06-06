@@ -15,10 +15,13 @@ export function dailyTrendToSeries(
     key: key as string,
     label,
     color,
-    values: trends.map((t) => ({
-      date: new Date(t.date),
-      value: Number(t[key]) || 0,
-    })),
+    values: trends
+      .filter((t) => t.date)
+      .map((t) => ({
+        date: new Date(t.date),
+        value: Number(t[key]) || 0,
+      }))
+      .filter((v) => !isNaN(v.date.getTime())),
   }))
 }
 
