@@ -98,10 +98,24 @@ func SetupRouter(
 		reports := protected.Group("/reports")
 		reports.Use(middleware.RequirePermission(domain.PermReports))
 		{
+			reports.GET("/moderation-summary", reportH.ModerationSummary)
+			reports.GET("/content", reportH.ListContentReports)
+			reports.GET("/content/counts", reportH.ContentReportStatusCounts)
+			reports.GET("/content/:id", reportH.GetContentReport)
+			reports.PUT("/content/:id/review", reportH.ReviewContentReport)
+			reports.POST("/content/:id/resolve", reportH.ResolveContentReport)
 			reports.GET("", reportH.List)
 			reports.GET("/counts", reportH.StatusCounts)
 			reports.GET("/:id", reportH.Get)
 			reports.PUT("/:id/review", reportH.Review)
+		}
+
+		blocks := protected.Group("/blocks")
+		blocks.Use(middleware.RequirePermission(domain.PermReports))
+		{
+			blocks.GET("", reportH.ListBlocks)
+			blocks.GET("/counts", reportH.BlockCounts)
+			blocks.GET("/:id", reportH.GetBlock)
 		}
 
 		users := protected.Group("/users")

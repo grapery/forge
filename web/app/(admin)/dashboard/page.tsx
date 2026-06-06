@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { dashboardApi, userApi, characterApi, membershipApi, aiTaskApi, deviceApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
-import { Users, BookOpen, Layers, Puzzle, UserCircle, Brain, CreditCard, Receipt, Coins, RefreshCw, GitFork, Zap } from "lucide-react"
+import { Users, BookOpen, Layers, Puzzle, UserCircle, Brain, CreditCard, Receipt, Coins, RefreshCw, GitFork, Zap, Flag, ShieldAlert } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageSkeleton } from "@/components/shared/skeleton"
@@ -169,6 +170,37 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      <Card className="border-amber-200 bg-amber-50/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Flag className="h-4 w-4" />
+              {t("moderationViewAll")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("moderationPendingUser")}</p>
+                <p className="text-2xl font-bold">{stats?.pendingUserReports ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("moderationPendingContent")}</p>
+                <p className="text-2xl font-bold">{stats?.pendingContentReports ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-xs text-red-700 flex items-center gap-1">
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  {t("moderationOverdue")}
+                </p>
+                <p className="text-2xl font-bold text-red-700">{stats?.overdueReportsTotal ?? 0}</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm" className="mt-4">
+              <Link href="/reports">{t("moderationViewAll")}</Link>
+            </Button>
+          </CardContent>
+        </Card>
 
       {trends.length > 0 && (
         <ClientOnly>

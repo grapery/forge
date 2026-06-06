@@ -25,6 +25,9 @@ type OverviewStats struct {
 	ActiveMemberships      int64        `json:"activeMemberships"`
 	TotalOrders            int64        `json:"totalOrders"`
 	TotalTokenTransactions int64        `json:"totalTokenTransactions"`
+	PendingUserReports     int64        `json:"pendingUserReports"`
+	PendingContentReports  int64        `json:"pendingContentReports"`
+	OverdueReportsTotal    int64        `json:"overdueReportsTotal"`
 	Trends                 []DailyTrend `json:"trends"`
 }
 
@@ -90,6 +93,19 @@ func (s *DashboardService) GetOverview() (*OverviewStats, error) {
 	stats.TotalTokenTransactions, err = s.readRepo.CountTokenTransactions()
 	if err != nil {
 		s.logger.Warn("failed to count token transactions", zap.Error(err))
+	}
+
+	stats.PendingUserReports, err = s.readRepo.CountPendingUserReports()
+	if err != nil {
+		s.logger.Warn("failed to count pending user reports", zap.Error(err))
+	}
+	stats.PendingContentReports, err = s.readRepo.CountPendingContentReports()
+	if err != nil {
+		s.logger.Warn("failed to count pending content reports", zap.Error(err))
+	}
+	stats.OverdueReportsTotal, err = s.readRepo.CountOverdueReportsTotal()
+	if err != nil {
+		s.logger.Warn("failed to count overdue reports", zap.Error(err))
 	}
 
 	dailyStats, err := s.repo.GetLatestStats(30)

@@ -118,9 +118,16 @@ export default function ReportDetailPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldStatus")}</p>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[report.status]}`}>
-                  {statusLabel[report.status] || report.status}
-                </span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[report.status]}`}>
+                    {statusLabel[report.status] || report.status}
+                  </span>
+                  {report.isOverdue && (
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800">
+                      {t("slaOverdue")}
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldSubmitted")}</p>
@@ -140,6 +147,21 @@ export default function ReportDetailPage() {
               <p className="text-xs text-muted-foreground mb-1">{t("fieldReason")}</p>
               <div className="rounded-lg bg-muted p-4 text-sm whitespace-pre-wrap">{report.reason}</div>
             </div>
+
+            {report.reviewRemarks && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t("fieldReviewRemarks")}</p>
+                <div className="rounded-lg bg-muted p-4 text-sm whitespace-pre-wrap">{report.reviewRemarks}</div>
+                {report.reviewedBy && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("reviewedBy", {
+                      by: report.reviewedBy,
+                      at: report.reviewedAt ? new Date(report.reviewedAt * 1000).toLocaleString() : "",
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

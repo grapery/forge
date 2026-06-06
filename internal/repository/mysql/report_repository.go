@@ -26,18 +26,22 @@ func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64,
 	}
 
 	type row struct {
-		ID         string    `gorm:"column:id"`
-		ReporterID string    `gorm:"column:reporter_id"`
-		ReportedID string    `gorm:"column:reported_id"`
-		Reason     string    `gorm:"column:reason"`
-		Status     string    `gorm:"column:status"`
-		CreatedAt  time.Time `gorm:"column:created_at"`
-		UpdatedAt  time.Time `gorm:"column:updated_at"`
+		ID            string     `gorm:"column:id"`
+		ReporterID    string     `gorm:"column:reporter_id"`
+		ReportedID    string     `gorm:"column:reported_id"`
+		Reason        string     `gorm:"column:reason"`
+		Status        string     `gorm:"column:status"`
+		ReviewRemarks string     `gorm:"column:review_remarks"`
+		ReviewedBy    string     `gorm:"column:reviewed_by"`
+		ReviewedAt    *time.Time `gorm:"column:reviewed_at"`
+		CreatedAt     time.Time  `gorm:"column:created_at"`
+		UpdatedAt     time.Time  `gorm:"column:updated_at"`
 	}
 
 	var rows []row
 	offset := (f.Page - 1) * f.PageSize
-	if err := q.Order("created_at DESC").Offset(offset).Limit(f.PageSize).Find(&rows).Error; err != nil {
+	if err := q.Order("CASE WHEN status = 'pending' THEN 0 ELSE 1 END, created_at ASC").
+		Offset(offset).Limit(f.PageSize).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -50,16 +54,25 @@ func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64,
 
 	result := make([]*domain.Report, len(rows))
 	for i, r := range rows {
+		var reviewedAt *int64
+		if r.ReviewedAt != nil {
+			ts := r.ReviewedAt.Unix()
+			reviewedAt = &ts
+		}
 		result[i] = &domain.Report{
-			ID:           r.ID,
-			ReporterID:   r.ReporterID,
-			ReportedID:   r.ReportedID,
-			Reason:       r.Reason,
-			Status:       r.Status,
-			ReporterName: userNames[r.ReporterID],
-			ReportedName: userNames[r.ReportedID],
-			CreatedAt:    r.CreatedAt.Unix(),
-			UpdatedAt:    r.UpdatedAt.Unix(),
+			ID:            r.ID,
+			ReporterID:    r.ReporterID,
+			ReportedID:    r.ReportedID,
+			Reason:        r.Reason,
+			Status:        r.Status,
+			IsOverdue:     isReportOverdue(r.Status, r.CreatedAt),
+			ReporterName:  userNames[r.ReporterID],
+			ReportedName:  userNames[r.ReportedID],
+			ReviewRemarks: r.ReviewRemarks,
+			ReviewedBy:    r.ReviewedBy,
+			ReviewedAt:    reviewedAt,
+			CreatedAt:     r.CreatedAt.Unix(),
+			UpdatedAt:     r.UpdatedAt.Unix(),
 		}
 	}
 	return result, total, nil
@@ -67,13 +80,16 @@ func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64,
 
 func (rr *ReadRepository) GetReport(id string) (*domain.Report, error) {
 	type row struct {
-		ID         string    `gorm:"column:id"`
-		ReporterID string    `gorm:"column:reporter_id"`
-		ReportedID string    `gorm:"column:reported_id"`
-		Reason     string    `gorm:"column:reason"`
-		Status     string    `gorm:"column:status"`
-		CreatedAt  time.Time `gorm:"column:created_at"`
-		UpdatedAt  time.Time `gorm:"column:updated_at"`
+		ID            string     `gorm:"column:id"`
+		ReporterID    string     `gorm:"column:reporter_id"`
+		ReportedID    string     `gorm:"column:reported_id"`
+		Reason        string     `gorm:"column:reason"`
+		Status        string     `gorm:"column:status"`
+		ReviewRemarks string     `gorm:"column:review_remarks"`
+		ReviewedBy    string     `gorm:"column:reviewed_by"`
+		ReviewedAt    *time.Time `gorm:"column:reviewed_at"`
+		CreatedAt     time.Time  `gorm:"column:created_at"`
+		UpdatedAt     time.Time  `gorm:"column:updated_at"`
 	}
 
 	var r row
@@ -83,22 +99,57 @@ func (rr *ReadRepository) GetReport(id string) (*domain.Report, error) {
 
 	names := rr.batchUserNames(map[string]struct{}{r.ReporterID: {}, r.ReportedID: {}})
 
+	var reviewedAt *int64
+	if r.ReviewedAt != nil {
+		ts := r.ReviewedAt.Unix()
+		reviewedAt = &ts
+	}
+
 	return &domain.Report{
-		ID:           r.ID,
-		ReporterID:   r.ReporterID,
-		ReportedID:   r.ReportedID,
-		Reason:       r.Reason,
-		Status:       r.Status,
-		ReporterName: names[r.ReporterID],
-		ReportedName: names[r.ReportedID],
-		CreatedAt:    r.CreatedAt.Unix(),
-		UpdatedAt:    r.UpdatedAt.Unix(),
+		ID:            r.ID,
+		ReporterID:    r.ReporterID,
+		ReportedID:    r.ReportedID,
+		Reason:        r.Reason,
+		Status:        r.Status,
+		IsOverdue:     isReportOverdue(r.Status, r.CreatedAt),
+		ReporterName:  names[r.ReporterID],
+		ReportedName:  names[r.ReportedID],
+		ReviewRemarks: r.ReviewRemarks,
+		ReviewedBy:    r.ReviewedBy,
+		ReviewedAt:    reviewedAt,
+		CreatedAt:     r.CreatedAt.Unix(),
+		UpdatedAt:     r.UpdatedAt.Unix(),
 	}, nil
 }
 
-func (rr *ReadRepository) UpdateReportStatus(id, status string) error {
-	return rr.db.Table("user_reports").Where("id = ? AND deleted_at IS NULL", id).
-		Update("status", status).Error
+func (rr *ReadRepository) UpdateReportReview(id, status, remarks, reviewedBy string) error {
+	now := time.Now()
+	updates := map[string]any{
+		"status":         status,
+		"review_remarks": remarks,
+		"reviewed_by":    reviewedBy,
+		"reviewed_at":    now,
+		"updated_at":     now,
+	}
+	return rr.db.Table("user_reports").Where("id = ? AND deleted_at IS NULL", id).Updates(updates).Error
+}
+
+func (rr *ReadRepository) CountReportsByStatusWithOverdue() (*domain.ReportStatusCounts, error) {
+	counts, err := rr.CountReportsByStatus()
+	if err != nil {
+		return nil, err
+	}
+	overdue, err := rr.CountOverdueUserReports()
+	if err != nil {
+		return nil, err
+	}
+	return &domain.ReportStatusCounts{
+		Pending:   counts["pending"],
+		Reviewed:  counts["reviewed"],
+		Resolved:  counts["resolved"],
+		Dismissed: counts["dismissed"],
+		Overdue:   overdue,
+	}, nil
 }
 
 func (rr *ReadRepository) CountReportsByStatus() (map[string]int64, error) {

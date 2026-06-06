@@ -36,6 +36,9 @@ export interface OverviewStats {
   totalTokenTransactions: number
   totalForkEvents: number
   totalTokenConsumed: number
+  pendingUserReports?: number
+  pendingContentReports?: number
+  overdueReportsTotal?: number
   trends: DailyTrend[]
 }
 
@@ -107,10 +110,64 @@ export interface Report {
   reportedId: string
   reason: string
   status: string
+  isOverdue?: boolean
   reporterName?: string
   reportedName?: string
+  reviewRemarks?: string
+  reviewedBy?: string
+  reviewedAt?: number
   createdAt: number
   updatedAt?: number
+}
+
+export interface ReportStatusCounts {
+  pending: number
+  reviewed: number
+  resolved: number
+  dismissed: number
+  overdue: number
+}
+
+export interface ContentReport {
+  id: string
+  reporterId: string
+  contentType: string
+  contentId: string
+  reason: string
+  status: string
+  isOverdue?: boolean
+  reporterName?: string
+  creatorId?: string
+  creatorName?: string
+  contentTitle?: string
+  contentPreview?: string
+  contentStatus?: string
+  contentDeleted?: boolean
+  reviewRemarks?: string
+  reviewedBy?: string
+  reviewedAt?: number
+  createdAt: number
+  updatedAt?: number
+}
+
+export interface UserBlock {
+  id: string
+  blockerId: string
+  blockedId: string
+  blockerName?: string
+  blockedName?: string
+  createdAt: number
+}
+
+export interface BlockCounts {
+  total: number
+  last7Days: number
+}
+
+export interface ModerationSummary {
+  pendingUserReports: number
+  pendingContentReports: number
+  overdueTotal: number
 }
 
 export interface PlatformUser {

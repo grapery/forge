@@ -1,7 +1,8 @@
 import forgeClient from "./client"
 import type {
   LoginRequest, LoginResponse, AdminUser, OverviewStats, PaginatedData,
-  AdminOperationLog, Feedback, FeedbackStatusCount, Report,
+  AdminOperationLog, Feedback, FeedbackStatusCount, Report, ReportStatusCounts,
+  ContentReport, UserBlock, BlockCounts, ModerationSummary,
   PlatformUser, UserStatusCount, ContentItem, ContentStatusCount,
   TopicStats, PromptAuditRecord, PromptAuditSummary,
   CharacterItem, CharacterStatusCount,
@@ -78,11 +79,32 @@ export const reportApi = {
   review: (id: string, data: { status: string; remarks?: string }) =>
     forgeClient.put<any, Report>(`/api/admin/reports/${id}/review`, data),
   statusCounts: () =>
-    forgeClient.get<any, Record<string, number>>("/api/admin/reports/counts"),
+    forgeClient.get<any, ReportStatusCounts>("/api/admin/reports/counts"),
+  listContent: (params: { page?: number; pageSize?: number; status?: string; contentType?: string }) =>
+    forgeClient.get<any, PaginatedData<ContentReport>>("/api/admin/reports/content", { params }),
+  getContent: (id: string) =>
+    forgeClient.get<any, ContentReport>(`/api/admin/reports/content/${id}`),
+  reviewContent: (id: string, data: { status: string; remarks?: string }) =>
+    forgeClient.put<any, ContentReport>(`/api/admin/reports/content/${id}/review`, data),
+  resolveContent: (id: string, data: { status: string; remarks?: string; actions?: string[] }) =>
+    forgeClient.post<any, ContentReport>(`/api/admin/reports/content/${id}/resolve`, data),
+  contentStatusCounts: () =>
+    forgeClient.get<any, Record<string, number>>("/api/admin/reports/content/counts"),
+  moderationSummary: () =>
+    forgeClient.get<any, ModerationSummary>("/api/admin/reports/moderation-summary"),
   suspendUser: (userId: string) =>
     forgeClient.put(`/api/admin/users/${userId}/suspend`),
   activateUser: (userId: string) =>
     forgeClient.put(`/api/admin/users/${userId}/activate`),
+}
+
+export const blockApi = {
+  list: (params: { page?: number; pageSize?: number; blockerId?: string; blockedId?: string; search?: string }) =>
+    forgeClient.get<any, PaginatedData<UserBlock>>("/api/admin/blocks", { params }),
+  get: (id: string) =>
+    forgeClient.get<any, UserBlock>(`/api/admin/blocks/${id}`),
+  counts: () =>
+    forgeClient.get<any, BlockCounts>("/api/admin/blocks/counts"),
 }
 
 export const userApi = {
