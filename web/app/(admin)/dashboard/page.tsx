@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { dashboardApi } from "@/lib/api/admin"
+import { useEffect, useState, useCallback, useMemo } from "react"
+import { dashboardApi, userApi, characterApi, membershipApi, aiTaskApi, deviceApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
 import { Users, BookOpen, Layers, Puzzle, UserCircle, Brain, CreditCard, Receipt, Coins, RefreshCw, GitFork, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,49 +9,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageSkeleton } from "@/components/shared/skeleton"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
-import type { OverviewStats, DailyTrend } from "@/lib/types"
+import { LineChart } from "@/components/charts/line-chart"
+import { DonutChart } from "@/components/charts/donut-chart"
+import { HeatmapCalendar } from "@/components/charts/heatmap-calendar"
+import { ChartLegend } from "@/components/charts/chart-legend"
+import { ClientOnly } from "@/components/charts/client-only"
+import { dailyTrendToSeries } from "@/lib/chart-data"
+import type { OverviewStats, DailyTrend, UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary, DevicePlatformCount } from "@/lib/types"
 
 type Range = "7d" | "30d" | "90d"
 
-function MiniBarChart({ data, valueKey, label, color }: { data: DailyTrend[]; valueKey: keyof DailyTrend; label: string; color: string }) {
-  const values = data.map((d) => Number(d[valueKey]) || 0)
-  const max = Math.max(...values, 1)
-  const showEvery = values.length > 30 ? Math.ceil(values.length / 15) : 1
-  return (
-    <Card className="animate-fade-in-up hover:shadow-md transition-shadow duration-300">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-end gap-px h-28">
-          {values.map((v, i) => (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative min-w-0">
-              <div
-                className="w-full rounded-t transition-all duration-500"
-                style={{
-                  height: `${(v / max) * 100}%`,
-                  minHeight: v > 0 ? "4px" : "0",
-                  backgroundColor: color,
-                  transitionDelay: `${i * 20}ms`,
-                }}
-              />
-              {v > 0 && (
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-medium text-foreground bg-card border shadow-sm rounded px-1.5 py-0.5 pointer-events-none whitespace-nowrap z-10">
-                  {v.toLocaleString()}
-                </div>
-              )}
-              {(i % showEvery === 0 || i === values.length - 1) && (
-                <span className="text-[9px] text-muted-foreground truncate w-full text-center">
-                  {data[i]?.date?.slice(5) || ""}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
+const TREND_KEYS = [
+  { key: "newUsers" as const, labelKey: "trendNewUsers", color: "#3b82f6" },
+  { key: "newStories" as const, labelKey: "trendNewStories", color: "#8b5cf6" },
+  { key: "newOrders" as const, labelKey: "trendNewOrders", color: "#10b981" },
+  { key: "newFragments" as const, labelKey: "trendNewFragments", color: "#f59e0b" },
+  { key: "newStoryboards" as const, labelKey: "trendNewStoryboards", color: "#06b6d4" },
+  { key: "forkEvents" as const, labelKey: "trendForkEvents", color: "#ec4899" },
+  { key: "tokenConsumed" as const, labelKey: "trendTokenConsumed", color: "#ef4444" },
+]
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<OverviewStats | null>(null)
@@ -59,6 +35,15 @@ export default function DashboardPage() {
   const [collecting, setCollecting] = useState(false)
   const [error, setError] = useState("")
   const [range, setRange] = useState<Range>("30d")
+
+  const [userCounts, setUserCounts] = useState<UserStatusCount | null>(null)
+  const [charCounts, setCharCounts] = useState<CharacterStatusCount | null>(null)
+  const [memberSummary, setMemberSummary] = useState<MembershipSummary | null>(null)
+  const [aiSummary, setAiSummary] = useState<AITaskSummary | null>(null)
+  const [deviceCounts, setDeviceCounts] = useState<DevicePlatformCount | null>(null)
+
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(() => new Set(TREND_KEYS.map((k) => k.key)))
+
   const t = useTranslations("dashboard")
 
   const fetchData = useCallback((r?: Range) => {
@@ -75,6 +60,14 @@ export default function DashboardPage() {
     fetchData(range)
   }, [range])
 
+  useEffect(() => {
+    userApi.statusCounts().then(setUserCounts).catch(() => {})
+    characterApi.statusCounts().then(setCharCounts).catch(() => {})
+    membershipApi.summary().then(setMemberSummary).catch(() => {})
+    aiTaskApi.summary().then(setAiSummary).catch(() => {})
+    deviceApi.platformCounts().then(setDeviceCounts).catch(() => {})
+  }, [])
+
   const handleCollect = async () => {
     setCollecting(true)
     try {
@@ -87,6 +80,18 @@ export default function DashboardPage() {
       setCollecting(false)
     }
   }
+
+  const toggleSeries = useCallback((key: string) => {
+    setVisibleKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }, [])
 
   if (loading) return <PageSkeleton />
 
@@ -126,15 +131,23 @@ export default function DashboardPage() {
     { value: "90d", label: t("range90d") },
   ]
 
-  const trendCharts = [
-    { valueKey: "newUsers" as keyof DailyTrend, label: t("trendNewUsers"), color: "#3b82f6" },
-    { valueKey: "newStories" as keyof DailyTrend, label: t("trendNewStories"), color: "#8b5cf6" },
-    { valueKey: "newOrders" as keyof DailyTrend, label: t("trendNewOrders"), color: "#10b981" },
-    { valueKey: "newFragments" as keyof DailyTrend, label: t("trendNewFragments"), color: "#f59e0b" },
-    { valueKey: "newStoryboards" as keyof DailyTrend, label: t("trendNewStoryboards"), color: "#06b6d4" },
-    { valueKey: "forkEvents" as keyof DailyTrend, label: t("trendForkEvents"), color: "#ec4899" },
-    { valueKey: "tokenConsumed" as keyof DailyTrend, label: t("trendTokenConsumed"), color: "#ef4444" },
-  ]
+  const trendSeries = useMemo(() => {
+    if (trends.length === 0) return []
+    return dailyTrendToSeries(
+      trends,
+      TREND_KEYS.map((k) => ({ key: k.key, label: t(k.labelKey), color: k.color })),
+    )
+  }, [trends, t])
+
+  const legendItems = useMemo(
+    () => TREND_KEYS.map((k) => ({ key: k.key, label: t(k.labelKey), color: k.color })),
+    [t],
+  )
+
+  const heatmapData = useMemo(
+    () => trends.map((t) => ({ date: t.date, value: t.newUsers })),
+    [trends],
+  )
 
   return (
     <div className="space-y-6">
@@ -158,28 +171,88 @@ export default function DashboardPage() {
       </div>
 
       {trends.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{t("trendsTitle", { n: trends.length })}</h2>
-            <div className="flex gap-1">
-              {rangeOptions.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={range === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setRange(opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
+        <ClientOnly>
+          <>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">{t("trendsTitle", { n: trends.length })}</h2>
+                <div className="flex gap-1">
+                  {rangeOptions.map((opt) => (
+                    <Button key={opt.value} variant={range === opt.value ? "default" : "outline"} size="sm" onClick={() => setRange(opt.value)}>
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <Card>
+                <CardContent className="pt-4">
+                  <ChartLegend items={legendItems} visibleKeys={visibleKeys} onToggle={toggleSeries} />
+                  <div className="mt-3">
+                    <LineChart
+                      series={trendSeries}
+                      height={340}
+                      visibleKeys={visibleKeys}
+                      ariaLabel={t("trendsTitle", { n: trends.length })}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {trendCharts.map((chart) => (
-              <MiniBarChart key={chart.valueKey} data={trends} valueKey={chart.valueKey} label={chart.label} color={chart.color} />
-            ))}
-          </div>
-        </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {userCounts && (
+                <DonutChart
+                  data={[
+                    { label: "Active", value: userCounts.active },
+                    { label: "Suspended", value: userCounts.suspended },
+                    { label: "Deleted", value: userCounts.deleted },
+                  ]}
+                  title="User Status"
+                  centerLabel="Total"
+                  centerValue={String(userCounts.active + userCounts.suspended + userCounts.deleted)}
+                />
+              )}
+              {charCounts && (
+                <DonutChart
+                  data={[
+                    { label: "Public", value: charCounts.public },
+                    { label: "Private", value: charCounts.private },
+                    { label: "AI Generated", value: charCounts.aiGenerated },
+                  ]}
+                  title="Characters"
+                  centerLabel="Total"
+                  centerValue={String(charCounts.total)}
+                />
+              )}
+              {memberSummary && (
+                <DonutChart
+                  data={[
+                    { label: "Free", value: memberSummary.freeMembers },
+                    { label: "Basic", value: memberSummary.basicMembers },
+                    { label: "Premium", value: memberSummary.premiumMembers },
+                  ]}
+                  title="Membership"
+                  centerLabel="Active"
+                  centerValue={String(memberSummary.activeMemberships)}
+                />
+              )}
+              {aiSummary && (
+                <DonutChart
+                  data={[
+                    { label: "Completed", value: aiSummary.completedTasks },
+                    { label: "Pending", value: aiSummary.pendingTasks },
+                    { label: "Failed", value: aiSummary.failedTasks },
+                  ]}
+                  title="AI Tasks"
+                  centerLabel="Total"
+                  centerValue={String(aiSummary.totalTasks)}
+                />
+              )}
+            </div>
+
+            <HeatmapCalendar data={heatmapData} title="User Registration Activity" weeks={12} />
+          </>
+        </ClientOnly>
       )}
 
       {trends.length === 0 && (

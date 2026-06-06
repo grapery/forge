@@ -10,6 +10,7 @@ import {
   CreditCard, Coins, Tags, Palette, BookOpen, Mail, Search,
   UserX, Smartphone, Bot, Terminal, Receipt, Flag, Bell,
   Crown, UserCheck, ScrollText, Anvil, Globe, ChevronsUpDown,
+  BarChart3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/providers/locale-provider"
@@ -33,6 +34,11 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "operator", "viewer"] },
+  // Analytics
+  { href: "/analytics/users", label: "analyticsUsers", icon: BarChart3, roles: ["super_admin", "admin"], group: "analytics", permission: "users" },
+  { href: "/analytics/content", label: "analyticsContent", icon: BookOpen, roles: ["super_admin", "admin"], group: "analytics", permission: "content" },
+  { href: "/analytics/revenue", label: "analyticsRevenue", icon: CreditCard, roles: ["super_admin", "admin"], group: "analytics", permission: "orders" },
+  { href: "/analytics/ai", label: "analyticsAi", icon: Brain, roles: ["super_admin", "admin"], group: "analytics", permission: "ai-tasks" },
   // Operations
   { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin"], group: "operations", permission: "content" },
   { href: "/characters", label: "characters", icon: Ghost, roles: ["super_admin", "admin"], group: "operations", permission: "characters" },
@@ -63,9 +69,10 @@ const navItems: NavItem[] = [
   { href: "/change-password", label: "changePassword", icon: KeyRound, roles: ["super_admin", "admin", "operator", "viewer"], group: "settings" },
 ]
 
-const groupOrder = ["", "operations", "settings"]
+const groupOrder = ["", "analytics", "operations", "settings"]
 const groupLabels: Record<string, string> = {
   "": "",
+  "analytics": "groupAnalytics",
   "operations": "groupOperations",
   "settings": "groupSettings",
 }
