@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { userApi, dashboardApi, deviceApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
 import { Users, UserCheck, UserX, Smartphone } from "lucide-react"
@@ -12,6 +12,7 @@ import { BarChart } from "@/components/charts/bar-chart"
 import { HeatmapCalendar } from "@/components/charts/heatmap-calendar"
 import { ClientOnly } from "@/components/charts/client-only"
 import { dailyTrendToSeries } from "@/lib/chart-data"
+import { useTranslations } from "next-intl"
 import type { DailyTrend, UserStatusCount, DevicePlatformCount, OverviewStats } from "@/lib/types"
 
 type Range = "7d" | "30d" | "90d"
@@ -22,6 +23,9 @@ export default function UserAnalyticsPage() {
   const [deviceCounts, setDeviceCounts] = useState<DevicePlatformCount | null>(null)
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState<Range>("30d")
+
+  const t = useTranslations("analyticsUsers")
+  const dt = useTranslations("dashboard")
 
   useEffect(() => {
     setLoading(true)
@@ -36,21 +40,21 @@ export default function UserAnalyticsPage() {
   const trends = stats?.trends || []
 
   const growthSeries = dailyTrendToSeries(trends, [
-    { key: "newUsers", label: "New Users", color: "#3b82f6" },
-    { key: "totalUsers", label: "Total Users", color: "#8b5cf6" },
+    { key: "newUsers", label: t("newUsers"), color: "#3b82f6" },
+    { key: "totalUsers", label: t("totalUsersSeries"), color: "#8b5cf6" },
   ])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">User Analytics</h1>
-          <p className="text-muted-foreground">User growth, engagement, and platform distribution</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex gap-1">
           {(["7d", "30d", "90d"] as Range[]).map((r) => (
             <Button key={r} variant={range === r ? "default" : "outline"} size="sm" onClick={() => setRange(r)}>
-              {r}
+              {r === "7d" ? dt("range7d") : r === "30d" ? dt("range30d") : dt("range90d")}
             </Button>
           ))}
         </div>
@@ -58,23 +62,23 @@ export default function UserAnalyticsPage() {
 
       <ClientOnly>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Users" value={stats?.totalUsers ?? 0} icon={Users} />
-          <StatCard title="Active" value={userCounts?.active ?? 0} icon={UserCheck} />
-          <StatCard title="Suspended" value={userCounts?.suspended ?? 0} icon={UserX} />
-          <StatCard title="Devices" value={(deviceCounts?.ios ?? 0) + (deviceCounts?.android ?? 0)} icon={Smartphone} />
+          <StatCard title={t("statTotalUsers")} value={stats?.totalUsers ?? 0} icon={Users} />
+          <StatCard title={t("statActive")} value={userCounts?.active ?? 0} icon={UserCheck} />
+          <StatCard title={t("statSuspended")} value={userCounts?.suspended ?? 0} icon={UserX} />
+          <StatCard title={t("statDevices")} value={(deviceCounts?.ios ?? 0) + (deviceCounts?.android ?? 0)} icon={Smartphone} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <LineChart series={growthSeries} title="User Growth Trend" height={300} />
+          <LineChart series={growthSeries} title={t("growthTrend")} height={300} />
           {userCounts && (
             <DonutChart
               data={[
-                { label: "Active", value: userCounts.active },
-                { label: "Suspended", value: userCounts.suspended },
-                { label: "Deleted", value: userCounts.deleted },
+                { label: t("statActive"), value: userCounts.active },
+                { label: t("statSuspended"), value: userCounts.suspended },
+                { label: t("chartDeleted"), value: userCounts.deleted },
               ]}
-              title="User Status Distribution"
-              centerLabel="Total"
+              title={t("statusDistribution")}
+              centerLabel={t("total")}
               centerValue={String(userCounts.active + userCounts.suspended + userCounts.deleted)}
             />
           )}
@@ -84,17 +88,17 @@ export default function UserAnalyticsPage() {
           {deviceCounts && (
             <BarChart
               data={[
-                { label: "iOS", value: deviceCounts.ios },
-                { label: "Android", value: deviceCounts.android },
-                { label: "Other", value: deviceCounts.other },
+                { label: t("ios"), value: deviceCounts.ios },
+                { label: t("android"), value: deviceCounts.android },
+                { label: t("other"), value: deviceCounts.other },
               ]}
-              title="Device Platform"
+              title={t("devicePlatform")}
               horizontal
             />
           )}
           <HeatmapCalendar
-            data={trends.map((t) => ({ date: t.date, value: t.newUsers }))}
-            title="Registration Activity"
+            data={trends.map((tr) => ({ date: tr.date, value: tr.newUsers }))}
+            title={t("registrationActivity")}
             weeks={12}
           />
         </div>

@@ -13,6 +13,7 @@ import { FunnelChart } from "@/components/charts/funnel-chart"
 import { SankeyChart } from "@/components/charts/sankey-chart"
 import { ClientOnly } from "@/components/charts/client-only"
 import { dailyTrendToSeries } from "@/lib/chart-data"
+import { useTranslations } from "next-intl"
 import type { OverviewStats, OrderSummary, MembershipSummary, TokenSummary } from "@/lib/types"
 
 type Range = "7d" | "30d" | "90d"
@@ -25,10 +26,13 @@ export default function RevenueAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState<Range>("30d")
 
+  const t = useTranslations("analyticsRevenue")
+  const dt = useTranslations("dashboard")
+
   useEffect(() => {
     setLoading(true)
     Promise.all([dashboardApi.getOverview(range), orderApi.summary(), membershipApi.summary(), tokenApi.summary()])
-      .then(([s, o, m, t]) => { setStats(s); setOrderSummary(o); setMemberSummary(m); setTokenSummary(t) })
+      .then(([s, o, m, ts]) => { setStats(s); setOrderSummary(o); setMemberSummary(m); setTokenSummary(ts) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [range])
@@ -38,21 +42,21 @@ export default function RevenueAnalyticsPage() {
   const trends = stats?.trends || []
 
   const revenueSeries = dailyTrendToSeries(trends, [
-    { key: "newRevenue", label: "Revenue", color: "#10b981" },
-    { key: "newOrders", label: "Orders", color: "#3b82f6" },
+    { key: "newRevenue", label: t("revenue"), color: "#10b981" },
+    { key: "newOrders", label: t("orders"), color: "#3b82f6" },
   ])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Revenue Analytics</h1>
-          <p className="text-muted-foreground">Revenue trends, subscriptions, and token economy</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex gap-1">
           {(["7d", "30d", "90d"] as Range[]).map((r) => (
             <Button key={r} variant={range === r ? "default" : "outline"} size="sm" onClick={() => setRange(r)}>
-              {r}
+              {r === "7d" ? dt("range7d") : r === "30d" ? dt("range30d") : dt("range90d")}
             </Button>
           ))}
         </div>
@@ -60,22 +64,22 @@ export default function RevenueAnalyticsPage() {
 
       <ClientOnly>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Revenue" value={`$${orderSummary?.totalRevenue?.toLocaleString() ?? 0}`} icon={CreditCard} />
-          <StatCard title="Total Orders" value={orderSummary?.totalOrders ?? 0} icon={Receipt} />
-          <StatCard title="Active Members" value={memberSummary?.activeMemberships ?? 0} icon={TrendingUp} />
-          <StatCard title="Tokens Consumed" value={tokenSummary?.totalConsumed?.toLocaleString() ?? 0} icon={Coins} />
+          <StatCard title={t("statTotalRevenue")} value={`$${orderSummary?.totalRevenue?.toLocaleString() ?? 0}`} icon={CreditCard} />
+          <StatCard title={t("statTotalOrders")} value={orderSummary?.totalOrders ?? 0} icon={Receipt} />
+          <StatCard title={t("statActiveMembers")} value={memberSummary?.activeMemberships ?? 0} icon={TrendingUp} />
+          <StatCard title={t("statTokensConsumed")} value={tokenSummary?.totalConsumed?.toLocaleString() ?? 0} icon={Coins} />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <LineChart series={revenueSeries} title="Revenue & Order Trend" height={300} />
+          <LineChart series={revenueSeries} title={t("revenueTrend")} height={300} />
           {orderSummary && (
             <FunnelChart
               data={[
-                { label: "Total Orders", value: orderSummary.totalOrders },
-                { label: "Paid", value: orderSummary.paidOrders },
-                { label: "Pending", value: orderSummary.pendingOrders },
+                { label: t("totalOrders"), value: orderSummary.totalOrders },
+                { label: t("paid"), value: orderSummary.paidOrders },
+                { label: t("pending"), value: orderSummary.pendingOrders },
               ]}
-              title="Order Funnel"
+              title={t("orderFunnel")}
             />
           )}
         </div>
@@ -84,33 +88,33 @@ export default function RevenueAnalyticsPage() {
           {memberSummary && (
             <DonutChart
               data={[
-                { label: "Free", value: memberSummary.freeMembers },
-                { label: "Basic", value: memberSummary.basicMembers },
-                { label: "Premium", value: memberSummary.premiumMembers },
+                { label: t("free"), value: memberSummary.freeMembers },
+                { label: t("basic"), value: memberSummary.basicMembers },
+                { label: t("premium"), value: memberSummary.premiumMembers },
               ]}
-              title="Membership Tier Distribution"
-              centerLabel="Active"
+              title={t("membershipDistribution")}
+              centerLabel={t("active")}
               centerValue={String(memberSummary.activeMemberships)}
             />
           )}
           {tokenSummary && (
             <SankeyChart
               nodes={[
-                { name: "Recharged" },
-                { name: "Gifted" },
-                { name: "Consumed" },
-                { name: "Refunded" },
-                { name: "AI Tasks" },
-                { name: "Generation" },
+                { name: t("recharged") },
+                { name: t("gifted") },
+                { name: t("consumed") },
+                { name: t("refunded") },
+                { name: t("aiTasks") },
+                { name: t("generation") },
               ]}
               links={[
-                { source: "Recharged", target: "Consumed", value: Math.min(tokenSummary.totalRecharged, tokenSummary.totalConsumed) },
-                { source: "Gifted", target: "Consumed", value: Math.min(tokenSummary.totalGifted, tokenSummary.totalConsumed) },
-                { source: "Consumed", target: "AI Tasks", value: Math.floor(tokenSummary.totalConsumed * 0.6) },
-                { source: "Consumed", target: "Generation", value: Math.floor(tokenSummary.totalConsumed * 0.4) },
-                { source: "Refunded", target: "Consumed", value: tokenSummary.totalRefunded },
+                { source: t("recharged"), target: t("consumed"), value: Math.min(tokenSummary.totalRecharged, tokenSummary.totalConsumed) },
+                { source: t("gifted"), target: t("consumed"), value: Math.min(tokenSummary.totalGifted, tokenSummary.totalConsumed) },
+                { source: t("consumed"), target: t("aiTasks"), value: Math.floor(tokenSummary.totalConsumed * 0.6) },
+                { source: t("consumed"), target: t("generation"), value: Math.floor(tokenSummary.totalConsumed * 0.4) },
+                { source: t("refunded"), target: t("consumed"), value: tokenSummary.totalRefunded },
               ]}
-              title="Token Economy Flow"
+              title={t("tokenEconomyFlow")}
             />
           )}
         </div>

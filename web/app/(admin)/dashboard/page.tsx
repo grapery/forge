@@ -203,54 +203,54 @@ export default function DashboardPage() {
               {userCounts && (
                 <DonutChart
                   data={[
-                    { label: "Active", value: userCounts.active },
-                    { label: "Suspended", value: userCounts.suspended },
-                    { label: "Deleted", value: userCounts.deleted },
+                    { label: t("chartActive"), value: userCounts.active },
+                    { label: t("chartSuspended"), value: userCounts.suspended },
+                    { label: t("chartDeleted"), value: userCounts.deleted },
                   ]}
-                  title="User Status"
-                  centerLabel="Total"
+                  title={t("chartUserStatus")}
+                  centerLabel={t("chartTotal")}
                   centerValue={String(userCounts.active + userCounts.suspended + userCounts.deleted)}
                 />
               )}
               {charCounts && (
                 <DonutChart
                   data={[
-                    { label: "Public", value: charCounts.public },
-                    { label: "Private", value: charCounts.private },
-                    { label: "AI Generated", value: charCounts.aiGenerated },
+                    { label: t("chartPublic"), value: charCounts.public },
+                    { label: t("chartPrivate"), value: charCounts.private },
+                    { label: t("chartAiGenerated"), value: charCounts.aiGenerated },
                   ]}
-                  title="Characters"
-                  centerLabel="Total"
+                  title={t("chartCharacters")}
+                  centerLabel={t("chartTotal")}
                   centerValue={String(charCounts.total)}
                 />
               )}
               {memberSummary && (
                 <DonutChart
                   data={[
-                    { label: "Free", value: memberSummary.freeMembers },
-                    { label: "Basic", value: memberSummary.basicMembers },
-                    { label: "Premium", value: memberSummary.premiumMembers },
+                    { label: t("chartFree"), value: memberSummary.freeMembers },
+                    { label: t("chartBasic"), value: memberSummary.basicMembers },
+                    { label: t("chartPremium"), value: memberSummary.premiumMembers },
                   ]}
-                  title="Membership"
-                  centerLabel="Active"
+                  title={t("chartMembership")}
+                  centerLabel={t("chartActive")}
                   centerValue={String(memberSummary.activeMemberships)}
                 />
               )}
               {aiSummary && (
                 <DonutChart
                   data={[
-                    { label: "Completed", value: aiSummary.completedTasks },
-                    { label: "Pending", value: aiSummary.pendingTasks },
-                    { label: "Failed", value: aiSummary.failedTasks },
+                    { label: t("chartCompleted"), value: aiSummary.completedTasks },
+                    { label: t("chartPending"), value: aiSummary.pendingTasks },
+                    { label: t("chartFailed"), value: aiSummary.failedTasks },
                   ]}
-                  title="AI Tasks"
-                  centerLabel="Total"
+                  title={t("chartAiTasks")}
+                  centerLabel={t("chartTotal")}
                   centerValue={String(aiSummary.totalTasks)}
                 />
               )}
             </div>
 
-            <HeatmapCalendar data={heatmapData} title="User Registration Activity" weeks={12} />
+            <HeatmapCalendar data={heatmapData} title={t("chartRegistrationActivity")} weeks={12} />
           </>
         </ClientOnly>
       )}
