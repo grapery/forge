@@ -54,6 +54,7 @@ export default function ReportsPage() {
   const [blockItems, setBlockItems] = useState<UserBlock[]>([])
   const [blockTotal, setBlockTotal] = useState(0)
   const [blockCounts, setBlockCounts] = useState<BlockCounts | null>(null)
+  const [countsError, setCountsError] = useState("")
 
   const statusLabel: Record<string, string> = {
     pending: t("statusPending"),
@@ -71,6 +72,7 @@ export default function ReportsPage() {
   }
 
   useEffect(() => {
+    setCountsError("")
     if (tab === "users") {
       reportApi.statusCounts().then((c) => setUserCounts({
         pending: c.pending,
@@ -78,12 +80,22 @@ export default function ReportsPage() {
         resolved: c.resolved,
         dismissed: c.dismissed,
         overdue: c.overdue,
-      })).catch(() => {})
+      })).catch((err: Error) => {
+        setUserCounts(null)
+        setCountsError(err.message || t("countsLoadFailed"))
+      })
     } else if (tab === "content") {
-      reportApi.contentStatusCounts().then(setContentCounts).catch(() => {})
+      reportApi.contentStatusCounts().then(setContentCounts).catch((err: Error) => {
+        setContentCounts(null)
+        setCountsError(err.message || t("countsLoadFailed"))
+      })
     } else {
-      blockApi.counts().then(setBlockCounts).catch(() => {})
+      blockApi.counts().then(setBlockCounts).catch((err: Error) => {
+        setBlockCounts(null)
+        setCountsError(err.message || t("countsLoadFailed"))
+      })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
   useEffect(() => {
@@ -152,6 +164,12 @@ export default function ReportsPage() {
       </div>
 
       {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {countsError && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {countsError}
+          <p className="mt-1 text-xs opacity-90">{t("countsLoadHint")}</p>
+        </div>
+      )}
 
       {tab !== "blocks" && (userCounts || contentCounts) && (
         <div className="grid gap-4 md:grid-cols-5">
