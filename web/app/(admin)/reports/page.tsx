@@ -120,7 +120,7 @@ export default function ReportsPage() {
       }
     }
     load()
-  }, [tab, page, statusFilter, contentTypeFilter, blockSearch, t])
+  }, [tab, page, statusFilter, contentTypeFilter, blockSearch])
 
   const total = tab === "users" ? userTotal : tab === "content" ? contentTotal : blockTotal
   const totalPages = Math.ceil(total / pageSize)
