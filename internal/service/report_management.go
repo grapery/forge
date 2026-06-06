@@ -80,10 +80,24 @@ func (s *ReportService) Review(id string, req *domain.ReviewReportRequest, revie
 	if report.Status == req.Status && req.Remarks == report.ReviewRemarks {
 		return report, nil
 	}
+	prevStatus := report.Status
 	if err := s.readRepo.UpdateReportReview(id, req.Status, req.Remarks, reviewedBy); err != nil {
 		return nil, err
 	}
-	return s.readRepo.GetReport(id)
+	updated, err := s.readRepo.GetReport(id)
+	if err != nil {
+		return nil, err
+	}
+	if prevStatus != updated.Status {
+		s.notifyReporterOutcome(
+			updated.ReporterID,
+			updated.Status,
+			updated.ReviewRemarks,
+			fmt.Sprintf("/users/%s", updated.ReportedID),
+			"用户举报",
+		)
+	}
+	return updated, nil
 }
 
 func (s *ReportService) StatusCounts() (*domain.ReportStatusCounts, error) {
@@ -125,10 +139,18 @@ func (s *ReportService) ReviewContentReport(id string, req *domain.ReviewReportR
 	if report.Status == req.Status && req.Remarks == report.ReviewRemarks {
 		return report, nil
 	}
+	prevStatus := report.Status
 	if err := s.readRepo.UpdateContentReportReview(id, req.Status, req.Remarks, reviewedBy); err != nil {
 		return nil, err
 	}
-	return s.readRepo.GetContentReport(id)
+	updated, err := s.readRepo.GetContentReport(id)
+	if err != nil {
+		return nil, err
+	}
+	if prevStatus != updated.Status {
+		s.notifyContentReportOutcome(updated)
+	}
+	return updated, nil
 }
 
 func (s *ReportService) ContentReportStatusCounts() (map[string]int64, error) {
@@ -175,10 +197,18 @@ func (s *ReportService) ResolveContentReport(id string, req *domain.ResolveConte
 		}
 	}
 
+	prevStatus := report.Status
 	if err := s.readRepo.UpdateContentReportReview(id, req.Status, req.Remarks, reviewedBy); err != nil {
 		return nil, err
 	}
-	return s.readRepo.GetContentReport(id)
+	updated, err := s.readRepo.GetContentReport(id)
+	if err != nil {
+		return nil, err
+	}
+	if prevStatus != updated.Status {
+		s.notifyContentReportOutcome(updated)
+	}
+	return updated, nil
 }
 
 func (s *ReportService) takedownContent(contentType, contentID string) error {
