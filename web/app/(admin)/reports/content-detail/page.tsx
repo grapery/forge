@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
+import { toast } from "sonner"
 
 const statusColor: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -56,12 +57,26 @@ export default function ContentReportDetailPage() {
     setReviewStatus(data.status)
   }
 
+  const showReviewOutcome = (updated: ContentReport) => {
+    if (updated.reporterNotified) {
+      toast.success(t("toastReporterNotified"), {
+        action: {
+          label: t("viewReporterNotifications"),
+          onClick: () => router.push(`/notifications?userId=${updated.reporterId}&type=moderation_report_resolved`),
+        },
+      })
+    } else {
+      toast.success(t("toastReviewSaved"))
+    }
+  }
+
   const handleReview = async () => {
     setSaving(true)
     try {
       const updated = await reportApi.reviewContent(id, { status: reviewStatus, remarks })
       setReport(updated)
       setRemarks("")
+      showReviewOutcome(updated)
     } finally {
       setSaving(false)
     }
@@ -86,6 +101,7 @@ export default function ContentReportDetailPage() {
       setReport(updated)
       setReviewStatus(updated.status)
       setRemarks("")
+      showReviewOutcome(updated)
     } finally {
       setActionLoading("")
     }
@@ -301,6 +317,14 @@ export default function ContentReportDetailPage() {
               <Button onClick={handleReview} disabled={saving} className="w-full">
                 {saving ? t("buttonSaving") : t("buttonSubmitReview")}
               </Button>
+              {report.reporterId && (
+                <Link
+                  href={`/notifications?userId=${report.reporterId}&type=moderation_report_resolved`}
+                  className="block text-center text-sm text-primary hover:underline"
+                >
+                  {t("viewReporterNotifications")}
+                </Link>
+              )}
             </CardContent>
           </Card>
         </div>

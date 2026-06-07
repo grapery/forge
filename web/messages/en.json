@@ -155,6 +155,13 @@
     "moderationPendingContent": "Pending content reports",
     "moderationOverdue": "Overdue (>24h)",
     "moderationViewAll": "Open moderation hub",
+    "moderationCardTitle": "Moderation overview",
+    "moderationBlocksTotal": "Total blocks",
+    "moderationBlocksLast7Days": "Blocks (last 7 days)",
+    "moderationLinkUserReports": "User reports",
+    "moderationLinkContentReports": "Content reports",
+    "moderationLinkBlocks": "Block relationships",
+    "moderationCountsFailed": "Failed to load block stats",
     "range7d": "7 Days",
     "range30d": "30 Days",
     "range90d": "90 Days",
@@ -866,7 +873,9 @@
     "contentType_fragment": "Fragment",
     "contentType_comment": "Comment",
     "contentType_story": "Story",
-    "contentType_character": "Character"
+    "contentType_character": "Character",
+    "countsLoadFailed": "Failed to load summary counts",
+    "countsLoadHint": "Ensure the backend has content_reports / user_blocks migrations and APIs deployed."
   },
   "reportsDetail": {
     "title": "Report Detail",
@@ -904,7 +913,10 @@
     "statusDismissed": "Dismissed",
     "slaOverdue": "Over 24h",
     "fieldReviewRemarks": "Review remarks",
-    "reviewedBy": "Reviewed by {by} at {at}"
+    "reviewedBy": "Reviewed by {by} at {at}",
+    "toastReporterNotified": "Reporter was notified of the outcome",
+    "toastReviewSaved": "Review saved",
+    "viewReporterNotifications": "View reporter notifications"
   },
   "reportsContentDetail": {
     "title": "Content Report Detail",
@@ -944,7 +956,10 @@
     "statusPending": "Pending",
     "statusReviewed": "Reviewed",
     "statusResolved": "Resolved",
-    "statusDismissed": "Dismissed"
+    "statusDismissed": "Dismissed",
+    "toastReporterNotified": "Reporter was notified of the outcome",
+    "toastReviewSaved": "Review saved",
+    "viewReporterNotifications": "View reporter notifications"
   },
   "topics": {
     "title": "Topics",
@@ -975,6 +990,19 @@
     "filterPromotion": "Promotion",
     "filterSocial": "Social",
     "filterContent": "Content",
+    "filterModerationReportReceived": "Report received",
+    "filterModerationReportResolved": "Report outcome",
+    "filterModerationBlockConfirmed": "Block confirmed",
+    "loadFailed": "Failed to load notifications",
+    "type_moderation_report_received": "Report received",
+    "type_moderation_report_resolved": "Report outcome",
+    "type_moderation_block_confirmed": "Block confirmed",
+    "type_system": "System",
+    "type_promotion": "Promotion",
+    "type_social": "Social",
+    "type_content": "Content",
+    "readYes": "Yes",
+    "readNo": "No",
     "columnUserId": "User ID",
     "columnType": "Type",
     "columnTitle": "Title",

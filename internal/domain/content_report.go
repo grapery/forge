@@ -21,6 +21,8 @@ type ContentReport struct {
 	ReviewedAt    *int64 `json:"reviewedAt,omitempty"`
 	CreatedAt     int64  `json:"createdAt"`
 	UpdatedAt     int64  `json:"updatedAt,omitempty"`
+	// ReporterNotified is true when a moderation outcome in-app notification was written for the reporter (resolved/dismissed).
+	ReporterNotified bool `json:"reporterNotified,omitempty"`
 }
 
 type ContentReportListQuery struct {

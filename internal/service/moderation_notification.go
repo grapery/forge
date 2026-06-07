@@ -59,15 +59,15 @@ func contentReportLink(contentType, contentID string) string {
 	}
 }
 
-func (s *ReportService) notifyContentReportOutcome(report *domain.ContentReport) {
+func (s *ReportService) notifyContentReportOutcome(report *domain.ContentReport) bool {
 	if report == nil {
-		return
+		return false
 	}
 	label := "内容举报"
 	if t := strings.TrimSpace(report.ContentType); t != "" {
 		label = fmt.Sprintf("「%s」内容举报", t)
 	}
-	s.notifyReporterOutcome(
+	return s.notifyReporterOutcome(
 		report.ReporterID,
 		report.Status,
 		report.ReviewRemarks,
@@ -76,18 +76,20 @@ func (s *ReportService) notifyContentReportOutcome(report *domain.ContentReport)
 	)
 }
 
-func (s *ReportService) notifyReporterOutcome(reporterID, status, remarks, link, targetLabel string) {
+func (s *ReportService) notifyReporterOutcome(reporterID, status, remarks, link, targetLabel string) bool {
 	if reporterID == "" {
-		return
+		return false
 	}
 	title, content, ok := moderationOutcomeCopy(status, remarks, targetLabel)
 	if !ok {
-		return
+		return false
 	}
 	if err := s.writeRepo.CreateSystemNotification(reporterID, notificationTypeModerationReportResolved, title, content, link); err != nil {
 		s.logger.Warn("failed to create moderation outcome notification",
 			zap.String("reporterId", reporterID),
 			zap.String("status", status),
 			zap.Error(err))
+		return false
 	}
+	return true
 }

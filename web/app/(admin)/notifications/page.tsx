@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useTranslations } from "next-intl"
+import { useSearchParams } from "next/navigation"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
 import { notificationApi } from "@/lib/api/admin"
@@ -20,19 +21,47 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { Bell } from "lucide-react"
 
+const KNOWN_TYPES = [
+  "system",
+  "promotion",
+  "social",
+  "content",
+  "moderation_report_received",
+  "moderation_report_resolved",
+  "moderation_block_confirmed",
+] as const
 
 export default function NotificationsPage() {
   const t = useTranslations("notifications")
+  const searchParams = useSearchParams()
   const [items, setItems] = useState<NotificationItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
-  const [search, setSearch] = useState("")
-  const [type, setType] = useState("")
+  const [search, setSearch] = useState(() => searchParams.get("userId") || "")
+  const [type, setType] = useState(() => searchParams.get("type") || "")
   const pageSize = 20
+
+  useEffect(() => {
+    const userId = searchParams.get("userId")
+    const notificationType = searchParams.get("type")
+    if (userId) setSearch(userId)
+    if (notificationType) setType(notificationType)
+    setPage(1)
+  }, [searchParams])
+
+  const typeLabel = (notificationType: string) => {
+    const key = `type_${notificationType}` as Parameters<typeof t>[0]
+    if ((KNOWN_TYPES as readonly string[]).includes(notificationType)) {
+      return t(key)
+    }
+    return notificationType
+  }
 
   const fetchData = useCallback(() => {
     setLoading(true)
+    setError("")
     notificationApi
       .list({
         page,
@@ -44,9 +73,13 @@ export default function NotificationsPage() {
         setItems(data.items || [])
         setTotal(data.total)
       })
-      .catch(() => {})
+      .catch((err: Error) => {
+        setItems([])
+        setTotal(0)
+        setError(err.message || t("loadFailed"))
+      })
       .finally(() => setLoading(false))
-  }, [page, search, type])
+  }, [page, search, type, t])
 
   useEffect(() => {
     fetchData()
@@ -61,12 +94,12 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")} icon={Bell} />
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
+          <SearchInput value={search} onSearch={setSearch} placeholder={t("searchPlaceholder")} />
         </div>
-        <Select value={type || "all"} onValueChange={(v) => setType(v)}>
-          <SelectTrigger className="w-40">
+        <Select value={type || "all"} onValueChange={(v) => { setType(v); setPage(1) }}>
+          <SelectTrigger className="w-52">
             <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
@@ -75,9 +108,16 @@ export default function NotificationsPage() {
             <SelectItem value="promotion">{t("filterPromotion")}</SelectItem>
             <SelectItem value="social">{t("filterSocial")}</SelectItem>
             <SelectItem value="content">{t("filterContent")}</SelectItem>
+            <SelectItem value="moderation_report_received">{t("filterModerationReportReceived")}</SelectItem>
+            <SelectItem value="moderation_report_resolved">{t("filterModerationReportResolved")}</SelectItem>
+            <SelectItem value="moderation_block_confirmed">{t("filterModerationBlockConfirmed")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
 
       {loading ? (
         <PageSkeleton />
@@ -98,7 +138,7 @@ export default function NotificationsPage() {
               key: "type",
               header: t("columnType"),
               render: (item: NotificationItem) => (
-                <Badge variant="secondary">{item.type}</Badge>
+                <Badge variant="secondary">{typeLabel(item.type)}</Badge>
               ),
             },
             {
@@ -122,7 +162,7 @@ export default function NotificationsPage() {
               header: t("columnRead"),
               render: (item: NotificationItem) => (
                 <Badge variant={item.read ? "default" : "secondary"}>
-                  {item.read ? "Yes" : "No"}
+                  {item.read ? t("readYes") : t("readNo")}
                 </Badge>
               ),
             },

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
-import { dashboardApi, userApi, characterApi, membershipApi, aiTaskApi, deviceApi } from "@/lib/api/admin"
+import { dashboardApi, userApi, characterApi, membershipApi, aiTaskApi, deviceApi, blockApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
 import { Users, BookOpen, Layers, Puzzle, UserCircle, Brain, CreditCard, Receipt, Coins, RefreshCw, GitFork, Zap, Flag, ShieldAlert } from "lucide-react"
 import Link from "next/link"
@@ -16,7 +16,7 @@ import { HeatmapCalendar } from "@/components/charts/heatmap-calendar"
 import { ChartLegend } from "@/components/charts/chart-legend"
 import { ClientOnly } from "@/components/charts/client-only"
 import { dailyTrendToSeries } from "@/lib/chart-data"
-import type { OverviewStats, DailyTrend, UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary, DevicePlatformCount } from "@/lib/types"
+import type { OverviewStats, DailyTrend, UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary, DevicePlatformCount, BlockCounts } from "@/lib/types"
 
 type Range = "7d" | "30d" | "90d"
 
@@ -42,6 +42,8 @@ export default function DashboardPage() {
   const [memberSummary, setMemberSummary] = useState<MembershipSummary | null>(null)
   const [aiSummary, setAiSummary] = useState<AITaskSummary | null>(null)
   const [deviceCounts, setDeviceCounts] = useState<DevicePlatformCount | null>(null)
+  const [blockCounts, setBlockCounts] = useState<BlockCounts | null>(null)
+  const [moderationCountsError, setModerationCountsError] = useState("")
 
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(() => new Set(TREND_KEYS.map((k) => k.key)))
 
@@ -67,7 +69,11 @@ export default function DashboardPage() {
     membershipApi.summary().then(setMemberSummary).catch(() => {})
     aiTaskApi.summary().then(setAiSummary).catch(() => {})
     deviceApi.platformCounts().then(setDeviceCounts).catch(() => {})
-  }, [])
+    blockApi.counts().then(setBlockCounts).catch((err: Error) => {
+      setBlockCounts(null)
+      setModerationCountsError(err.message || t("moderationCountsFailed"))
+    })
+  }, [t])
 
   const handleCollect = async () => {
     setCollecting(true)
@@ -175,11 +181,16 @@ export default function DashboardPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Flag className="h-4 w-4" />
-              {t("moderationViewAll")}
+              {t("moderationCardTitle")}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
+          <CardContent className="space-y-4">
+            {moderationCountsError && (
+              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {moderationCountsError}
+              </div>
+            )}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <div>
                 <p className="text-xs text-muted-foreground">{t("moderationPendingUser")}</p>
                 <p className="text-2xl font-bold">{stats?.pendingUserReports ?? 0}</p>
@@ -195,10 +206,26 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-2xl font-bold text-red-700">{stats?.overdueReportsTotal ?? 0}</p>
               </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("moderationBlocksTotal")}</p>
+                <p className="text-2xl font-bold">{blockCounts?.total ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("moderationBlocksLast7Days")}</p>
+                <p className="text-2xl font-bold">{blockCounts?.last7Days ?? "—"}</p>
+              </div>
             </div>
-            <Button asChild variant="outline" size="sm" className="mt-4">
-              <Link href="/reports">{t("moderationViewAll")}</Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/reports?tab=users">{t("moderationLinkUserReports")}</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/reports?tab=content">{t("moderationLinkContentReports")}</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/reports?tab=blocks">{t("moderationLinkBlocks")}</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

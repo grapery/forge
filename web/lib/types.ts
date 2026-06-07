@@ -118,6 +118,7 @@ export interface Report {
   reviewedAt?: number
   createdAt: number
   updatedAt?: number
+  reporterNotified?: boolean
 }
 
 export interface ReportStatusCounts {
@@ -148,6 +149,7 @@ export interface ContentReport {
   reviewedAt?: number
   createdAt: number
   updatedAt?: number
+  reporterNotified?: boolean
 }
 
 export interface UserBlock {

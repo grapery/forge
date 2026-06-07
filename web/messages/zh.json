@@ -155,6 +155,13 @@
     "moderationPendingContent": "待处理内容举报",
     "moderationOverdue": "超时（>24h）",
     "moderationViewAll": "打开内容审核",
+    "moderationCardTitle": "内容审核概览",
+    "moderationBlocksTotal": "拉黑总数",
+    "moderationBlocksLast7Days": "近 7 日新增拉黑",
+    "moderationLinkUserReports": "用户举报",
+    "moderationLinkContentReports": "内容举报",
+    "moderationLinkBlocks": "拉黑关系",
+    "moderationCountsFailed": "加载拉黑统计失败",
     "range7d": "近一周",
     "range30d": "近一月",
     "range90d": "近一季度",
@@ -866,7 +873,9 @@
     "contentType_fragment": "碎片",
     "contentType_comment": "评论",
     "contentType_story": "故事",
-    "contentType_character": "角色"
+    "contentType_character": "角色",
+    "countsLoadFailed": "加载统计数据失败",
+    "countsLoadHint": "请确认后端已部署 content_reports / user_blocks 相关迁移与 API。"
   },
   "reportsDetail": {
     "title": "举报详情",
@@ -904,7 +913,10 @@
     "statusDismissed": "已驳回",
     "slaOverdue": "超过 24 小时",
     "fieldReviewRemarks": "审核备注",
-    "reviewedBy": "由 {by} 于 {at} 审核"
+    "reviewedBy": "由 {by} 于 {at} 审核",
+    "toastReporterNotified": "已向举报人发送处理结果通知",
+    "toastReviewSaved": "审核已保存",
+    "viewReporterNotifications": "查看举报人通知"
   },
   "reportsContentDetail": {
     "title": "内容举报详情",
@@ -944,7 +956,10 @@
     "statusPending": "待处理",
     "statusReviewed": "已审阅",
     "statusResolved": "已解决",
-    "statusDismissed": "已驳回"
+    "statusDismissed": "已驳回",
+    "toastReporterNotified": "已向举报人发送处理结果通知",
+    "toastReviewSaved": "审核已保存",
+    "viewReporterNotifications": "查看举报人通知"
   },
   "topics": {
     "title": "话题",
@@ -975,6 +990,19 @@
     "filterPromotion": "推广",
     "filterSocial": "社交",
     "filterContent": "内容",
+    "filterModerationReportReceived": "举报已受理",
+    "filterModerationReportResolved": "举报处理结果",
+    "filterModerationBlockConfirmed": "拉黑确认",
+    "loadFailed": "加载通知失败",
+    "type_moderation_report_received": "举报已受理",
+    "type_moderation_report_resolved": "举报处理结果",
+    "type_moderation_block_confirmed": "拉黑确认",
+    "type_system": "系统",
+    "type_promotion": "推广",
+    "type_social": "社交",
+    "type_content": "内容",
+    "readYes": "是",
+    "readNo": "否",
     "columnUserId": "用户 ID",
     "columnType": "类型",
     "columnTitle": "标题",

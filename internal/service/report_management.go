@@ -89,7 +89,7 @@ func (s *ReportService) Review(id string, req *domain.ReviewReportRequest, revie
 		return nil, err
 	}
 	if prevStatus != updated.Status {
-		s.notifyReporterOutcome(
+		updated.ReporterNotified = s.notifyReporterOutcome(
 			updated.ReporterID,
 			updated.Status,
 			updated.ReviewRemarks,
@@ -148,7 +148,7 @@ func (s *ReportService) ReviewContentReport(id string, req *domain.ReviewReportR
 		return nil, err
 	}
 	if prevStatus != updated.Status {
-		s.notifyContentReportOutcome(updated)
+		updated.ReporterNotified = s.notifyContentReportOutcome(updated)
 	}
 	return updated, nil
 }
@@ -206,7 +206,7 @@ func (s *ReportService) ResolveContentReport(id string, req *domain.ResolveConte
 		return nil, err
 	}
 	if prevStatus != updated.Status {
-		s.notifyContentReportOutcome(updated)
+		updated.ReporterNotified = s.notifyContentReportOutcome(updated)
 	}
 	return updated, nil
 }
