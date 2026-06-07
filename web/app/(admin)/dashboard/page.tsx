@@ -100,6 +100,26 @@ export default function DashboardPage() {
     })
   }, [])
 
+  const trends = stats?.trends || []
+
+  const trendSeries = useMemo(() => {
+    if (trends.length === 0) return []
+    return dailyTrendToSeries(
+      trends,
+      TREND_KEYS.map((k) => ({ key: k.key, label: t(k.labelKey), color: k.color })),
+    )
+  }, [trends, t])
+
+  const legendItems = useMemo(
+    () => TREND_KEYS.map((k) => ({ key: k.key, label: t(k.labelKey), color: k.color })),
+    [t],
+  )
+
+  const heatmapData = useMemo(
+    () => trends.map((t) => ({ date: t.date, value: t.newUsers })),
+    [trends],
+  )
+
   if (loading) return <PageSkeleton />
 
   if (error) {
@@ -115,8 +135,6 @@ export default function DashboardPage() {
       </div>
     )
   }
-
-  const trends = stats?.trends || []
 
   const statCards = [
     { title: t("statTotalUsers"), value: stats?.totalUsers ?? 0, icon: Users },
@@ -137,24 +155,6 @@ export default function DashboardPage() {
     { value: "30d", label: t("range30d") },
     { value: "90d", label: t("range90d") },
   ]
-
-  const trendSeries = useMemo(() => {
-    if (trends.length === 0) return []
-    return dailyTrendToSeries(
-      trends,
-      TREND_KEYS.map((k) => ({ key: k.key, label: t(k.labelKey), color: k.color })),
-    )
-  }, [trends, t])
-
-  const legendItems = useMemo(
-    () => TREND_KEYS.map((k) => ({ key: k.key, label: t(k.labelKey), color: k.color })),
-    [t],
-  )
-
-  const heatmapData = useMemo(
-    () => trends.map((t) => ({ date: t.date, value: t.newUsers })),
-    [trends],
-  )
 
   return (
     <div className="space-y-6">
