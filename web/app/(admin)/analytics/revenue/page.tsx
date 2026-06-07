@@ -43,7 +43,7 @@ export default function RevenueAnalyticsPage() {
 
   const revenueSeries = dailyTrendToSeries(trends, [
     { key: "newRevenue", label: t("revenue"), color: "#10b981" },
-    { key: "newOrders", label: t("orders"), color: "#3b82f6" },
+    { key: "newOrders", label: t("orders"), color: "#7A39EC" },
   ])
 
   return (

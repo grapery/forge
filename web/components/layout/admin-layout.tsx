@@ -126,8 +126,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 border-r bg-sidebar-bg flex flex-col shadow-sm">
-        <div className="flex h-14 items-center gap-2.5 border-b px-4">
+      <aside className="w-60 border-r border-glass-border bg-sidebar-bg backdrop-blur-xl flex flex-col shadow-sm">
+        <div className="flex h-14 items-center gap-2.5 border-b border-glass-border px-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
             <Anvil className="h-4 w-4 text-primary-foreground" />
           </div>
@@ -149,7 +149,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                     "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-150 border-l-[3px]",
                     pathname.startsWith(item.href)
                       ? "bg-primary/10 text-primary font-medium border-l-primary sidebar-active-bg"
-                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:translate-x-0.5 border-l-transparent"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground hover:translate-x-0.5 border-l-transparent"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -162,7 +162,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b px-6 bg-background">
+        <header className="flex h-14 items-center justify-between border-b border-glass-border px-6 bg-sidebar-bg backdrop-blur-xl">
           <div />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

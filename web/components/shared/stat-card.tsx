@@ -18,9 +18,9 @@ export function StatCard({ title, value, icon: Icon, trend, trendLabel }: StatCa
   const animatedValue = useCountUp({ end: numericValue, duration: 800 })
 
   return (
-    <Card className="hover:shadow-md transition-all duration-300 active:scale-[0.98]">
+    <Card className="hover:shadow-glow transition-all duration-300 active:scale-[0.98]">
       <CardContent className="flex items-center gap-4 p-6">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/25 to-primary/10">
           <Icon className="h-6 w-6 text-primary" />
         </div>
         <div className="min-w-0">
@@ -31,7 +31,7 @@ export function StatCard({ title, value, icon: Icon, trend, trendLabel }: StatCa
           {trend !== undefined && (
             <div className={cn(
               "flex items-center gap-1 text-xs font-medium",
-              trend >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+              trend >= 0 ? "text-emerald-400" : "text-red-400"
             )}>
               {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
               {trend >= 0 ? "+" : ""}{trend}%

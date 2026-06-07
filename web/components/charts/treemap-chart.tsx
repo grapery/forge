@@ -20,6 +20,7 @@ interface TreemapChartProps {
 
 export function TreemapChart({ data, title, height = 300, className }: TreemapChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const draw = useCallback(() => {
     const container = containerRef.current
@@ -46,6 +47,8 @@ export function TreemapChart({ data, title, height = 300, className }: TreemapCh
 
     const leaves = root.leaves() as d3.HierarchyRectangularNode<any>[]
 
+    const tooltipDiv = tooltipRef.current
+
     const colorScale = d3.scaleOrdinal<string>()
       .domain(data.map((d) => d.label))
       .range(SERIES_COLORS as unknown as string[])
@@ -62,8 +65,25 @@ export function TreemapChart({ data, title, height = 300, className }: TreemapCh
       .attr("fill-opacity", 0.85)
       .attr("rx", 3)
       .style("cursor", "pointer")
-      .append("title")
-      .text((d) => `${(d.data as any).label}: ${((d.data as any).value ?? 0).toLocaleString()}`)
+      .on("mouseenter", function (event, d) {
+        d3.select(this).attr("fill-opacity", 1)
+        if (tooltipDiv) {
+          tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${(d.data as any).label}</div><div style="color:${colors.text}">${((d.data as any).value ?? 0).toLocaleString()}</div>`
+          tooltipDiv.style.opacity = "1"
+        }
+      })
+      .on("mousemove", function (event) {
+        if (tooltipDiv) {
+          const svgRect = container.getBoundingClientRect()
+          const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+          tooltipDiv.style.left = `${tx}px`
+          tooltipDiv.style.top = `${event.offsetY}px`
+        }
+      })
+      .on("mouseleave", function () {
+        d3.select(this).attr("fill-opacity", 0.85)
+        if (tooltipDiv) tooltipDiv.style.opacity = "0"
+      })
 
     cell.each(function (d) {
       const w = d.x1 - d.x0
@@ -96,7 +116,16 @@ export function TreemapChart({ data, title, height = 300, className }: TreemapCh
     return () => ro.disconnect()
   }, [draw])
 
-  const content = <div ref={containerRef} style={{ width: "100%", height }} />
+  const content = (
+    <div className="relative" style={{ width: "100%", height }}>
+      <div ref={containerRef} style={{ width: "100%", height }} />
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute border-glass-border bg-[#12121e]/95 backdrop-blur-xl shadow-glow-lg rounded-lg px-3 py-2 transition-opacity duration-100"
+        style={{ opacity: 0, zIndex: 50, minWidth: 120 }}
+      />
+    </div>
+  )
 
   if (title) {
     return (

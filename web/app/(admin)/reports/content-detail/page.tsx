@@ -13,10 +13,10 @@ import Link from "next/link"
 import { toast } from "sonner"
 
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  reviewed: "bg-blue-100 text-blue-800",
-  resolved: "bg-green-100 text-green-800",
-  dismissed: "bg-gray-100 text-gray-800",
+  pending: "bg-yellow-500/15 text-yellow-400",
+  reviewed: "bg-blue-500/15 text-blue-400",
+  resolved: "bg-green-500/15 text-emerald-400",
+  dismissed: "bg-gray-500/15 text-gray-400",
 }
 
 export default function ContentReportDetailPage() {
@@ -165,7 +165,7 @@ export default function ContentReportDetailPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+      <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-400">
         {t("slaGuidance")}
       </div>
 
@@ -183,7 +183,7 @@ export default function ContentReportDetailPage() {
                     {statusLabel[report.status] || report.status}
                   </span>
                   {report.isOverdue && (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
                       {t("slaOverdue")}
                     </span>
                   )}

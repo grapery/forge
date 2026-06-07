@@ -40,7 +40,7 @@ export default function ContentAnalyticsPage() {
   const trends = stats?.trends || []
 
   const contentSeries = dailyTrendToSeries(trends, [
-    { key: "newStories", label: t("stories"), color: "#3b82f6" },
+    { key: "newStories", label: t("stories"), color: "#7A39EC" },
     { key: "newStoryboards", label: t("storyboards"), color: "#8b5cf6" },
     { key: "newFragments", label: t("fragments"), color: "#10b981" },
     { key: "newCharacters", label: t("characters"), color: "#f59e0b" },

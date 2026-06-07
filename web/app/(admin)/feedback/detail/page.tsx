@@ -18,10 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 
 const statusColor: Record<string, string> = {
-  received: "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
-  resolved: "bg-green-100 text-green-800",
-  closed: "bg-gray-100 text-gray-800",
+  received: "bg-yellow-500/15 text-yellow-400",
+  processing: "bg-primary/15 text-primary",
+  resolved: "bg-emerald-500/15 text-emerald-400",
+  closed: "bg-gray-500/15 text-gray-400",
 }
 
 export default function FeedbackDetailPage() {

@@ -36,10 +36,10 @@ export function DataTable<T>({
 
   return (
     <div className="animate-fade-in">
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-lg border border-glass-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/50">
+            <tr className="border-b border-glass-border bg-secondary/40">
               {columns.map((col) => (
                 <th key={col.key} className="px-4 py-3 text-left font-medium text-muted-foreground">
                   {col.header}
@@ -59,7 +59,7 @@ export function DataTable<T>({
                 <tr
                   key={(item as any).id || idx}
                   className={cn(
-                    "border-b transition-colors hover:bg-muted/50 animate-fade-in-up",
+                    "border-b border-glass-border transition-colors hover:bg-secondary/30 animate-fade-in-up",
                     onRowClick && "cursor-pointer"
                   )}
                   style={{ animationDelay: `${idx * 30}ms` }}

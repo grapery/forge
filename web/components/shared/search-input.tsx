@@ -36,7 +36,7 @@ export function SearchInput({
   }, [onSearch])
 
   return (
-    <div className="relative transition-all duration-200 focus-within:shadow-md focus-within:ring-1 focus-within:ring-primary/20 rounded-md">
+    <div className="relative transition-all duration-200 focus-within:shadow-glow focus-within:ring-1 focus-within:ring-primary/30 rounded-md">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={value}

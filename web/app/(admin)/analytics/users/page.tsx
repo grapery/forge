@@ -40,7 +40,7 @@ export default function UserAnalyticsPage() {
   const trends = stats?.trends || []
 
   const growthSeries = dailyTrendToSeries(trends, [
-    { key: "newUsers", label: t("newUsers"), color: "#3b82f6" },
+    { key: "newUsers", label: t("newUsers"), color: "#7A39EC" },
     { key: "totalUsers", label: t("totalUsersSeries"), color: "#8b5cf6" },
   ])
 

@@ -30,6 +30,7 @@ export function BarChart({
   valueFormatter,
 }: BarChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const draw = useCallback(() => {
     const container = containerRef.current
@@ -61,6 +62,8 @@ export function BarChart({
         .domain([0, d3.max(validData, (d) => d.value) || 1])
         .range([0, w])
 
+      const tooltipDiv = tooltipRef.current
+
       g.selectAll("rect")
         .data(validData)
         .join("rect")
@@ -70,6 +73,25 @@ export function BarChart({
         .attr("width", 0)
         .attr("fill", barColor)
         .attr("rx", 3)
+        .style("cursor", "pointer")
+        .on("mouseenter", function (event, d) {
+          const val = valueFormatter ? valueFormatter(d.value ?? 0) : (d.value ?? 0).toLocaleString()
+          if (tooltipDiv) {
+            tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${d.label}</div><div style="color:${colors.text}">${val}</div>`
+            tooltipDiv.style.opacity = "1"
+          }
+        })
+        .on("mousemove", function (event) {
+          if (tooltipDiv) {
+            const svgRect = container.getBoundingClientRect()
+            const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+            tooltipDiv.style.left = `${tx}px`
+            tooltipDiv.style.top = `${event.offsetY}px`
+          }
+        })
+        .on("mouseleave", function () {
+          if (tooltipDiv) tooltipDiv.style.opacity = "0"
+        })
         .transition()
         .duration(500)
         .attr("width", (d) => x(d.value ?? 0))
@@ -120,6 +142,8 @@ export function BarChart({
         .call((g) => g.selectAll("text").attr("fill", colors.text).attr("font-size", "11px"))
         .call((g) => g.selectAll(".tick line").attr("stroke", colors.grid).attr("stroke-opacity", 0.3))
 
+      const tooltipDiv = tooltipRef.current
+
       g.selectAll("rect")
         .data(validData)
         .join("rect")
@@ -129,6 +153,25 @@ export function BarChart({
         .attr("height", 0)
         .attr("fill", barColor)
         .attr("rx", 2)
+        .style("cursor", "pointer")
+        .on("mouseenter", function (event, d) {
+          const val = valueFormatter ? valueFormatter(d.value ?? 0) : (d.value ?? 0).toLocaleString()
+          if (tooltipDiv) {
+            tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${d.label}</div><div style="color:${colors.text}">${val}</div>`
+            tooltipDiv.style.opacity = "1"
+          }
+        })
+        .on("mousemove", function (event) {
+          if (tooltipDiv) {
+            const svgRect = container.getBoundingClientRect()
+            const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+            tooltipDiv.style.left = `${tx}px`
+            tooltipDiv.style.top = `${event.offsetY}px`
+          }
+        })
+        .on("mouseleave", function () {
+          if (tooltipDiv) tooltipDiv.style.opacity = "0"
+        })
         .transition()
         .duration(500)
         .attr("y", (d) => y(d.value ?? 0))
@@ -154,7 +197,16 @@ export function BarChart({
     return () => ro.disconnect()
   }, [draw])
 
-  const content = <div ref={containerRef} style={{ width: "100%", height }} />
+  const content = (
+    <div className="relative" style={{ width: "100%", height }}>
+      <div ref={containerRef} style={{ width: "100%", height }} />
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute border-glass-border bg-[#12121e]/95 backdrop-blur-xl shadow-glow-lg rounded-lg px-3 py-2 transition-opacity duration-100"
+        style={{ opacity: 0, zIndex: 50, minWidth: 120 }}
+      />
+    </div>
+  )
 
   if (title) {
     return (

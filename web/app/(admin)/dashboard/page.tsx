@@ -21,7 +21,7 @@ import type { OverviewStats, DailyTrend, UserStatusCount, CharacterStatusCount, 
 type Range = "7d" | "30d" | "90d"
 
 const TREND_KEYS = [
-  { key: "newUsers" as const, labelKey: "trendNewUsers", color: "#3b82f6" },
+  { key: "newUsers" as const, labelKey: "trendNewUsers", color: "#7A39EC" },
   { key: "newStories" as const, labelKey: "trendNewStories", color: "#8b5cf6" },
   { key: "newOrders" as const, labelKey: "trendNewOrders", color: "#10b981" },
   { key: "newFragments" as const, labelKey: "trendNewFragments", color: "#f59e0b" },
@@ -177,7 +177,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <Card className="border-amber-200 bg-amber-50/40">
+      <Card className="border-amber-500/20 bg-amber-500/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Flag className="h-4 w-4" />
@@ -200,11 +200,11 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold">{stats?.pendingContentReports ?? 0}</p>
               </div>
               <div>
-                <p className="text-xs text-red-700 flex items-center gap-1">
+                <p className="text-xs text-red-400 flex items-center gap-1">
                   <ShieldAlert className="h-3.5 w-3.5" />
                   {t("moderationOverdue")}
                 </p>
-                <p className="text-2xl font-bold text-red-700">{stats?.overdueReportsTotal ?? 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.overdueReportsTotal ?? 0}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("moderationBlocksTotal")}</p>

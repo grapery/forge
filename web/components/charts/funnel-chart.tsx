@@ -19,6 +19,7 @@ interface FunnelChartProps {
 
 export function FunnelChart({ data, title, height = 200, className }: FunnelChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const draw = useCallback(() => {
     const container = containerRef.current
@@ -41,6 +42,8 @@ export function FunnelChart({ data, title, height = 200, className }: FunnelChar
     const stepH = (H - gap * (validData.length - 1)) / validData.length
     const centerX = W / 2
 
+    const tooltipDiv = tooltipRef.current
+
     validData.forEach((d, i) => {
       const ratio = d.value / maxVal
       const barW = Math.max(ratio * (W - 80), 20)
@@ -57,6 +60,26 @@ export function FunnelChart({ data, title, height = 200, className }: FunnelChar
         .attr("fill", SERIES_COLORS[i % SERIES_COLORS.length])
         .attr("rx", 4)
         .attr("opacity", 0.85)
+        .style("cursor", "pointer")
+        .on("mouseenter", function (event) {
+          d3.select(this).attr("opacity", 1)
+          if (tooltipDiv) {
+            tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${d.label}</div><div style="color:${colors.text}">${(d.value ?? 0).toLocaleString()} (${pct}%)</div>`
+            tooltipDiv.style.opacity = "1"
+          }
+        })
+        .on("mousemove", function (event) {
+          if (tooltipDiv) {
+            const svgRect = container.getBoundingClientRect()
+            const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+            tooltipDiv.style.left = `${tx}px`
+            tooltipDiv.style.top = `${event.offsetY}px`
+          }
+        })
+        .on("mouseleave", function () {
+          d3.select(this).attr("opacity", 0.85)
+          if (tooltipDiv) tooltipDiv.style.opacity = "0"
+        })
 
       svg
         .append("text")
@@ -78,7 +101,16 @@ export function FunnelChart({ data, title, height = 200, className }: FunnelChar
     return () => ro.disconnect()
   }, [draw])
 
-  const content = <div ref={containerRef} style={{ width: "100%", height }} />
+  const content = (
+    <div className="relative" style={{ width: "100%", height }}>
+      <div ref={containerRef} style={{ width: "100%", height }} />
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute border-glass-border bg-[#12121e]/95 backdrop-blur-xl shadow-glow-lg rounded-lg px-3 py-2 transition-opacity duration-100"
+        style={{ opacity: 0, zIndex: 50, minWidth: 120 }}
+      />
+    </div>
+  )
 
   if (title) {
     return (

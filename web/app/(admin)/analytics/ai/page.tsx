@@ -41,7 +41,7 @@ export default function AIAnalyticsPage() {
 
   const tokenSeries = dailyTrendToSeries(trends, [
     { key: "tokenConsumed", label: t("tokensConsumed"), color: "#ef4444" },
-    { key: "newAITasks", label: t("newAiTasks"), color: "#3b82f6" },
+    { key: "newAITasks", label: t("newAiTasks"), color: "#7A39EC" },
   ])
 
   return (

@@ -13,7 +13,7 @@ export function EmptyState({ icon: Icon = Inbox, title, description }: EmptyStat
   const t = useTranslations("common")
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in-up">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/50">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary/40 border border-glass-border">
         <Icon className="h-7 w-7 text-muted-foreground" />
       </div>
       <p className="mt-4 text-sm font-medium text-muted-foreground">{title || t("noData")}</p>

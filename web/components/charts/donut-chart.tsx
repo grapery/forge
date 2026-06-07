@@ -21,6 +21,7 @@ interface DonutChartProps {
 
 export function DonutChart({ data, title, height = 260, centerLabel, centerValue, className }: DonutChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const draw = useCallback(() => {
     const container = containerRef.current
@@ -65,11 +66,31 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
       .attr("stroke", colors.card)
       .attr("stroke-width", 2)
       .style("cursor", "pointer")
-      .on("mouseenter", function () {
+      .on("mouseenter", function (event, d) {
         d3.select(this).transition().duration(150).attr("d", arcGen.outerRadius(radius + 4))
+        const tooltipDiv = tooltipRef.current
+        if (tooltipDiv) {
+          const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : "0.0"
+          tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${d.data.label}</div><div style="color:${colors.text}">${(d.data.value ?? 0).toLocaleString()} (${pct}%)</div>`
+          tooltipDiv.style.opacity = "1"
+          const svgRect = container.getBoundingClientRect()
+          const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+          tooltipDiv.style.left = `${tx}px`
+          tooltipDiv.style.top = `${event.offsetY}px`
+        }
+      })
+      .on("mousemove", function (event) {
+        const tooltipDiv = tooltipRef.current
+        if (tooltipDiv) {
+          const svgRect = container.getBoundingClientRect()
+          const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+          tooltipDiv.style.left = `${tx}px`
+          tooltipDiv.style.top = `${event.offsetY}px`
+        }
       })
       .on("mouseleave", function () {
         d3.select(this).transition().duration(150).attr("d", arcGen.outerRadius(radius))
+        if (tooltipRef.current) tooltipRef.current.style.opacity = "0"
       })
 
     const total = validData.reduce((sum, d) => sum + (d.value ?? 0), 0)
@@ -122,7 +143,14 @@ export function DonutChart({ data, title, height = 260, centerLabel, centerValue
   }, [draw])
 
   const content = (
-    <div ref={containerRef} style={{ width: "100%", height }} />
+    <div className="relative" style={{ width: "100%", height }}>
+      <div ref={containerRef} style={{ width: "100%", height }} />
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute border-glass-border bg-[#12121e]/95 backdrop-blur-xl shadow-glow-lg rounded-lg px-3 py-2 transition-opacity duration-100"
+        style={{ opacity: 0, zIndex: 50, minWidth: 120 }}
+      />
+    </div>
   )
 
   if (title) {

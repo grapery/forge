@@ -26,6 +26,7 @@ interface SankeyChartProps {
 
 export function SankeyChart({ nodes, links, title, height = 300, className }: SankeyChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const draw = useCallback(() => {
     const container = containerRef.current
@@ -65,6 +66,8 @@ export function SankeyChart({ nodes, links, title, height = 300, className }: Sa
       .domain(nodes.map((n) => n.name))
       .range(SERIES_COLORS as unknown as string[])
 
+    const tooltipDiv = tooltipRef.current
+
     svg.append("g")
       .selectAll("path")
       .data(graph.links)
@@ -74,11 +77,26 @@ export function SankeyChart({ nodes, links, title, height = 300, className }: Sa
       .attr("stroke", (d: any) => colorScale((d.source as any).name) as string)
       .attr("stroke-opacity", 0.3)
       .attr("stroke-width", (d: any) => Math.max(1, d.width || 1))
-      .on("mouseenter", function () {
+      .on("mouseenter", function (event, d) {
         d3.select(this).attr("stroke-opacity", 0.6)
+        if (tooltipDiv) {
+          const src = (d.source as any).name
+          const tgt = (d.target as any).name
+          tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${src} → ${tgt}</div><div style="color:${colors.text}">${(d.value ?? 0).toLocaleString()}</div>`
+          tooltipDiv.style.opacity = "1"
+        }
+      })
+      .on("mousemove", function (event) {
+        if (tooltipDiv) {
+          const svgRect = container.getBoundingClientRect()
+          const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+          tooltipDiv.style.left = `${tx}px`
+          tooltipDiv.style.top = `${event.offsetY}px`
+        }
       })
       .on("mouseleave", function () {
         d3.select(this).attr("stroke-opacity", 0.3)
+        if (tooltipDiv) tooltipDiv.style.opacity = "0"
       })
 
     const node = svg.append("g")
@@ -93,6 +111,24 @@ export function SankeyChart({ nodes, links, title, height = 300, className }: Sa
       .attr("width", (d: any) => d.x1 - d.x0)
       .attr("fill", (d: any) => colorScale(d.name) as string)
       .attr("rx", 3)
+      .style("cursor", "pointer")
+      .on("mouseenter", function (event, d: any) {
+        if (tooltipDiv) {
+          tooltipDiv.innerHTML = `<div style="font-size:11px;margin-bottom:4px;color:${colors.text}">${d.name}</div><div style="color:${colors.text}">${(d.value ?? 0).toLocaleString()}</div>`
+          tooltipDiv.style.opacity = "1"
+        }
+      })
+      .on("mousemove", function (event) {
+        if (tooltipDiv) {
+          const svgRect = container.getBoundingClientRect()
+          const tx = Math.min(event.offsetX + 12, svgRect.width - 160)
+          tooltipDiv.style.left = `${tx}px`
+          tooltipDiv.style.top = `${event.offsetY}px`
+        }
+      })
+      .on("mouseleave", function () {
+        if (tooltipDiv) tooltipDiv.style.opacity = "0"
+      })
 
     node.append("text")
       .attr("x", (d: any) => (d.x0 < W / 2 ? d.x1 + 6 : d.x0 - 6))
@@ -111,7 +147,16 @@ export function SankeyChart({ nodes, links, title, height = 300, className }: Sa
     return () => ro.disconnect()
   }, [draw])
 
-  const content = <div ref={containerRef} style={{ width: "100%", height }} />
+  const content = (
+    <div className="relative" style={{ width: "100%", height }}>
+      <div ref={containerRef} style={{ width: "100%", height }} />
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute border-glass-border bg-[#12121e]/95 backdrop-blur-xl shadow-glow-lg rounded-lg px-3 py-2 transition-opacity duration-100"
+        style={{ opacity: 0, zIndex: 50, minWidth: 120 }}
+      />
+    </div>
+  )
 
   if (title) {
     return (

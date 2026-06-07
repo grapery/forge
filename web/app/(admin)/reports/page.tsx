@@ -17,10 +17,10 @@ type Tab = "users" | "content" | "blocks"
 const statusOptions = ["", "pending", "reviewed", "resolved", "dismissed"]
 
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  reviewed: "bg-blue-100 text-blue-800",
-  resolved: "bg-green-100 text-green-800",
-  dismissed: "bg-gray-100 text-gray-800",
+  pending: "bg-yellow-500/15 text-yellow-400",
+  reviewed: "bg-blue-500/15 text-blue-400",
+  resolved: "bg-green-500/15 text-emerald-400",
+  dismissed: "bg-gray-500/15 text-gray-400",
 }
 
 const contentTypes = ["", "storyboard", "fragment", "comment", "story", "character"]
@@ -190,12 +190,12 @@ export default function ReportsPage() {
               </Card>
             )
           })}
-          <Card className="border-red-200 bg-red-50/50">
+          <Card className="border-red-500/20 bg-red-500/10">
             <CardContent className="flex items-center gap-3 p-4">
-              <ShieldAlert className="h-4 w-4 text-red-600" />
+              <ShieldAlert className="h-4 w-4 text-red-400" />
               <div>
-                <p className="text-xs text-red-700">{t("slaOverdue")}</p>
-                <span className="text-2xl font-bold text-red-700">
+                <p className="text-xs text-red-400">{t("slaOverdue")}</p>
+                <span className="text-2xl font-bold text-red-400">
                   {(tab === "users" ? userCounts?.overdue : contentCounts?.overdue) || 0}
                 </span>
               </div>
@@ -278,7 +278,7 @@ export default function ReportsPage() {
                           {statusLabel[r.status] || r.status}
                         </span>
                         {r.isOverdue && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
                             {t("slaOverdue")}
                           </span>
                         )}
@@ -312,12 +312,12 @@ export default function ReportsPage() {
                           {statusLabel[r.status] || r.status}
                         </span>
                         {r.isOverdue && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
                             {t("slaOverdue")}
                           </span>
                         )}
                         {r.contentDeleted && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-500/15 text-gray-400">
                             {t("contentRemoved")}
                           </span>
                         )}

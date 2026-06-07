@@ -4,7 +4,7 @@ function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>)
   return (
     <div
       className={cn(
-        "rounded-md bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%] animate-shimmer",
+        "rounded-md bg-gradient-to-r from-secondary/60 via-secondary/30 to-secondary/60 border-glass-border bg-[length:200%_100%] animate-shimmer",
         className,
       )}
       {...props}
@@ -14,7 +14,7 @@ function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>)
 
 function StatCardSkeleton() {
   return (
-    <div className="rounded-xl border bg-card p-6">
+    <div className="rounded-xl border border-glass-border bg-card p-6">
       <div className="flex items-center gap-4">
         <Skeleton className="h-12 w-12 rounded-lg" />
         <div className="space-y-2 flex-1">
@@ -28,7 +28,7 @@ function StatCardSkeleton() {
 
 function TableRowSkeleton({ cols }: { cols: number }) {
   return (
-    <tr className="border-b">
+    <tr className="border-b border-glass-border">
       {Array.from({ length: cols }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <Skeleton className="h-4 w-full max-w-[120px]" />
@@ -45,10 +45,10 @@ function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number })
         <Skeleton className="h-9 w-64 rounded-md" />
         <Skeleton className="h-9 w-28 rounded-md" />
       </div>
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-md border border-glass-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-muted/50">
+            <tr className="border-b border-glass-border bg-secondary/40">
               {Array.from({ length: cols }).map((_, i) => (
                 <th key={i} className="px-4 py-3">
                   <Skeleton className="h-3 w-16" />

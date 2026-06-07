@@ -1,5 +1,5 @@
 const SERIES_COLORS = [
-  "#3b82f6", // blue
+  "#7A39EC", // primary purple
   "#8b5cf6", // violet
   "#10b981", // emerald
   "#f59e0b", // amber
@@ -15,14 +15,14 @@ function getCssVar(name: string): string {
 
 export function getThemeColors() {
   return {
-    primary: getCssVar("--primary") || "#2563eb",
-    text: getCssVar("--muted-foreground") || "#737373",
-    grid: getCssVar("--border") || "#e5e5e5",
-    card: getCssVar("--card") || "#ffffff",
-    background: getCssVar("--background") || "#ffffff",
+    primary: getCssVar("--primary") || "#7A39EC",
+    text: getCssVar("--muted-foreground") || "#6b6b8a",
+    grid: "rgba(255,255,255,0.06)",
+    card: getCssVar("--card") || "#12121e",
+    background: getCssVar("--background") || "#0a0a12",
     positive: "#10b981",
     negative: "#ef4444",
-    neutral: "#737373",
+    neutral: "#6b6b8a",
     series: [...SERIES_COLORS],
   }
 }

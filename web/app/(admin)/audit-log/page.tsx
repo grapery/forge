@@ -20,10 +20,10 @@ import { ScrollText } from "lucide-react"
 
 
 const actionColors: Record<string, string> = {
-  create: "bg-green-100 text-green-800",
-  update: "bg-blue-100 text-blue-800",
-  delete: "bg-red-100 text-red-800",
-  login: "bg-purple-100 text-purple-800",
+  create: "bg-emerald-500/15 text-emerald-400",
+  update: "bg-primary/15 text-primary",
+  delete: "bg-red-500/15 text-red-400",
+  login: "bg-purple-500/15 text-purple-400",
 }
 
 export default function AuditLogPage() {
@@ -103,7 +103,7 @@ export default function AuditLogPage() {
               key: "action",
               header: t("columnAction"),
               render: (log: AdminOperationLog) => (
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actionColors[log.action] || "bg-gray-100 text-gray-800"}`}>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${actionColors[log.action] || "bg-gray-500/15 text-gray-400"}`}>
                   {log.action}
                 </span>
               ),

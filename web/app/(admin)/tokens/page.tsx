@@ -116,7 +116,7 @@ export default function TokensPage() {
               key: "amount",
               header: t("columnAmount"),
               render: (t: TokenTransactionItem) => (
-                <span className={`text-sm font-medium ${t.amount >= 0 ? "text-green-600" : "text-red-600"}`}>
+                <span className={`text-sm font-medium ${t.amount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                   {t.amount >= 0 ? "+" : ""}{t.amount}
                 </span>
               ),
