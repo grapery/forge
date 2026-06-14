@@ -75,7 +75,7 @@ func main() {
 	commentSvc := service.NewCommentService(readRepo, writeRepo, logger)
 	reportSvc := service.NewReportService(readRepo, writeRepo, contentSvc, commentSvc, characterSvc, logger)
 	deletionSvc := service.NewDeletionService(readRepo, writeRepo, logger)
-	membershipSvc := service.NewMembershipService(readRepo, logger)
+	membershipSvc := service.NewMembershipService(mainDB, readRepo, writeRepo, logger)
 	planSvc := service.NewPlanService(readRepo, writeRepo, logger)
 	orderSvc := service.NewOrderService(readRepo, writeRepo, logger)
 	tokenSvc := service.NewTokenService(readRepo, logger)

@@ -2,8 +2,12 @@ package mysql
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/grapestree/fgrapery/forge/internal/domain"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // --- Membership queries ---
@@ -347,4 +351,176 @@ func (wr *WriteRepository) RefundOrder(id string, reason string) error {
 			"status":     "refunded",
 			"updated_at": now(),
 		}).Error
+}
+
+// --- Membership write operations (transactional) ---
+
+// GetActiveMembershipByUserIDTx returns the user's current active membership, or nil if none.
+// Accepts a *gorm.DB so it can run within a caller transaction; locks the row with FOR UPDATE
+// to prevent two concurrent admin requests from both seeing "no active" and creating duplicates.
+func (rr *ReadRepository) GetActiveMembershipByUserIDTx(db *gorm.DB, userID string) (*domain.MembershipItem, error) {
+	type row struct {
+		ID         string `gorm:"column:id"`
+		UserID     string `gorm:"column:user_id"`
+		Tier       string `gorm:"column:tier"`
+		Status     string `gorm:"column:status"`
+		StartDate  int64  `gorm:"column:start_date"`
+		EndDate    int64  `gorm:"column:end_date"`
+		AutoRenew  bool   `gorm:"column:auto_renew"`
+		TokenQuota int    `gorm:"column:token_quota"`
+		TokenUsed  int    `gorm:"column:token_used"`
+	}
+	var r row
+	err := db.Table("memberships").
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Select("id, user_id, tier, status, "+
+			"COALESCE(UNIX_TIMESTAMP(start_date), 0) as start_date, "+
+			"COALESCE(UNIX_TIMESTAMP(end_date), 0) as end_date, "+
+			"COALESCE(auto_renew, false) as auto_renew, "+
+			"COALESCE(token_quota, 0) as token_quota, "+
+			"COALESCE(token_used, 0) as token_used").
+		Where("user_id = ? AND status = ?", userID, "active").
+		Order("created_at DESC").
+		Take(&r).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get active membership: %w", err)
+	}
+	return &domain.MembershipItem{
+		ID: r.ID, UserID: r.UserID, Tier: r.Tier, Status: r.Status,
+		StartDate: r.StartDate, EndDate: r.EndDate, AutoRenew: r.AutoRenew,
+		TokenQuota: r.TokenQuota, TokenUsed: r.TokenUsed,
+	}, nil
+}
+
+// GetMembershipByIDTx returns a membership by id (any status), or nil if not found.
+// Accepts a *gorm.DB so it can run within a caller transaction; locks the row with FOR UPDATE.
+func (rr *ReadRepository) GetMembershipByIDTx(db *gorm.DB, id string) (*domain.MembershipItem, error) {
+	type row struct {
+		ID         string `gorm:"column:id"`
+		UserID     string `gorm:"column:user_id"`
+		Tier       string `gorm:"column:tier"`
+		Status     string `gorm:"column:status"`
+		StartDate  int64  `gorm:"column:start_date"`
+		EndDate    int64  `gorm:"column:end_date"`
+		AutoRenew  bool   `gorm:"column:auto_renew"`
+		TokenQuota int    `gorm:"column:token_quota"`
+		TokenUsed  int    `gorm:"column:token_used"`
+	}
+	var r row
+	err := db.Table("memberships").
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Select("id, user_id, tier, status, "+
+			"COALESCE(UNIX_TIMESTAMP(start_date), 0) as start_date, "+
+			"COALESCE(UNIX_TIMESTAMP(end_date), 0) as end_date, "+
+			"COALESCE(auto_renew, false) as auto_renew, "+
+			"COALESCE(token_quota, 0) as token_quota, "+
+			"COALESCE(token_used, 0) as token_used").
+		Where("id = ?", id).
+		Take(&r).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("get membership: %w", err)
+	}
+	return &domain.MembershipItem{
+		ID: r.ID, UserID: r.UserID, Tier: r.Tier, Status: r.Status,
+		StartDate: r.StartDate, EndDate: r.EndDate, AutoRenew: r.AutoRenew,
+		TokenQuota: r.TokenQuota, TokenUsed: r.TokenUsed,
+	}, nil
+}
+
+// CreateMembershipTx inserts a new active membership row. Returns the new id.
+func (wr *WriteRepository) CreateMembershipTx(db *gorm.DB, req *domain.MembershipUpsertRequest) (string, error) {
+	id := uuid.New().String()
+	err := db.Table("memberships").Create(map[string]any{
+		"id":          id,
+		"user_id":     req.UserID,
+		"tier":        req.Tier,
+		"status":      "active",
+		"start_date":  time.Now(),
+		"end_date":    time.Unix(req.EndDate, 0),
+		"auto_renew":  req.AutoRenew,
+		"token_quota": req.TokenQuota,
+		"token_used":  0,
+		"created_at":  time.Now(),
+		"updated_at":  time.Now(),
+	}).Error
+	if err != nil {
+		return "", fmt.Errorf("create membership: %w", err)
+	}
+	return id, nil
+}
+
+// UpdateMembershipTx updates tier/quota/end_date/auto_renew on an existing membership.
+func (wr *WriteRepository) UpdateMembershipTx(db *gorm.DB, id string, req *domain.MembershipUpsertRequest) error {
+	return db.Table("memberships").Where("id = ?", id).Updates(map[string]any{
+		"tier":        req.Tier,
+		"end_date":    time.Unix(req.EndDate, 0),
+		"auto_renew":  req.AutoRenew,
+		"token_quota": req.TokenQuota,
+		"updated_at":  time.Now(),
+	}).Error
+}
+
+// RenewMembershipTx extends end_date to newEndDate (already computed by caller).
+func (wr *WriteRepository) RenewMembershipTx(db *gorm.DB, id string, newEndDate int64) error {
+	return db.Table("memberships").Where("id = ?", id).Updates(map[string]any{
+		"end_date":   time.Unix(newEndDate, 0),
+		"updated_at": time.Now(),
+	}).Error
+}
+
+// CancelMembershipTx marks a membership cancelled and sets end_date to now.
+func (wr *WriteRepository) CancelMembershipTx(db *gorm.DB, id string) error {
+	return db.Table("memberships").Where("id = ?", id).Updates(map[string]any{
+		"status":     "cancelled",
+		"end_date":   time.Now(),
+		"auto_renew": false,
+		"updated_at": time.Now(),
+	}).Error
+}
+
+// InsertTokenGrantTx inserts a grant row into token_transactions. No-op when amount <= 0.
+func (wr *WriteRepository) InsertTokenGrantTx(db *gorm.DB, userID, refID, description string, amount int) error {
+	if amount <= 0 {
+		return nil
+	}
+	return db.Table("token_transactions").Create(map[string]any{
+		"id":          uuid.New().String(),
+		"user_id":     userID,
+		"type":        "grant",
+		"amount":      amount,
+		"balance":     0,
+		"description": description,
+		"related_id":  refID,
+		"created_at":  time.Now(),
+	}).Error
+}
+
+// InsertAdminGiftOrderTx inserts a $0 completed order as an audit-trail voucher.
+// reason is not persisted here: the audit middleware already captures the full request
+// body (including reason) in admin_operation_logs keyed by this admin's session.
+func (wr *WriteRepository) InsertAdminGiftOrderTx(db *gorm.DB, userID, action string, endDateUnix int64) error {
+	endDate := time.Now()
+	if endDateUnix > 0 {
+		endDate = time.Unix(endDateUnix, 0)
+	}
+	return db.Table("subscription_orders").Create(map[string]any{
+		"id":             uuid.New().String(),
+		"user_id":        userID,
+		"plan_id":        "",
+		"amount":         0,
+		"currency":       "USD",
+		"status":         "completed",
+		"payment_method": "admin_gift",
+		"payment_id":     "admin:" + action,
+		"start_date":     time.Now(),
+		"end_date":       endDate,
+		"created_at":     time.Now(),
+		"updated_at":     time.Now(),
+	}).Error
 }

@@ -30,8 +30,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { MembershipFormDialog } from "@/components/shared/membership-form-dialog"
 
-import { ArrowLeft, BookOpen, Layers, Users as UsersIcon, Shield, ShieldOff, Crown, Coins, Sparkles, FileText, RefreshCw } from "lucide-react"
+import { ArrowLeft, BookOpen, Layers, Users as UsersIcon, Shield, ShieldOff, Crown, Coins, Sparkles, FileText, RefreshCw, Pencil, RefreshCw as RenewIcon, XCircle } from "lucide-react"
 
 import { toast } from "sonner"
 
@@ -96,6 +97,12 @@ export default function UserDetailPage() {
   }, [id])
 
   const [refreshing, setRefreshing] = useState(false)
+
+  const [membershipEditTarget, setMembershipEditTarget] = useState<MembershipItem | "new" | null>(null)
+  const [membershipRenewTarget, setMembershipRenewTarget] = useState<MembershipItem | null>(null)
+  const [membershipCancelTarget, setMembershipCancelTarget] = useState<MembershipItem | null>(null)
+
+  const activeMembership = memberships.find((m) => m.status === "active") || null
 
   useEffect(() => {
     if (activeTab === "memberships") loadMemberships()
@@ -188,7 +195,19 @@ export default function UserDetailPage() {
 
         <TabsContent value="memberships">
           <Card>
-            <CardHeader><CardTitle>{t("cardMemberships")}</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>{t("cardMemberships")}</span>
+                <Button
+                  size="sm"
+                  variant={activeMembership ? "outline" : "default"}
+                  onClick={() => setMembershipEditTarget(activeMembership || "new")}
+                >
+                  <Crown className="mr-1 h-3 w-3" />
+                  {activeMembership ? tMemberships("buttonEdit") : tMemberships("buttonOpenMembership")}
+                </Button>
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               <DataTable
                 data={memberships}
@@ -200,6 +219,27 @@ export default function UserDetailPage() {
                   { key: "tokens", header: tMemberships("columnTokens"), render: (m: MembershipItem) => <span className="text-sm">{m.tokenUsed}/{m.tokenQuota}</span> },
                   { key: "endDate", header: tMemberships("columnEndDate"), render: (m: MembershipItem) => <span className="text-xs text-muted-foreground">{m.endDate ? new Date(m.endDate * 1000).toLocaleDateString() : "-"}</span> },
                   { key: "autoRenew", header: tMemberships("columnAutoRenew"), render: (m: MembershipItem) => <Badge variant={m.autoRenew ? "default" : "secondary"}>{m.autoRenew ? "Yes" : "No"}</Badge> },
+                  {
+                    key: "actions",
+                    header: "",
+                    render: (m: MembershipItem) => (
+                      <div className="flex gap-1">
+                        {m.status === "active" && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setMembershipEditTarget(m) }}>
+                              <Pencil className="mr-1 h-3 w-3" />{tMemberships("buttonEdit")}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setMembershipRenewTarget(m) }}>
+                              <RenewIcon className="mr-1 h-3 w-3" />{tMemberships("buttonRenew")}
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-destructive" onClick={(e) => { e.stopPropagation(); setMembershipCancelTarget(m) }}>
+                              <XCircle className="mr-1 h-3 w-3" />{tMemberships("buttonCancelMembership")}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ),
+                  },
                 ]}
               />
             </CardContent>
@@ -303,6 +343,33 @@ export default function UserDetailPage() {
         confirmLabel={action === "suspend" ? t("dialogConfirmSuspend") : t("dialogConfirmActivate")}
         variant={action === "suspend" ? "destructive" : "default"}
         onConfirm={handleAction}
+      />
+
+      <MembershipFormDialog
+        mode="upsert"
+        open={!!membershipEditTarget}
+        onOpenChange={(o) => { if (!o) setMembershipEditTarget(null) }}
+        userId={id || ""}
+        initial={membershipEditTarget === "new" ? null : membershipEditTarget}
+        onSubmitted={loadMemberships}
+      />
+
+      <MembershipFormDialog
+        mode="renew"
+        open={!!membershipRenewTarget}
+        onOpenChange={(o) => { if (!o) setMembershipRenewTarget(null) }}
+        userId={id || ""}
+        membershipId={membershipRenewTarget?.id}
+        onSubmitted={loadMemberships}
+      />
+
+      <MembershipFormDialog
+        mode="cancel"
+        open={!!membershipCancelTarget}
+        onOpenChange={(o) => { if (!o) setMembershipCancelTarget(null) }}
+        userId={id || ""}
+        membershipId={membershipCancelTarget?.id}
+        onSubmitted={loadMemberships}
       />
     </div>
   )

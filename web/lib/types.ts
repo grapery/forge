@@ -365,6 +365,27 @@ export interface MembershipSummary {
   freeMembers: number
 }
 
+export type MembershipTier = "basic" | "pro" | "premium"
+
+export interface MembershipUpsertRequest {
+  userId: string
+  tier: MembershipTier
+  tokenQuota: number
+  endDate: number
+  autoRenew: boolean
+  reason: string
+}
+
+export interface MembershipRenewRequest {
+  extendDays: number
+  topUpTokens?: number
+  reason: string
+}
+
+export interface MembershipCancelRequest {
+  reason: string
+}
+
 export interface SubscriptionPlanItem {
   id: string
   name: string

@@ -8,7 +8,7 @@ import type {
   CharacterItem, CharacterStatusCount,
   CommentItem, CommentStatusCount,
   AccountDeletionItem, AccountDeletionStatusCount,
-  MembershipItem, MembershipSummary, SubscriptionPlanItem, SubscriptionOrderItem, OrderSummary,
+  MembershipItem, MembershipSummary, MembershipUpsertRequest, MembershipRenewRequest, MembershipCancelRequest, SubscriptionPlanItem, SubscriptionOrderItem, OrderSummary,
   TokenTransactionItem, TokenSummary,
   AITaskItem, AITaskSummary, AIGenerationRecordItem, AIGenerationSummary,
   AgentItem, AgentSkillItem, AgentInteractionItem,
@@ -188,6 +188,12 @@ export const membershipApi = {
     forgeClient.get<any, PaginatedData<MembershipItem>>("/api/admin/memberships", { params }),
   summary: () =>
     forgeClient.get<any, MembershipSummary>("/api/admin/memberships/summary"),
+  upsert: (req: MembershipUpsertRequest) =>
+    forgeClient.post<any, { code: number; message: string }>("/api/admin/memberships", req),
+  renew: (id: string, req: MembershipRenewRequest) =>
+    forgeClient.post<any, { code: number; message: string }>(`/api/admin/memberships/${id}/renew`, req),
+  cancel: (id: string, req: MembershipCancelRequest) =>
+    forgeClient.post<any, { code: number; message: string }>(`/api/admin/memberships/${id}/cancel`, req),
 }
 
 // Plan API

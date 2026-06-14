@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/domain"
 	"github.com/grapestree/fgrapery/forge/internal/service"
@@ -45,6 +47,79 @@ func (h *MembershipHandler) Summary(c *gin.Context) {
 		return
 	}
 	Success(c, summary)
+}
+
+// Upsert creates or updates a user's active membership.
+// Token grant: full quota on first-time creation, positive delta on updates.
+func (h *MembershipHandler) Upsert(c *gin.Context) {
+	var req domain.MembershipUpsertRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	if !domain.IsValidMembershipTier(req.Tier) {
+		Error(c, CodeInvalidParams, "tier must be one of basic/pro/premium")
+		return
+	}
+	if req.EndDate <= time.Now().Unix() {
+		Error(c, CodeInvalidParams, "endDate must be in the future")
+		return
+	}
+	if err := h.svc.Upsert(&req); err != nil {
+		if service.IsValidationError(err) {
+			Error(c, CodeInvalidParams, err.Error())
+			return
+		}
+		Error(c, CodeInternalError, err.Error())
+		return
+	}
+	Success(c, nil)
+}
+
+// Renew extends the end_date of an active membership. Optionally tops up tokens.
+func (h *MembershipHandler) Renew(c *gin.Context) {
+	id := c.Param("id")
+	var req domain.MembershipRenewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	if err := h.svc.Renew(id, &req); err != nil {
+		if service.IsNotFound(err) {
+			Error(c, CodeNotFound, "membership not found")
+			return
+		}
+		if service.IsInvalidState(err) {
+			Error(c, CodeInvalidParams, err.Error())
+			return
+		}
+		Error(c, CodeInternalError, err.Error())
+		return
+	}
+	Success(c, nil)
+}
+
+// Cancel marks a membership cancelled. Already-consumed tokens are not refunded.
+func (h *MembershipHandler) Cancel(c *gin.Context) {
+	id := c.Param("id")
+	var req domain.MembershipCancelRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	if err := h.svc.Cancel(id, &req); err != nil {
+		if service.IsNotFound(err) {
+			Error(c, CodeNotFound, "membership not found")
+			return
+		}
+		if service.IsInvalidState(err) {
+			Error(c, CodeInvalidParams, err.Error())
+			return
+		}
+		Error(c, CodeInternalError, err.Error())
+		return
+	}
+	Success(c, nil)
 }
 
 // --- PlanHandler ---

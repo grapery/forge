@@ -106,3 +106,26 @@ type PlanUpdateRequest struct {
 type RefundRequest struct {
 	Reason string `json:"reason" binding:"required"`
 }
+
+var validMembershipTiers = map[string]bool{"basic": true, "pro": true, "premium": true}
+
+func IsValidMembershipTier(t string) bool { return validMembershipTiers[t] }
+
+type MembershipUpsertRequest struct {
+	UserID     string `json:"userId" binding:"required"`
+	Tier       string `json:"tier" binding:"required"`
+	TokenQuota int    `json:"tokenQuota" binding:"gte=0"`
+	EndDate    int64  `json:"endDate" binding:"required"`
+	AutoRenew  bool   `json:"autoRenew"`
+	Reason     string `json:"reason" binding:"required,min=1"`
+}
+
+type MembershipRenewRequest struct {
+	ExtendDays  int    `json:"extendDays" binding:"gte=1"`
+	TopUpTokens int    `json:"topUpTokens" binding:"gte=0"`
+	Reason      string `json:"reason" binding:"required,min=1"`
+}
+
+type MembershipCancelRequest struct {
+	Reason string `json:"reason" binding:"required,min=1"`
+}

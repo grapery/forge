@@ -189,6 +189,9 @@ func SetupRouter(
 		{
 			memberships.GET("", membershipH.List)
 			memberships.GET("/summary", membershipH.Summary)
+			memberships.POST("", membershipH.Upsert)
+			memberships.POST("/:id/renew", membershipH.Renew)
+			memberships.POST("/:id/cancel", membershipH.Cancel)
 		}
 
 		plans := protected.Group("/plans")

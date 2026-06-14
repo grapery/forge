@@ -17,9 +17,13 @@ import { StatCard } from "@/components/shared/stat-card"
 
 import { Badge } from "@/components/ui/badge"
 
+import { Button } from "@/components/ui/button"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { Users, Shield, Crown, User, Sparkles } from "lucide-react"
+import { Users, Shield, Crown, User, Sparkles, Pencil, RefreshCw, XCircle } from "lucide-react"
+
+import { MembershipFormDialog } from "@/components/shared/membership-form-dialog"
 
 
 const tierVariant: Record<string, "default" | "secondary" | "outline"> = {
@@ -41,6 +45,10 @@ export default function MembershipsPage() {
   const [tier, setTier] = useState("")
   const [status, setStatus] = useState("")
   const pageSize = 20
+
+  const [editTarget, setEditTarget] = useState<MembershipItem | null>(null)
+  const [renewTarget, setRenewTarget] = useState<MembershipItem | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<MembershipItem | null>(null)
 
   const fetchData = useCallback(() => {
     setLoading(true)
@@ -66,6 +74,11 @@ export default function MembershipsPage() {
   useEffect(() => {
     membershipApi.summary().then(setSummary).catch(() => {})
   }, [])
+
+  const refreshAfterMutation = useCallback(() => {
+    fetchData()
+    membershipApi.summary().then(setSummary).catch(() => {})
+  }, [fetchData])
 
   const formatTime = (ts: number | null) => {
     if (!ts) return "-"
@@ -191,11 +204,59 @@ export default function MembershipsPage() {
                 <span className="text-xs text-muted-foreground">{formatTime(m.createdAt)}</span>
               ),
             },
+            {
+              key: "actions",
+              header: "",
+              render: (m: MembershipItem) => (
+                <div className="flex gap-1">
+                  {m.status === "active" && (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setEditTarget(m) }}>
+                        <Pencil className="mr-1 h-3 w-3" />{t("buttonEdit")}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setRenewTarget(m) }}>
+                        <RefreshCw className="mr-1 h-3 w-3" />{t("buttonRenew")}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => { e.stopPropagation(); setCancelTarget(m) }}>
+                        <XCircle className="mr-1 h-3 w-3" />{t("buttonCancelMembership")}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ),
+            },
           ]}
         />
       )}
 
       <p className="text-xs text-muted-foreground">{t("rowClickHint")}</p>
+
+      <MembershipFormDialog
+        mode="upsert"
+        open={!!editTarget}
+        onOpenChange={(o) => { if (!o) setEditTarget(null) }}
+        userId={editTarget?.userId || ""}
+        initial={editTarget}
+        onSubmitted={refreshAfterMutation}
+      />
+
+      <MembershipFormDialog
+        mode="renew"
+        open={!!renewTarget}
+        onOpenChange={(o) => { if (!o) setRenewTarget(null) }}
+        userId={renewTarget?.userId || ""}
+        membershipId={renewTarget?.id}
+        onSubmitted={refreshAfterMutation}
+      />
+
+      <MembershipFormDialog
+        mode="cancel"
+        open={!!cancelTarget}
+        onOpenChange={(o) => { if (!o) setCancelTarget(null) }}
+        userId={cancelTarget?.userId || ""}
+        membershipId={cancelTarget?.id}
+        onSubmitted={refreshAfterMutation}
+      />
     </div>
   )
 }
