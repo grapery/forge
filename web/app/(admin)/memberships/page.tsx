@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
@@ -18,10 +19,19 @@ import { Badge } from "@/components/ui/badge"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { Users, Shield, Crown, User } from "lucide-react"
+import { Users, Shield, Crown, User, Sparkles } from "lucide-react"
+
+
+const tierVariant: Record<string, "default" | "secondary" | "outline"> = {
+  premium: "default",
+  pro: "default",
+  basic: "secondary",
+  free: "outline",
+}
 
 
 export default function MembershipsPage() {
+  const router = useRouter()
   const t = useTranslations("memberships")
   const [items, setItems] = useState<MembershipItem[]>([])
   const [total, setTotal] = useState(0)
@@ -82,9 +92,10 @@ export default function MembershipsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("filterAllTiers")}</SelectItem>
-            <SelectItem value="basic">{t("filterBasic")}</SelectItem>
-            <SelectItem value="premium">{t("filterPremium")}</SelectItem>
             <SelectItem value="free">{t("filterFree")}</SelectItem>
+            <SelectItem value="basic">{t("filterBasic")}</SelectItem>
+            <SelectItem value="pro">{t("filterPro")}</SelectItem>
+            <SelectItem value="premium">{t("filterPremium")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1) }}>
@@ -107,6 +118,7 @@ export default function MembershipsPage() {
           data={items}
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
+          onRowClick={(m) => router.push(`/users/detail?id=${m.userId}`)}
           columns={[
             {
               key: "userName",
@@ -119,7 +131,8 @@ export default function MembershipsPage() {
               key: "tier",
               header: t("columnTier"),
               render: (m: MembershipItem) => (
-                <Badge variant={m.tier === "premium" ? "default" : m.tier === "basic" ? "secondary" : "outline"}>
+                <Badge variant={tierVariant[m.tier] || "outline"}>
+                  {m.tier === "premium" || m.tier === "pro" ? <Sparkles className="mr-1 h-3 w-3" /> : null}
                   {m.tier}
                 </Badge>
               ),
@@ -159,16 +172,17 @@ export default function MembershipsPage() {
             {
               key: "tokens",
               header: t("columnTokens"),
-              render: (m: MembershipItem) => (
-                <span className="text-sm">{m.tokenUsed}/{m.tokenQuota}</span>
-              ),
-            },
-            {
-              key: "storage",
-              header: t("columnStorage"),
-              render: (m: MembershipItem) => (
-                <span className="text-sm">{m.storageUsed}/{m.storageQuota}</span>
-              ),
+              render: (m: MembershipItem) => {
+                const pct = m.tokenQuota > 0 ? Math.min(100, Math.round((m.tokenUsed / m.tokenQuota) * 100)) : 0
+                return (
+                  <div className="flex flex-col gap-1 min-w-[100px]">
+                    <span className="text-xs">{m.tokenUsed}/{m.tokenQuota}</span>
+                    <div className="h-1 rounded bg-secondary/60 overflow-hidden">
+                      <div className="h-full bg-primary/70" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              },
             },
             {
               key: "createdAt",
@@ -180,6 +194,9 @@ export default function MembershipsPage() {
           ]}
         />
       )}
+
+      <p className="text-xs text-muted-foreground">{t("rowClickHint")}</p>
     </div>
   )
 }
+

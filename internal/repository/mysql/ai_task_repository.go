@@ -54,6 +54,13 @@ func applyAITaskFilters(db *gorm.DB, query interface{}) *gorm.DB {
 		if q.DateTo != "" {
 			db = db.Where("created_at <= ?", q.DateTo)
 		}
+		if q.Keyword != "" {
+			like := "%" + q.Keyword + "%"
+			db = db.Where("(original_prompt LIKE ? OR enhanced_prompt LIKE ? OR error_message LIKE ?)", like, like, like)
+		}
+		if q.RelatedEntityType != "" {
+			db = db.Where("related_entity_type = ?", q.RelatedEntityType)
+		}
 	}
 	return db
 }

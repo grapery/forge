@@ -18,13 +18,18 @@ func NewTokenHandler(svc *service.TokenService, logger *zap.Logger) *TokenHandle
 
 func (h *TokenHandler) List(c *gin.Context) {
 	page, pageSize := parsePagination(c)
+	dateTo := c.Query("dateTo")
+	if dateTo != "" && len(dateTo) == 10 {
+		dateTo = dateTo + " 23:59:59"
+	}
 	query := &domain.TokenListQuery{
 		Page:     page,
 		PageSize: pageSize,
 		UserID:   c.Query("userId"),
 		Type:     c.Query("type"),
 		DateFrom: c.Query("dateFrom"),
-		DateTo:   c.Query("dateTo"),
+		DateTo:   dateTo,
+		Keyword:  c.Query("keyword"),
 	}
 
 	items, total, err := h.svc.List(query)

@@ -18,6 +18,10 @@ import { Badge } from "@/components/ui/badge"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+import { Input } from "@/components/ui/input"
+
+import { SearchInput } from "@/components/shared/search-input"
+
 import { Coins, ArrowDown, ArrowUp, RotateCcw, Gift } from "lucide-react"
 
 
@@ -29,6 +33,10 @@ export default function TokensPage() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [type, setType] = useState("")
+  const [keyword, setKeyword] = useState("")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+  const [userId, setUserId] = useState("")
   const pageSize = 20
 
   const fetchData = useCallback(() => {
@@ -38,6 +46,10 @@ export default function TokensPage() {
         page,
         pageSize,
         type: type || undefined,
+        keyword: keyword || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        userId: userId || undefined,
       })
       .then((data) => {
         setItems(data.items || [])
@@ -45,7 +57,7 @@ export default function TokensPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page, type])
+  }, [page, type, keyword, dateFrom, dateTo, userId])
 
   useEffect(() => {
     fetchData()
@@ -69,11 +81,19 @@ export default function TokensPage() {
           <StatCard title={t("statConsumed")} value={summary.totalConsumed} icon={ArrowDown} />
           <StatCard title={t("statRecharged")} value={summary.totalRecharged} icon={ArrowUp} />
           <StatCard title={t("statRefunded")} value={summary.totalRefunded} icon={RotateCcw} />
-          <StatCard title={t("statGifted")} value={summary.totalGifted} icon={Coins} />
+          <StatCard title={t("statGifted")} value={summary.totalGifted} icon={Gift} />
         </div>
       )}
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="w-64">
+          <SearchInput
+            value={keyword}
+            onSearch={(v) => { setKeyword(v); setPage(1) }}
+            placeholder={t("searchPlaceholder")}
+          />
+        </div>
+
         <Select value={type || "all"} onValueChange={(v) => { setType(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder={t("filterAllTypes")} />
@@ -88,6 +108,31 @@ export default function TokensPage() {
         </Select>
       </div>
 
+      <div className="flex flex-wrap items-center gap-4">
+        <Input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+          className="w-40"
+          placeholder={t("filterDateFrom")}
+        />
+        <span className="text-sm text-muted-foreground">-</span>
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+          className="w-40"
+          placeholder={t("filterDateTo")}
+        />
+        <Input
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          onBlur={() => setPage(1)}
+          placeholder={t("filterUser")}
+          className="w-48"
+        />
+      </div>
+
       {loading ? (
         <PageSkeleton />
       ) : (
@@ -99,61 +144,56 @@ export default function TokensPage() {
             {
               key: "userName",
               header: t("columnUser"),
-              render: (t: TokenTransactionItem) => (
-                <span className="text-sm font-medium">{t.userName}</span>
+              render: (item: TokenTransactionItem) => (
+                <span className="text-sm font-medium">{item.userName}</span>
               ),
             },
             {
               key: "type",
               header: t("columnType"),
-              render: (t: TokenTransactionItem) => (
-                <Badge variant={t.type === "consumed" ? "secondary" : t.type === "recharged" ? "default" : t.type === "gifted" ? "outline" : "secondary"}>
-                  {t.type}
+              render: (item: TokenTransactionItem) => (
+                <Badge variant={item.type === "consume" || item.type === "deduct" ? "secondary" : item.type === "grant" || item.type === "purchase" ? "default" : "outline"}>
+                  {item.type}
                 </Badge>
               ),
             },
             {
               key: "amount",
               header: t("columnAmount"),
-              render: (t: TokenTransactionItem) => (
-                <span className={`text-sm font-medium ${t.amount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {t.amount >= 0 ? "+" : ""}{t.amount}
+              render: (item: TokenTransactionItem) => (
+                <span className={`text-sm font-medium ${item.amount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {item.amount >= 0 ? "+" : ""}{item.amount}
                 </span>
               ),
             },
             {
               key: "balance",
               header: t("columnBalance"),
-              render: (t: TokenTransactionItem) => (
-                <span className="text-sm">{t.balance}</span>
-              ),
-            },
-            {
-              key: "source",
-              header: t("columnSource"),
-              render: (t: TokenTransactionItem) => (
-                <span className="text-sm text-muted-foreground">{t.source || "-"}</span>
+              render: (item: TokenTransactionItem) => (
+                <span className="text-sm">{item.balance}</span>
               ),
             },
             {
               key: "description",
               header: t("columnDescription"),
-              render: (t: TokenTransactionItem) => (
-                <span className="text-xs text-muted-foreground">{t.description || "-"}</span>
+              render: (item: TokenTransactionItem) => (
+                <span className="text-xs text-muted-foreground max-w-[200px] truncate block" title={item.description}>
+                  {item.description || "-"}
+                </span>
               ),
             },
             {
-              key: "relatedId",
+              key: "referenceId",
               header: t("columnRelatedId"),
-              render: (t: TokenTransactionItem) => (
-                <span className="text-xs text-muted-foreground">{t.relatedId || "-"}</span>
+              render: (item: TokenTransactionItem) => (
+                <span className="text-xs text-muted-foreground">{item.referenceId || "-"}</span>
               ),
             },
             {
               key: "createdAt",
               header: t("columnCreated"),
-              render: (t: TokenTransactionItem) => (
-                <span className="text-xs text-muted-foreground">{formatTime(t.createdAt)}</span>
+              render: (item: TokenTransactionItem) => (
+                <span className="text-xs text-muted-foreground">{formatTime(item.createdAt)}</span>
               ),
             },
           ]}

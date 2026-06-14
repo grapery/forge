@@ -13,10 +13,10 @@ type TokenTransactionItem struct {
 }
 
 type TokenSummary struct {
-	TotalTransactions int64 `json:"totalTransactions"`
-	TotalGranted      int64 `json:"totalGranted"`
-	TotalConsumed     int64 `json:"totalConsumed"`
-	TotalPurchased    int64 `json:"totalPurchased"`
+	TotalConsumed  int64 `json:"totalConsumed"`
+	TotalRecharged int64 `json:"totalRecharged"`
+	TotalRefunded  int64 `json:"totalRefunded"`
+	TotalGifted    int64 `json:"totalGifted"`
 }
 
 type TokenListQuery struct {
@@ -26,4 +26,5 @@ type TokenListQuery struct {
 	Type     string `form:"type,omitempty"`
 	DateFrom string `form:"dateFrom,omitempty"`
 	DateTo   string `form:"dateTo,omitempty"`
+	Keyword  string `form:"keyword,omitempty"`
 }

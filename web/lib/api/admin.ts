@@ -121,7 +121,7 @@ export const userApi = {
 }
 
 export const contentApi = {
-  list: (params: { page?: number; pageSize?: number; contentType?: string; search?: string; status?: string }) =>
+  list: (params: { page?: number; pageSize?: number; contentType?: string; search?: string; status?: string; authorId?: string }) =>
     forgeClient.get<any, PaginatedData<ContentItem>>("/api/admin/content", { params }),
   get: (contentType: string, id: string) =>
     forgeClient.get<any, Record<string, any>>(`/api/admin/content/${contentType}/${id}`),
@@ -184,7 +184,7 @@ export const accountDeletionApi = {
 
 // Membership API
 export const membershipApi = {
-  list: (params: { page?: number; pageSize?: number; tier?: string; status?: string }) =>
+  list: (params: { page?: number; pageSize?: number; tier?: string; status?: string; userId?: string }) =>
     forgeClient.get<any, PaginatedData<MembershipItem>>("/api/admin/memberships", { params }),
   summary: () =>
     forgeClient.get<any, MembershipSummary>("/api/admin/memberships/summary"),
@@ -214,7 +214,7 @@ export const orderApi = {
 
 // Token API
 export const tokenApi = {
-  list: (params: { page?: number; pageSize?: number; type?: string; userId?: string }) =>
+  list: (params: { page?: number; pageSize?: number; type?: string; userId?: string; dateFrom?: string; dateTo?: string; keyword?: string }) =>
     forgeClient.get<any, PaginatedData<TokenTransactionItem>>("/api/admin/tokens", { params }),
   summary: () =>
     forgeClient.get<any, TokenSummary>("/api/admin/tokens/summary"),
@@ -222,7 +222,7 @@ export const tokenApi = {
 
 // AI Task API
 export const aiTaskApi = {
-  list: (params: { page?: number; pageSize?: number; status?: string; type?: string }) =>
+  list: (params: { page?: number; pageSize?: number; status?: string; type?: string; userId?: string; provider?: string; model?: string; dateFrom?: string; dateTo?: string }) =>
     forgeClient.get<any, PaginatedData<AITaskItem>>("/api/admin/ai-tasks", { params }),
   get: (id: string) =>
     forgeClient.get<any, Record<string, any>>(`/api/admin/ai-tasks/${id}`),
@@ -234,7 +234,7 @@ export const aiTaskApi = {
 
 // AI Generation API
 export const aiGenerationApi = {
-  list: (params: { page?: number; pageSize?: number; type?: string }) =>
+  list: (params: { page?: number; pageSize?: number; type?: string; status?: string; userId?: string; dateFrom?: string; dateTo?: string; keyword?: string; relatedEntityType?: string }) =>
     forgeClient.get<any, PaginatedData<AIGenerationRecordItem>>("/api/admin/ai-generations", { params }),
   get: (id: string) =>
     forgeClient.get<any, Record<string, any>>(`/api/admin/ai-generations/${id}`),

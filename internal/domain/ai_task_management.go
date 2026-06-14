@@ -60,15 +60,17 @@ type AIGenerationRecordItem struct {
 }
 
 type AIGenerationListQuery struct {
-	Page     int    `form:"page"`
-	PageSize int    `form:"pageSize"`
-	Type     string `form:"type,omitempty"`
-	Status   string `form:"status,omitempty"`
-	Provider string `form:"provider,omitempty"`
-	Model    string `form:"model,omitempty"`
-	UserID   string `form:"userId,omitempty"`
-	DateFrom string `form:"dateFrom,omitempty"`
-	DateTo   string `form:"dateTo,omitempty"`
+	Page              int    `form:"page"`
+	PageSize          int    `form:"pageSize"`
+	Type              string `form:"type,omitempty"`
+	Status            string `form:"status,omitempty"`
+	Provider          string `form:"provider,omitempty"`
+	Model             string `form:"model,omitempty"`
+	UserID            string `form:"userId,omitempty"`
+	DateFrom          string `form:"dateFrom,omitempty"`
+	DateTo            string `form:"dateTo,omitempty"`
+	Keyword           string `form:"keyword,omitempty"`
+	RelatedEntityType string `form:"relatedEntityType,omitempty"`
 }
 
 type AIGenerationSummary struct {

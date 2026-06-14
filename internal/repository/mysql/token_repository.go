@@ -15,13 +15,28 @@ func (rr *ReadRepository) ListTokenTransactions(query *domain.TokenListQuery) ([
 		q = q.Where("token_transactions.user_id = ?", query.UserID)
 	}
 	if query.Type != "" {
-		q = q.Where("token_transactions.type = ?", query.Type)
+		switch query.Type {
+		case "consumed":
+			q = q.Where("token_transactions.type IN ?", []string{"consume", "deduct"})
+		case "recharged":
+			q = q.Where("token_transactions.type IN ?", []string{"grant", "purchase"})
+		case "gifted":
+			q = q.Where("token_transactions.type IN ?", []string{"bonus", "gift"})
+		case "refunded":
+			q = q.Where("token_transactions.type = ?", "refund")
+		default:
+			q = q.Where("token_transactions.type = ?", query.Type)
+		}
 	}
 	if query.DateFrom != "" {
 		q = q.Where("token_transactions.created_at >= ?", query.DateFrom)
 	}
 	if query.DateTo != "" {
 		q = q.Where("token_transactions.created_at <= ?", query.DateTo)
+	}
+	if query.Keyword != "" {
+		like := "%" + query.Keyword + "%"
+		q = q.Where("token_transactions.description LIKE ?", like)
 	}
 
 	if err := q.Count(&total).Error; err != nil {
@@ -77,19 +92,9 @@ func (rr *ReadRepository) ListTokenTransactions(query *domain.TokenListQuery) ([
 func (rr *ReadRepository) GetTokenSummary() (*domain.TokenSummary, error) {
 	var summary domain.TokenSummary
 
-	base := rr.db.Table("token_transactions")
-	base.Count(&summary.TotalTransactions)
-
 	type sumRow struct {
 		Total int64 `gorm:"column:total"`
 	}
-
-	var granted sumRow
-	rr.db.Table("token_transactions").
-		Select("COALESCE(SUM(amount), 0) as total").
-		Where("type IN ?", []string{"grant", "purchase", "bonus"}).
-		Take(&granted)
-	summary.TotalGranted = granted.Total
 
 	var consumed sumRow
 	rr.db.Table("token_transactions").
@@ -98,12 +103,26 @@ func (rr *ReadRepository) GetTokenSummary() (*domain.TokenSummary, error) {
 		Take(&consumed)
 	summary.TotalConsumed = consumed.Total
 
-	var purchased sumRow
+	var recharged sumRow
 	rr.db.Table("token_transactions").
 		Select("COALESCE(SUM(amount), 0) as total").
-		Where("type = ?", "purchase").
-		Take(&purchased)
-	summary.TotalPurchased = purchased.Total
+		Where("type IN ?", []string{"grant", "purchase"}).
+		Take(&recharged)
+	summary.TotalRecharged = recharged.Total
+
+	var refunded sumRow
+	rr.db.Table("token_transactions").
+		Select("COALESCE(SUM(ABS(amount)), 0) as total").
+		Where("type = ?", "refund").
+		Take(&refunded)
+	summary.TotalRefunded = refunded.Total
+
+	var gifted sumRow
+	rr.db.Table("token_transactions").
+		Select("COALESCE(SUM(amount), 0) as total").
+		Where("type IN ?", []string{"bonus", "gift"}).
+		Take(&gifted)
+	summary.TotalGifted = gifted.Total
 
 	return &summary, nil
 }

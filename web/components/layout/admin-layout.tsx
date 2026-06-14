@@ -10,7 +10,7 @@ import {
   CreditCard, Coins, Tags, Palette, BookOpen, Mail, Search,
   UserX, Smartphone, Bot, Terminal, Receipt, Flag, Bell,
   Crown, UserCheck, ScrollText, Anvil, Globe, ChevronsUpDown,
-  BarChart3,
+  BarChart3, Layers,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/providers/locale-provider"
@@ -41,6 +41,8 @@ const navItems: NavItem[] = [
   { href: "/analytics/ai", label: "analyticsAi", icon: Brain, roles: ["super_admin", "admin"], group: "analytics", permission: "ai-tasks" },
   // Operations
   { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin"], group: "operations", permission: "content" },
+  { href: "/fragments", label: "fragments", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", permission: "content" },
+  { href: "/storyboards", label: "storyboards", icon: Layers, roles: ["super_admin", "admin"], group: "operations", permission: "content" },
   { href: "/characters", label: "characters", icon: Ghost, roles: ["super_admin", "admin"], group: "operations", permission: "characters" },
   { href: "/comments", label: "comments", icon: MessageSquare, roles: ["super_admin", "admin", "operator"], group: "operations", permission: "comments" },
   { href: "/tags", label: "tags", icon: Tags, roles: ["super_admin", "admin"], group: "operations", permission: "tags" },

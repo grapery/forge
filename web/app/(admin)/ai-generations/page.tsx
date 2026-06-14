@@ -19,6 +19,10 @@ import { Badge } from "@/components/ui/badge"
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+import { Input } from "@/components/ui/input"
+
+import { SearchInput } from "@/components/shared/search-input"
+
 import { Image, Video, Type, BarChart3, Sparkles } from "lucide-react"
 
 
@@ -38,19 +42,35 @@ export default function AIGenerationsPage() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [type, setType] = useState("")
+  const [status, setStatus] = useState("")
+  const [keyword, setKeyword] = useState("")
+  const [relatedEntityType, setRelatedEntityType] = useState("")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+  const [userId, setUserId] = useState("")
   const pageSize = 20
 
   const fetchData = useCallback(() => {
     setLoading(true)
     aiGenerationApi
-      .list({ page, pageSize, type: type || undefined })
+      .list({
+        page,
+        pageSize,
+        type: type || undefined,
+        status: status || undefined,
+        keyword: keyword || undefined,
+        relatedEntityType: relatedEntityType || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        userId: userId || undefined,
+      })
       .then((data) => {
         setItems(data.items || [])
         setTotal(data.total)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page, type])
+  }, [page, type, status, keyword, relatedEntityType, dateFrom, dateTo, userId])
 
   useEffect(() => {
     fetchData()
@@ -78,9 +98,17 @@ export default function AIGenerationsPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-4">
-        <Select value={type || "all"} onValueChange={(v) => setType(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-48">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="w-64">
+          <SearchInput
+            value={keyword}
+            onSearch={(v) => { setKeyword(v); setPage(1) }}
+            placeholder={t("searchPlaceholder")}
+          />
+        </div>
+
+        <Select value={type || "all"} onValueChange={(v) => { setType(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-40">
             <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
           <SelectContent>
@@ -90,6 +118,56 @@ export default function AIGenerationsPage() {
             <SelectItem value="text_generation">{t("filterTextGeneration")}</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder={t("filterAllStatus")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            <SelectItem value="pending">{t("filterStatusPending")}</SelectItem>
+            <SelectItem value="running">{t("filterStatusRunning")}</SelectItem>
+            <SelectItem value="completed">{t("filterStatusCompleted")}</SelectItem>
+            <SelectItem value="failed">{t("filterStatusFailed")}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={relatedEntityType || "all"} onValueChange={(v) => { setRelatedEntityType(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder={t("filterAllEntityTypes")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filterAllEntityTypes")}</SelectItem>
+            <SelectItem value="story">{t("filterEntityStory")}</SelectItem>
+            <SelectItem value="storyboard">{t("filterEntityStoryboard")}</SelectItem>
+            <SelectItem value="fragment">{t("filterEntityFragment")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <Input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+          className="w-40"
+          placeholder={t("filterDateFrom")}
+        />
+        <span className="text-sm text-muted-foreground">-</span>
+        <Input
+          type="date"
+          value={dateTo}
+          onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+          className="w-40"
+          placeholder={t("filterDateTo")}
+        />
+        <Input
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          onBlur={() => setPage(1)}
+          placeholder={t("filterUser")}
+          className="w-48"
+        />
       </div>
 
       {loading ? (

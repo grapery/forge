@@ -80,16 +80,22 @@ func NewAIGenerationHandler(svc *service.AIGenerationService, logger *zap.Logger
 
 func (h *AIGenerationHandler) List(c *gin.Context) {
 	page, pageSize := parsePagination(c)
+	dateTo := c.Query("dateTo")
+	if dateTo != "" && len(dateTo) == 10 {
+		dateTo = dateTo + " 23:59:59"
+	}
 	query := &domain.AIGenerationListQuery{
-		Page:     page,
-		PageSize: pageSize,
-		Type:     c.Query("type"),
-		Status:   c.Query("status"),
-		Provider: c.Query("provider"),
-		Model:    c.Query("model"),
-		UserID:   c.Query("userId"),
-		DateFrom: c.Query("dateFrom"),
-		DateTo:   c.Query("dateTo"),
+		Page:              page,
+		PageSize:          pageSize,
+		Type:              c.Query("type"),
+		Status:            c.Query("status"),
+		Provider:          c.Query("provider"),
+		Model:             c.Query("model"),
+		UserID:            c.Query("userId"),
+		DateFrom:          c.Query("dateFrom"),
+		DateTo:            dateTo,
+		Keyword:           c.Query("keyword"),
+		RelatedEntityType: c.Query("relatedEntityType"),
 	}
 
 	items, total, err := h.svc.List(query)

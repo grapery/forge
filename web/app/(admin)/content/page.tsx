@@ -20,9 +20,13 @@ import { Badge } from "@/components/ui/badge"
 
 import { Button } from "@/components/ui/button"
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+import { Input } from "@/components/ui/input"
+
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
-import { Eye, Trash2, FileText } from "lucide-react"
+import { Eye, Trash2, FileText, Sparkles, ArrowRight } from "lucide-react"
 
 import { useRouter } from "next/navigation"
 
@@ -43,6 +47,22 @@ const statusBadgeMap: Record<string, "default" | "secondary" | "outline"> = {
   followers_only: "outline",
 }
 
+const statusOptionsByTab: Record<string, { value: string; labelKey: string }[]> = {
+  story: [
+    { value: "published", labelKey: "filterPublished" },
+    { value: "draft", labelKey: "filterDraft" },
+  ],
+  storyboard: [
+    { value: "published", labelKey: "filterPublished" },
+    { value: "draft", labelKey: "filterDraft" },
+  ],
+  fragment: [
+    { value: "public", labelKey: "filterPublic" },
+    { value: "private", labelKey: "filterPrivate" },
+    { value: "followers_only", labelKey: "filterFollowersOnly" },
+  ],
+}
+
 export default function ContentPage() {
   const router = useRouter()
   const t = useTranslations("content")
@@ -53,6 +73,8 @@ export default function ContentPage() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
+  const [status, setStatus] = useState("")
+  const [authorId, setAuthorId] = useState("")
   const pageSize = 20
 
   const [actionItem, setActionItem] = useState<ContentItem | null>(null)
@@ -61,14 +83,21 @@ export default function ContentPage() {
   const fetchData = useCallback(() => {
     setLoading(true)
     contentApi
-      .list({ page, pageSize, contentType: tab, search: search || undefined })
+      .list({
+        page,
+        pageSize,
+        contentType: tab,
+        search: search || undefined,
+        status: status || undefined,
+        authorId: authorId || undefined,
+      })
       .then((data) => {
         setItems(data.items || [])
         setTotal(data.total)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page, tab, search])
+  }, [page, tab, search, status, authorId])
 
   useEffect(() => {
     fetchData()
@@ -77,6 +106,12 @@ export default function ContentPage() {
   useEffect(() => {
     contentApi.statusCounts(tab).then(setCounts).catch(() => {})
   }, [tab])
+
+  const handleTabChange = (v: string) => {
+    setTab(v)
+    setStatus("")
+    setPage(1)
+  }
 
   const handleAction = async () => {
     if (!actionItem || !actionType) return
@@ -151,16 +186,54 @@ export default function ContentPage() {
         </div>
       )}
 
-      <div className="w-64">
-        <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="w-64">
+          <SearchInput onSearch={(v) => { setSearch(v); setPage(1) }} placeholder={t("searchPlaceholder")} />
+        </div>
+
+        <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1) }}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder={t("filterAllStatus")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
+            {(statusOptionsByTab[tab] || []).map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Input
+          value={authorId}
+          onChange={(e) => setAuthorId(e.target.value)}
+          onBlur={() => setPage(1)}
+          placeholder={t("filterAuthor")}
+          className="w-48"
+        />
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => { setTab(v); setPage(1) }}>
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="story">{t("tabStories")}</TabsTrigger>
           <TabsTrigger value="storyboard">{t("tabStoryboards")}</TabsTrigger>
           <TabsTrigger value="fragment">{t("tabFragments")}</TabsTrigger>
         </TabsList>
+
+        {(tab === "storyboard" || tab === "fragment") && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="text-muted-foreground">{t("dedicatedPageHint")}</span>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs text-primary"
+              onClick={() => router.push(tab === "storyboard" ? "/storyboards" : "/fragments")}
+            >
+              {tab === "storyboard" ? t("openStoryboardPage") : t("openFragmentPage")}
+              <ArrowRight className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
+        )}
 
         <TabsContent value={tab}>
           {loading ? (

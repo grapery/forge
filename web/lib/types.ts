@@ -410,9 +410,8 @@ export interface TokenTransactionItem {
   type: string
   amount: number
   balance: number
-  source: string
-  relatedId: string
   description: string
+  referenceId: string
   createdAt: number
 }
 
