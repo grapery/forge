@@ -208,6 +208,14 @@ jobs:
           FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET || 'forge-dev-secret-change-in-prod' }}
           FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '24h' }}
           FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '168h' }}
+
+          # ========== Ops Assistant (DeepSeek V4) ==========
+          FORGE_OPS_PROVIDER=${{ vars.FORGE_OPS_PROVIDER || 'deepseek' }}
+          FORGE_OPS_API_KEY=${{ secrets.FORGE_OPS_API_KEY || vars.FORGE_OPS_API_KEY }}
+          FORGE_OPS_BASE_URL=${{ vars.FORGE_OPS_BASE_URL || 'https://api.deepseek.com' }}
+          FORGE_OPS_MODEL=${{ vars.FORGE_OPS_MODEL || 'deepseek-v4-flash' }}
+          FORGE_OPS_THINKING=${{ vars.FORGE_OPS_THINKING || 'false' }}
+          FORGE_HTTP_WRITE_TIMEOUT=${{ vars.FORGE_HTTP_WRITE_TIMEOUT || '180s' }}
           EOF
 
       - name: Deploy notification
@@ -322,6 +330,14 @@ jobs:
           FORGE_JWT_SECRET=${{ vars.FORGE_JWT_SECRET }}
           FORGE_JWT_ACCESS_EXPIRY=${{ vars.FORGE_JWT_ACCESS_EXPIRY || '8h' }}
           FORGE_JWT_REFRESH_EXPIRY=${{ vars.FORGE_JWT_REFRESH_EXPIRY || '72h' }}
+
+          # ========== Ops Assistant (DeepSeek V4) ==========
+          FORGE_OPS_PROVIDER=${{ vars.FORGE_OPS_PROVIDER || 'deepseek' }}
+          FORGE_OPS_API_KEY=${{ secrets.FORGE_OPS_API_KEY || vars.FORGE_OPS_API_KEY }}
+          FORGE_OPS_BASE_URL=${{ vars.FORGE_OPS_BASE_URL || 'https://api.deepseek.com' }}
+          FORGE_OPS_MODEL=${{ vars.FORGE_OPS_MODEL || 'deepseek-v4-flash' }}
+          FORGE_OPS_THINKING=${{ vars.FORGE_OPS_THINKING || 'false' }}
+          FORGE_HTTP_WRITE_TIMEOUT=${{ vars.FORGE_HTTP_WRITE_TIMEOUT || '180s' }}
           EOF
 
       - name: Prepare SSH private key

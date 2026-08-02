@@ -13,16 +13,20 @@ UI: `/forge/ops-assistant`
 
 ## LLM env
 
+Uses [DeepSeek OpenAI-compatible API](https://api-docs.deepseek.com/zh-cn/quick_start/pricing) by default (`deepseek-v4-flash`, tool calls supported).
+
 ```
-FORGE_OPS_PROVIDER=huoshan   # or gemini
-FORGE_OPS_API_KEY=...        # falls back to HUOSHAN_API_KEY / GEMINI_API_KEY
-FORGE_OPS_BASE_URL=...       # optional; huoshan default Ark URL
-FORGE_OPS_MODEL=...
+FORGE_OPS_PROVIDER=deepseek          # deepseek | huoshan | gemini
+FORGE_OPS_API_KEY=sk-...             # or DEEPSEEK_API_KEY
+FORGE_OPS_BASE_URL=https://api.deepseek.com   # optional; /v1 also ok
+FORGE_OPS_MODEL=deepseek-v4-flash    # or deepseek-v4-pro
+FORGE_OPS_THINKING=false             # V4 thinking; default off for simpler tool loops
 FORGE_OPS_MAX_ITERATIONS=8
-FORGE_OPS_MCP_ENABLED=true   # surfaces mcp:true in /status (stdio MCP is separate process)
+FORGE_OPS_MCP_ENABLED=true           # surfaces mcp:true in /status (stdio MCP is separate process)
 FORGE_HTTP_WRITE_TIMEOUT=180s
 ```
 
+Huoshan / Gemini remain available by switching `FORGE_OPS_PROVIDER`.
 Permissions: `super_admin`/`admin` see all tools. `operator`/`viewer` only see tools matching their `permissions` (and dashboard overview fields are redacted).
 
 ## MCP (shared tools)
