@@ -116,7 +116,7 @@ func (rr *ReadRepository) ListNotifications(query *domain.NotificationListQuery)
 
 	offset := (query.Page - 1) * query.PageSize
 	if err := q.Select("id, user_id, COALESCE(type, '') as type, COALESCE(title, '') as title, "+
-		"COALESCE(content, '') as content, COALESCE(link, '') as link, COALESCE(read, false) as read, created_at").
+		"COALESCE(content, '') as content, COALESCE(link, '') as link, COALESCE(`read`, 0) as `read`, created_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&items).Error; err != nil {
 		return nil, 0, fmt.Errorf("list notifications: %w", err)
