@@ -92,10 +92,10 @@ export default function MembershipsPage() {
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard title={t("statActiveMemberships")} value={summary.activeMemberships} icon={Users} />
-          <StatCard title={t("statBasicMembers")} value={summary.basicMembers} icon={Shield} />
-          <StatCard title={t("statPremiumMembers")} value={summary.premiumMembers} icon={Crown} />
-          <StatCard title={t("statFreeMembers")} value={summary.freeMembers} icon={User} />
+          <StatCard title={t("statActiveMemberships")} value={summary.totalActive} icon={Users} />
+          <StatCard title={t("statBasicMembers")} value={summary.basicCount} icon={Shield} />
+          <StatCard title={t("statPremiumMembers")} value={summary.premiumCount} icon={Crown} />
+          <StatCard title={t("statFreeMembers")} value={summary.freeCount} icon={User} />
         </div>
       )}
 

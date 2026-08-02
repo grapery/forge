@@ -57,10 +57,13 @@ export function LineChart({
     if (allValues.length === 0) return
     const xDomain = d3.extent(allValues, (d) => d.date) as [Date, Date]
     if (!xDomain[0] || !xDomain[1]) return
-    const yMax = d3.max(allValues, (d) => d.value) || 1
+    const rawMax = d3.max(allValues, (d) => d.value) ?? 0
+    const allInteger = allValues.every((d) => Number.isInteger(d.value))
+    // Keep baseline at 0; avoid d3.nice() expanding small domains to [0.4, 1].
+    const yTop = rawMax <= 0 ? 1 : allInteger ? Math.max(Math.ceil(rawMax * 1.15), rawMax + 1) : rawMax * 1.15
 
     const x = d3.scaleTime().domain(xDomain).range([0, w])
-    const y = d3.scaleLinear().domain([0, yMax * 1.1]).range([h, 0]).nice()
+    const y = d3.scaleLinear().domain([0, yTop]).range([h, 0])
 
     const xAxis = d3.axisBottom(x).ticks(Math.min(visible[0].values.length, 7)).tickFormat(d3.timeFormat("%m/%d") as any)
     g.append("g")
@@ -70,7 +73,9 @@ export function LineChart({
       .call((sel) => sel.selectAll("text").attr("fill", colors.text).attr("font-size", "11px"))
       .call((sel) => sel.selectAll(".tick line").attr("stroke", colors.grid).attr("stroke-opacity", 0.5))
 
-    const yAxis = d3.axisLeft(y).ticks(5).tickSize(-w)
+    const yTickCount = allInteger ? Math.min(5, Math.max(2, Math.ceil(yTop))) : 5
+    const yAxis = d3.axisLeft(y).ticks(yTickCount).tickSize(-w)
+    if (allInteger) yAxis.tickFormat(d3.format("d"))
     g.append("g")
       .call(yAxis)
       .call((sel) => sel.select(".domain").remove())

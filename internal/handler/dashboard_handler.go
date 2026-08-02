@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/service"
 	"go.uber.org/zap"
@@ -44,5 +42,5 @@ func (h *DashboardHandler) CollectStats(c *gin.Context) {
 		Error(c, CodeInternalError, "failed to collect stats")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "stats collected"})
+	SuccessWithMessage(c, "stats collected", nil)
 }

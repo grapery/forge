@@ -308,13 +308,14 @@ export default function DashboardPage() {
               {memberSummary && (
                 <DonutChart
                   data={[
-                    { label: t("chartFree"), value: memberSummary.freeMembers },
-                    { label: t("chartBasic"), value: memberSummary.basicMembers },
-                    { label: t("chartPremium"), value: memberSummary.premiumMembers },
+                    { label: t("chartFree"), value: memberSummary.freeCount },
+                    { label: t("chartBasic"), value: memberSummary.basicCount },
+                    { label: t("chartPro"), value: memberSummary.proCount },
+                    { label: t("chartPremium"), value: memberSummary.premiumCount },
                   ]}
                   title={t("chartMembership")}
                   centerLabel={t("chartActive")}
-                  centerValue={String(memberSummary.activeMemberships)}
+                  centerValue={String(memberSummary.totalActive)}
                 />
               )}
               {aiSummary && (

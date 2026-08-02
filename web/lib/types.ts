@@ -366,10 +366,11 @@ export interface MembershipItem {
 }
 
 export interface MembershipSummary {
-  activeMemberships: number
-  basicMembers: number
-  premiumMembers: number
-  freeMembers: number
+  freeCount: number
+  basicCount: number
+  proCount: number
+  premiumCount: number
+  totalActive: number
 }
 
 export type MembershipTier = "basic" | "pro" | "premium"

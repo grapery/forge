@@ -74,7 +74,7 @@ export default function RevenueAnalyticsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard title={t("statTotalRevenue")} value={`$${orderSummary?.totalRevenue?.toLocaleString() ?? 0}`} icon={CreditCard} />
           <StatCard title={t("statTotalOrders")} value={orderSummary?.totalOrders ?? 0} icon={Receipt} />
-          <StatCard title={t("statActiveMembers")} value={memberSummary?.activeMemberships ?? 0} icon={TrendingUp} />
+          <StatCard title={t("statActiveMembers")} value={memberSummary?.totalActive ?? 0} icon={TrendingUp} />
           <StatCard title={t("statTokensConsumed")} value={tokenSummary?.totalConsumed?.toLocaleString() ?? 0} icon={Coins} />
         </div>
 
@@ -96,13 +96,14 @@ export default function RevenueAnalyticsPage() {
           {memberSummary && (
             <DonutChart
               data={[
-                { label: t("free"), value: memberSummary.freeMembers },
-                { label: t("basic"), value: memberSummary.basicMembers },
-                { label: t("premium"), value: memberSummary.premiumMembers },
+                { label: t("free"), value: memberSummary.freeCount },
+                { label: t("basic"), value: memberSummary.basicCount },
+                { label: t("pro"), value: memberSummary.proCount },
+                { label: t("premium"), value: memberSummary.premiumCount },
               ]}
               title={t("membershipDistribution")}
               centerLabel={t("active")}
-              centerValue={String(memberSummary.activeMemberships)}
+              centerValue={String(memberSummary.totalActive)}
             />
           )}
           {tokenSummary && (

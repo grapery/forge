@@ -39,26 +39,23 @@ func (h *OpsAssistantHandler) callerFrom(c *gin.Context) opsagent.Caller {
 func (h *OpsAssistantHandler) Status(c *gin.Context) {
 	caller := h.callerFrom(c)
 	tools := h.reg.ListFor(caller)
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": gin.H{
-			"configured": h.llm.Enabled(),
-			"provider":   h.llm.Provider,
-			"model":      h.llm.Model,
-			"tools":      len(tools),
-			"mcp":        os.Getenv("FORGE_OPS_MCP_ENABLED") == "1" || os.Getenv("FORGE_OPS_MCP_ENABLED") == "true",
-		},
+	Success(c, gin.H{
+		"configured": h.llm.Enabled(),
+		"provider":   h.llm.Provider,
+		"model":      h.llm.Model,
+		"tools":      len(tools),
+		"mcp":        os.Getenv("FORGE_OPS_MCP_ENABLED") == "1" || os.Getenv("FORGE_OPS_MCP_ENABLED") == "true",
 	})
 }
 
 func (h *OpsAssistantHandler) ListTools(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": h.reg.ListFor(h.callerFrom(c))})
+	Success(c, h.reg.ListFor(h.callerFrom(c)))
 }
 
 func (h *OpsAssistantHandler) Chat(c *gin.Context) {
 	var req opsChatRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "message required"})
+		Error(c, CodeInvalidParams, "message required")
 		return
 	}
 
@@ -92,12 +89,12 @@ func (h *OpsAssistantHandler) ToolCall(c *gin.Context) {
 	}
 	res := h.reg.CallFor(c.Request.Context(), h.callerFrom(c), name, string(body))
 	if res.Error != "" {
-		status := http.StatusBadRequest
+		code := CodeInvalidParams
 		if res.Error == "permission denied" {
-			status = http.StatusForbidden
+			code = CodeForbidden
 		}
-		c.JSON(status, gin.H{"code": -1, "message": res.Error, "data": res})
+		Error(c, code, res.Error)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": res})
+	Success(c, res)
 }
