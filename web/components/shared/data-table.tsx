@@ -22,6 +22,10 @@ interface DataTableProps<T> {
     render: (item: T) => React.ReactNode
   }[]
   onRowClick?: (item: T) => void
+  emptyTitle?: string
+  emptyDescription?: string
+  emptyActionLabel?: string
+  onEmptyAction?: () => void
 }
 
 export function DataTable<T>({
@@ -30,6 +34,10 @@ export function DataTable<T>({
   onPageChange,
   columns,
   onRowClick,
+  emptyTitle,
+  emptyDescription,
+  emptyActionLabel,
+  onEmptyAction,
 }: DataTableProps<T>) {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize)
   const t = useTranslations("common")
@@ -51,7 +59,12 @@ export function DataTable<T>({
             {data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length}>
-                  <EmptyState />
+                  <EmptyState
+                    title={emptyTitle}
+                    description={emptyDescription}
+                    actionLabel={emptyActionLabel}
+                    onAction={onEmptyAction}
+                  />
                 </td>
               </tr>
             ) : (

@@ -28,10 +28,12 @@ import { MessageSquare, BookOpen, Puzzle, Users, Trash2, Search } from "lucide-r
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
 
 
 export default function CommentsPage() {
   const t = useTranslations("comments")
+  const tc = useTranslations("common")
   const router = useRouter()
   const searchParams = useSearchParams()
   const authorIdFilter = searchParams.get("authorId") || searchParams.get("userId") || ""
@@ -41,6 +43,7 @@ export default function CommentsPage() {
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<CommentStatusCount | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState(searchParams.get("search") || searchParams.get("keyword") || "")
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get("search") || searchParams.get("keyword") || "")
@@ -48,9 +51,11 @@ export default function CommentsPage() {
   const pageSize = 20
 
   const [deleteComment, setDeleteComment] = useState<CommentItem | null>(null)
+  const hasFilters = Boolean(keyword || targetType || authorIdFilter || targetIdFilter)
 
   const fetchData = useCallback(() => {
     setLoading(true)
+    setError("")
     commentApi
       .list({
         page,
@@ -64,9 +69,9 @@ export default function CommentsPage() {
         setItems(data.items || [])
         setTotal(data.total)
       })
-      .catch(() => {})
+      .catch((err: Error) => setError(err.message || tc("loadFailed")))
       .finally(() => setLoading(false))
-  }, [page, keyword, targetType, authorIdFilter, targetIdFilter])
+  }, [page, keyword, targetType, authorIdFilter, targetIdFilter, tc])
 
   useEffect(() => {
     fetchData()
@@ -141,6 +146,8 @@ export default function CommentsPage() {
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")} icon={MessageSquare} />
 
+      {error && <LoadErrorBanner message={error} onRetry={fetchData} />}
+
       {counts && (
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard title={t("statTotal")} value={counts.total} icon={MessageSquare} />
@@ -202,6 +209,10 @@ export default function CommentsPage() {
           data={items}
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
+          emptyTitle={hasFilters ? tc("emptyFilteredTitle") : undefined}
+          emptyDescription={hasFilters ? tc("emptyFilteredDescription") : undefined}
+          emptyActionLabel={hasFilters ? tc("clearFilters") : undefined}
+          onEmptyAction={hasFilters ? clearFilters : undefined}
           columns={[
             {
               key: "content",

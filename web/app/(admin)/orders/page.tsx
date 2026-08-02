@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, ShoppingCart, Clock, CheckCircle, RotateCcw, Receipt, Search } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
 
 
 const statusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
@@ -38,6 +39,7 @@ const statusVariant = (status: string): "default" | "secondary" | "destructive" 
 
 export default function OrdersPage() {
   const t = useTranslations("orders")
+  const tc = useTranslations("common")
   const router = useRouter()
   const searchParams = useSearchParams()
   const userIdFromUrl = searchParams.get("userId") || ""
@@ -45,6 +47,7 @@ export default function OrdersPage() {
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<OrderSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState(searchParams.get("status") || "")
   const [userIdDraft, setUserIdDraft] = useState(userIdFromUrl)
@@ -55,6 +58,7 @@ export default function OrdersPage() {
   const pageSize = 20
 
   const [refundOrder, setRefundOrder] = useState<SubscriptionOrderItem | null>(null)
+  const hasFilters = Boolean(status || userId || dateFrom || dateTo)
 
   useEffect(() => {
     const next = searchParams.get("userId") || ""
@@ -65,6 +69,7 @@ export default function OrdersPage() {
 
   const fetchData = useCallback(() => {
     setLoading(true)
+    setError("")
     orderApi
       .list({
         page,
@@ -78,9 +83,9 @@ export default function OrdersPage() {
         setItems(data.items || [])
         setTotal(data.total)
       })
-      .catch(() => {})
+      .catch((err: Error) => setError(err.message || tc("loadFailed")))
       .finally(() => setLoading(false))
-  }, [page, status, userId, dateFrom, dateTo])
+  }, [page, status, userId, dateFrom, dateTo, tc])
 
   useEffect(() => {
     fetchData()
@@ -163,6 +168,8 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")} icon={Receipt} />
 
+      {error && <LoadErrorBanner message={error} onRetry={fetchData} />}
+
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard title={t("statTotalRevenue")} value={summary.totalRevenue} icon={DollarSign} />
@@ -232,6 +239,18 @@ export default function OrdersPage() {
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
           onRowClick={(o: SubscriptionOrderItem) => router.push(`/orders/detail?id=${o.id}`)}
+          emptyTitle={hasFilters ? tc("emptyFilteredTitle") : undefined}
+          emptyDescription={hasFilters ? tc("emptyFilteredDescription") : undefined}
+          emptyActionLabel={hasFilters ? tc("clearFilters") : undefined}
+          onEmptyAction={hasFilters ? () => {
+            setStatus("")
+            setUserId("")
+            setUserIdDraft("")
+            setDateFrom("")
+            setDateTo("")
+            setPage(1)
+            router.replace("/orders")
+          } : undefined}
           columns={[
             {
               key: "userName",

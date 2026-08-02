@@ -33,6 +33,7 @@ import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { AdminPage } from "@/components/layout/admin-page"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
 
 
 export default function UsersPage() {
@@ -44,6 +45,7 @@ export default function UsersPage() {
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<UserStatusCount | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState("")
@@ -53,18 +55,26 @@ export default function UsersPage() {
   const [actionType, setActionType] = useState<"suspend" | "activate" | null>(null)
 
   const isAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin"
+  const hasFilters = Boolean(search || status)
+
+  const clearFilters = () => {
+    setSearch("")
+    setStatus("")
+    setPage(1)
+  }
 
   const fetchData = useCallback(() => {
     setLoading(true)
+    setError("")
     userApi
       .list({ page, pageSize, search: search || undefined, status: status || undefined })
       .then((data) => {
         setItems(data.items || [])
         setTotal(data.total)
       })
-      .catch(() => {})
+      .catch((err: Error) => setError(err.message || t("toastLoadFailed")))
       .finally(() => setLoading(false))
-  }, [page, search, status])
+  }, [page, search, status, t])
 
   useEffect(() => {
     fetchData()
@@ -109,11 +119,13 @@ export default function UsersPage() {
         </div>
       )}
 
+      {error && <LoadErrorBanner message={error} onRetry={fetchData} />}
+
       <div className="flex items-center gap-4">
         <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
+          <SearchInput value={search} onSearch={(v) => { setSearch(v); setPage(1) }} placeholder={t("searchPlaceholder")} />
         </div>
-        <Select value={status || "all"} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
+        <Select value={status || "all"} onValueChange={(v) => { setStatus(v === "all" ? "" : v); setPage(1) }}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder={t("filterAllStatus")} />
           </SelectTrigger>
@@ -123,6 +135,9 @@ export default function UsersPage() {
             <SelectItem value="suspended">{t("filterSuspended")}</SelectItem>
           </SelectContent>
         </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>{tc("clearFilters")}</Button>
+        )}
       </div>
 
       {loading ? (
@@ -133,6 +148,10 @@ export default function UsersPage() {
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
           onRowClick={(u) => router.push(`/users/detail?id=${u.id}`)}
+          emptyTitle={hasFilters ? t("emptyFilteredTitle") : undefined}
+          emptyDescription={hasFilters ? t("emptyFilteredDescription") : undefined}
+          emptyActionLabel={hasFilters ? tc("clearFilters") : undefined}
+          onEmptyAction={hasFilters ? clearFilters : undefined}
           columns={[
             {
               key: "user",

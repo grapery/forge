@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input"
 import { PageHeader } from "@/components/shared/page-header"
 import { MessageSquare, Search } from "lucide-react"
 import { getFeedbackSlaInfo } from "@/lib/feedback-sla"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
+import { EmptyState } from "@/components/shared/empty-state"
 
 const statusOptions = ["", "received", "processing", "resolved", "closed"]
 const categoryOptions = ["", "bug", "feature", "content", "general"]
@@ -63,6 +65,7 @@ function FeedbackSlaChip({
 
 export default function FeedbackPage() {
   const t = useTranslations("feedback")
+  const tc = useTranslations("common")
   const router = useRouter()
   const searchParams = useSearchParams()
   const [items, setItems] = useState<Feedback[]>([])
@@ -97,7 +100,7 @@ export default function FeedbackPage() {
     feedbackApi.statusCounts().then(setCounts).catch(() => {})
   }, [])
 
-  useEffect(() => {
+  const fetchList = () => {
     setLoading(true)
     setError("")
     feedbackApi
@@ -116,6 +119,11 @@ export default function FeedbackPage() {
       })
       .catch((err) => setError(err.message || t("toastLoadFailed")))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchList()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter, categoryFilter, userIdFilter, keyword, overdueOnly, t])
 
   const totalPages = Math.ceil(total / pageSize) || 1
@@ -167,12 +175,23 @@ export default function FeedbackPage() {
   }
 
   const displayedItems = items
+  const hasFilters = Boolean(statusFilter || categoryFilter || keyword || overdueOnly || userIdFilter)
+
+  const clearAllFilters = () => {
+    setStatusFilter("")
+    setCategoryFilter("")
+    setKeyword("")
+    setKeywordDraft("")
+    setOverdueOnly(false)
+    setPage(1)
+    router.replace("/feedback")
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("descriptionSla")} icon={MessageSquare} />
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && <LoadErrorBanner message={error} onRetry={fetchList} />}
 
       {counts && (
         <div className="grid gap-4 md:grid-cols-5">
@@ -262,9 +281,12 @@ export default function FeedbackPage() {
       {loading ? (
         <PageSkeleton />
       ) : displayedItems.length === 0 ? (
-        <div className="text-muted-foreground">
-          {overdueOnly ? t("noOverdueFound") : t("noFeedbackFound")}
-        </div>
+        <EmptyState
+          title={overdueOnly ? t("noOverdueFound") : hasFilters ? tc("emptyFilteredTitle") : t("noFeedbackFound")}
+          description={hasFilters && !overdueOnly ? tc("emptyFilteredDescription") : undefined}
+          actionLabel={hasFilters ? tc("clearFilters") : undefined}
+          onAction={hasFilters ? clearAllFilters : undefined}
+        />
       ) : (
         <div className="space-y-3">
           {overdueOnly && (

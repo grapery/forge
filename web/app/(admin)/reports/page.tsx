@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Flag, ShieldAlert, Search, Inbox, Clock } from "lucide-react"
 import { StatCard } from "@/components/shared/stat-card"
 import { getReportSlaInfo } from "@/lib/report-sla"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
+import { EmptyState } from "@/components/shared/empty-state"
 
 type Tab = "users" | "content" | "blocks"
 
@@ -59,16 +61,18 @@ function SlaChip({ createdAt, status, isOverdue, remainingLabel, overdueLabel }:
 
 export default function ReportsPage() {
   const t = useTranslations("reports")
+  const tc = useTranslations("common")
   const router = useRouter()
   const searchParams = useSearchParams()
   const tab = (searchParams.get("tab") as Tab) || "users"
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [reloadToken, setReloadToken] = useState(0)
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "")
   const [overdueOnly, setOverdueOnly] = useState(searchParams.get("overdue") === "1")
-  const [contentTypeFilter, setContentTypeFilter] = useState("")
+  const [contentTypeFilter, setContentTypeFilter] = useState(searchParams.get("contentType") || "")
   const [blockSearch, setBlockSearch] = useState("")
   const [keywordDraft, setKeywordDraft] = useState(searchParams.get("keyword") || "")
   const [keyword, setKeyword] = useState(searchParams.get("keyword") || "")
@@ -104,6 +108,49 @@ export default function ReportsPage() {
     setKeyword("")
     setKeywordDraft("")
     router.push(`/reports?tab=${next}`)
+  }
+
+  const syncUrl = (next: {
+    tab?: Tab
+    status?: string
+    overdue?: boolean
+    keyword?: string
+    contentType?: string
+  }) => {
+    const params = new URLSearchParams()
+    const nextTab = next.tab ?? tab
+    const status = next.status !== undefined ? next.status : statusFilter
+    const overdue = next.overdue !== undefined ? next.overdue : overdueOnly
+    const kw = next.keyword !== undefined ? next.keyword : keyword
+    const contentType = next.contentType !== undefined ? next.contentType : contentTypeFilter
+    params.set("tab", nextTab)
+    if (status) params.set("status", status)
+    if (overdue) params.set("overdue", "1")
+    if (kw) params.set("keyword", kw)
+    if (nextTab === "content" && contentType) params.set("contentType", contentType)
+    router.replace(`/reports?${params.toString()}`)
+  }
+
+  const applyStatus = (next: string) => {
+    setStatusFilter(next)
+    setOverdueOnly(false)
+    setPage(1)
+    syncUrl({ status: next, overdue: false })
+  }
+
+  const applyKeyword = () => {
+    const next = keywordDraft.trim()
+    setKeyword(next)
+    setPage(1)
+    syncUrl({ keyword: next })
+  }
+
+  const toggleOverdue = () => {
+    const next = !overdueOnly
+    setOverdueOnly(next)
+    if (next) setStatusFilter("pending")
+    setPage(1)
+    syncUrl({ overdue: next, status: next ? "pending" : statusFilter })
   }
 
   useEffect(() => {
@@ -179,10 +226,24 @@ export default function ReportsPage() {
       }
     }
     load()
-  }, [tab, page, statusFilter, contentTypeFilter, blockSearch, overdueOnly, keyword, t])
+  }, [tab, page, statusFilter, contentTypeFilter, blockSearch, overdueOnly, keyword, t, reloadToken])
+
+  const reloadList = () => setReloadToken((n) => n + 1)
 
   const total = tab === "users" ? userTotal : tab === "content" ? contentTotal : blockTotal
   const totalPages = Math.ceil(total / pageSize) || 1
+  const hasListFilters = Boolean(statusFilter || overdueOnly || keyword || contentTypeFilter || blockSearch)
+
+  const clearListFilters = () => {
+    setStatusFilter("")
+    setOverdueOnly(false)
+    setKeyword("")
+    setKeywordDraft("")
+    setContentTypeFilter("")
+    setBlockSearch("")
+    setPage(1)
+    syncUrl({ status: "", overdue: false, keyword: "", contentType: "" })
+  }
 
   const contentTypeLabel = (type: string) => {
     const key = `contentType_${type}` as const
@@ -191,18 +252,6 @@ export default function ReportsPage() {
     } catch {
       return type
     }
-  }
-
-  const applyKeyword = () => {
-    setKeyword(keywordDraft.trim())
-    setPage(1)
-  }
-
-  const toggleOverdue = () => {
-    const next = !overdueOnly
-    setOverdueOnly(next)
-    if (next) setStatusFilter("pending")
-    setPage(1)
   }
 
   return (
@@ -220,7 +269,7 @@ export default function ReportsPage() {
               setOverdueOnly(false)
               setKeyword("")
               setKeywordDraft("")
-              router.push("/reports?tab=users")
+              syncUrl({ tab: "users", status: "pending", overdue: false, keyword: "" })
             }}
           >
             <StatCard title={t("summaryPendingUsers")} value={summary.pendingUserReports} icon={Inbox} />
@@ -234,7 +283,7 @@ export default function ReportsPage() {
               setOverdueOnly(false)
               setKeyword("")
               setKeywordDraft("")
-              router.push("/reports?tab=content")
+              syncUrl({ tab: "content", status: "pending", overdue: false, keyword: "" })
             }}
           >
             <StatCard title={t("summaryPendingContent")} value={summary.pendingContentReports} icon={Flag} />
@@ -250,7 +299,7 @@ export default function ReportsPage() {
               setContentTypeFilter("")
               setKeyword("")
               setKeywordDraft("")
-              router.push(`/reports?tab=${nextTab}&overdue=1`)
+              syncUrl({ tab: nextTab, status: "pending", overdue: true, keyword: "" })
             }}
           >
             <StatCard title={t("summaryOverdueTotal")} value={summary.overdueTotal} icon={Clock} />
@@ -271,12 +320,9 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && <LoadErrorBanner message={error} onRetry={reloadList} />}
       {countsError && (
-        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          {countsError}
-          <p className="mt-1 text-xs opacity-90">{t("countsLoadHint")}</p>
-        </div>
+        <LoadErrorBanner message={`${countsError} — ${t("countsLoadHint")}`} />
       )}
 
       {tab !== "blocks" && (userCounts || contentCounts) && (
@@ -287,11 +333,7 @@ export default function ReportsPage() {
               <Card
                 key={s}
                 className={`cursor-pointer transition-colors ${!overdueOnly && statusFilter === s ? "ring-2 ring-primary" : ""}`}
-                onClick={() => {
-                  setOverdueOnly(false)
-                  setStatusFilter(statusFilter === s ? "" : s)
-                  setPage(1)
-                }}
+                onClick={() => applyStatus(statusFilter === s ? "" : s)}
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[s]}`}>
@@ -342,7 +384,7 @@ export default function ReportsPage() {
             <Button
               variant={!overdueOnly && statusFilter === "" ? "default" : "outline"}
               size="sm"
-              onClick={() => { setOverdueOnly(false); setStatusFilter(""); setPage(1) }}
+              onClick={() => applyStatus("")}
             >
               {t("filterAll")}
             </Button>
@@ -351,7 +393,7 @@ export default function ReportsPage() {
                 key={s}
                 variant={!overdueOnly && statusFilter === s ? "default" : "outline"}
                 size="sm"
-                onClick={() => { setOverdueOnly(false); setStatusFilter(s); setPage(1) }}
+                onClick={() => applyStatus(s)}
               >
                 {statusLabel[s]}
               </Button>
@@ -382,7 +424,11 @@ export default function ReportsPage() {
               key={ct || "all"}
               variant={contentTypeFilter === ct ? "default" : "outline"}
               size="sm"
-              onClick={() => { setContentTypeFilter(ct); setPage(1) }}
+              onClick={() => {
+                setContentTypeFilter(ct)
+                setPage(1)
+                syncUrl({ contentType: ct })
+              }}
             >
               {ct ? contentTypeLabel(ct) : t("filterAllTypes")}
             </Button>
@@ -406,7 +452,13 @@ export default function ReportsPage() {
         <PageSkeleton />
       ) : tab === "users" ? (
         userItems.length === 0 ? (
-          <div className="text-muted-foreground">{t("noReportsFound")}</div>
+          <EmptyState
+            icon={Inbox}
+            title={hasListFilters ? tc("emptyFilteredTitle") : t("noReportsFound")}
+            description={hasListFilters ? tc("emptyFilteredDescription") : undefined}
+            actionLabel={hasListFilters ? tc("clearFilters") : undefined}
+            onAction={hasListFilters ? clearListFilters : undefined}
+          />
         ) : (
           <div className="space-y-3">
             {userItems.map((r) => (
@@ -453,7 +505,13 @@ export default function ReportsPage() {
         )
       ) : tab === "content" ? (
         contentItems.length === 0 ? (
-          <div className="text-muted-foreground">{t("noContentReportsFound")}</div>
+          <EmptyState
+            icon={Inbox}
+            title={hasListFilters ? tc("emptyFilteredTitle") : t("noContentReportsFound")}
+            description={hasListFilters ? tc("emptyFilteredDescription") : undefined}
+            actionLabel={hasListFilters ? tc("clearFilters") : undefined}
+            onAction={hasListFilters ? clearListFilters : undefined}
+          />
         ) : (
           <div className="space-y-3">
             {contentItems.map((r) => (
@@ -513,7 +571,13 @@ export default function ReportsPage() {
           </div>
         )
       ) : blockItems.length === 0 ? (
-        <div className="text-muted-foreground">{t("noBlocksFound")}</div>
+        <EmptyState
+          icon={Inbox}
+          title={hasListFilters ? tc("emptyFilteredTitle") : t("noBlocksFound")}
+          description={hasListFilters ? tc("emptyFilteredDescription") : undefined}
+          actionLabel={hasListFilters ? tc("clearFilters") : undefined}
+          onAction={hasListFilters ? clearListFilters : undefined}
+        />
       ) : (
         <div className="space-y-3">
           {blockItems.map((b) => (

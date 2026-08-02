@@ -20,6 +20,7 @@ import { RefreshCw, Flag, ShieldAlert, Sparkles, ArrowRight } from "lucide-react
 import { userApi, characterApi, membershipApi, aiTaskApi } from "@/lib/api/admin"
 import type { UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
 
 type Range = "7d" | "30d" | "90d"
 
@@ -128,7 +129,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
-        <div className="rounded-md bg-[var(--status-danger-bg)] p-3 text-sm text-[var(--status-danger)]">{error}</div>
+        <LoadErrorBanner message={error} onRetry={() => fetchData(range)} />
       </div>
     )
   }
@@ -191,25 +192,25 @@ export default function DashboardPage() {
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 text-sm">
-            <div>
+            <Link href="/reports?tab=users&status=pending" className="rounded-md hover:bg-secondary/50 p-1 -m-1 transition-colors">
               <p className="text-xs text-muted-foreground">{t("moderationPendingUser")}</p>
               <p className="text-lg font-medium tabular-nums">{stats?.pendingUserReports ?? 0}</p>
-            </div>
-            <div>
+            </Link>
+            <Link href="/reports?tab=content&status=pending" className="rounded-md hover:bg-secondary/50 p-1 -m-1 transition-colors">
               <p className="text-xs text-muted-foreground">{t("moderationPendingContent")}</p>
               <p className="text-lg font-medium tabular-nums">{stats?.pendingContentReports ?? 0}</p>
-            </div>
-            <div>
+            </Link>
+            <Link href="/reports?tab=users&overdue=1" className="rounded-md hover:bg-secondary/50 p-1 -m-1 transition-colors">
               <p className="text-xs text-[var(--status-danger)] flex items-center gap-1">
                 <ShieldAlert className="h-3.5 w-3.5" />
                 {t("moderationOverdue")}
               </p>
               <p className="text-lg font-medium tabular-nums text-[var(--status-danger)]">{overdue}</p>
-            </div>
-            <div>
+            </Link>
+            <Link href="/reports?tab=blocks" className="rounded-md hover:bg-secondary/50 p-1 -m-1 transition-colors">
               <p className="text-xs text-muted-foreground">{t("moderationBlocksTotal")}</p>
               <p className="text-lg font-medium tabular-nums">{blockCounts?.total ?? "—"}</p>
-            </div>
+            </Link>
             <div>
               <p className="text-xs text-muted-foreground">{t("moderationBlocksLast7Days")}</p>
               <p className="text-lg font-medium tabular-nums">{blockCounts?.last7Days ?? "—"}</p>
@@ -217,9 +218,19 @@ export default function DashboardPage() {
           </div>
         )}
         <div className="mt-3 flex flex-wrap gap-3 text-sm">
-          <Link href="/reports?tab=users" className="text-primary hover:underline">{t("moderationLinkUserReports")}</Link>
-          <Link href="/reports?tab=content" className="text-primary hover:underline">{t("moderationLinkContentReports")}</Link>
+          <Link href="/reports?tab=users&status=pending" className="text-primary hover:underline">{t("moderationLinkUserReports")}</Link>
+          <Link href="/reports?tab=content&status=pending" className="text-primary hover:underline">{t("moderationLinkContentReports")}</Link>
           <Link href="/reports?tab=blocks" className="text-primary hover:underline">{t("moderationLinkBlocks")}</Link>
+          {(stats?.overdueFeedback ?? 0) > 0 && (
+            <Link href="/feedback?overdue=1" className="text-[var(--status-danger)] hover:underline">
+              {t("moderationLinkOverdueFeedback", { n: stats?.overdueFeedback ?? 0 })}
+            </Link>
+          )}
+          {(stats?.openFeedback ?? 0) > 0 && (
+            <Link href="/feedback?status=received" className="text-primary hover:underline">
+              {t("moderationLinkOpenFeedback", { n: stats?.openFeedback ?? 0 })}
+            </Link>
+          )}
         </div>
       </section>
 

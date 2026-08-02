@@ -63,7 +63,12 @@
     "toastActionFailed": "Action failed",
     "noPermission": "No Permission",
     "noPermissionDesc": "You don't have permission to access this page. Please contact the administrator.",
-    "backToDashboard": "Back to Dashboard"
+    "backToDashboard": "Back to Dashboard",
+    "retry": "Retry",
+    "clearFilters": "Clear filters",
+    "emptyFilteredTitle": "No results for current filters",
+    "emptyFilteredDescription": "Try adjusting filters or clear them to see all records.",
+    "loadFailed": "Failed to load data"
   },
   "nav": {
     "brandName": "Forge Admin",
@@ -118,7 +123,11 @@
     "opsAssistant": "Ops Assistant",
     "commandPalette": "Command palette",
     "commandPlaceholder": "Jump to a page…",
-    "commandEmpty": "No matches"
+    "commandEmpty": "No matches",
+    "opsGroup_content": "Content",
+    "opsGroup_ai": "AI",
+    "opsGroup_users": "Users",
+    "opsGroup_monetization": "Monetization"
   },
   "hub": {
     "analyticsTitle": "Analytics",
@@ -240,6 +249,9 @@
     "moderationLinkUserReports": "User reports",
     "moderationLinkContentReports": "Content reports",
     "moderationLinkBlocks": "Block relationships",
+    "moderationLinkOverdueFeedback": "Overdue feedback ({n})",
+    "moderationLinkOpenFeedback": "Open feedback ({n})",
+    "buttonRetry": "Retry",
     "moderationCountsFailed": "Failed to load block stats",
     "range7d": "7 Days",
     "range30d": "30 Days",
@@ -592,7 +604,12 @@
     "dialogBulkCancelTitle": "Bulk Cancel Tasks",
     "dialogBulkCancelDescription": "Are you sure you want to cancel {count} selected task(s)? This action cannot be undone.",
     "toastBulkSuccess": "{count} task(s) cancelled",
-    "toastBulkPartial": "{success} succeeded, {failed} failed"
+    "toastBulkPartial": "{success} succeeded, {failed} failed",
+    "toastLoadFailed": "Failed to load AI tasks",
+    "emptyActiveTitle": "No active AI tasks",
+    "emptyActiveDescription": "Pending and running jobs will appear here.",
+    "emptyFilteredTitle": "No AI tasks match filters",
+    "emptyFilteredDescription": "Try another quick filter or clear status/type filters."
   },
   "aiGenerations": {
     "title": "AI Generations",
@@ -754,7 +771,10 @@
     "dialogConfirmSuspend": "Suspend",
     "dialogConfirmActivate": "Activate",
     "toastSuspended": "User {username} suspended",
-    "toastActivated": "User {username} activated"
+    "toastActivated": "User {username} activated",
+    "toastLoadFailed": "Failed to load users",
+    "emptyFilteredTitle": "No users match filters",
+    "emptyFilteredDescription": "Clear search or status filter to see more users."
   },
   "usersDetail": {
     "buttonBack": "Back",

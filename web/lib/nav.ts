@@ -9,12 +9,15 @@ import {
 
 export type NavGroup = "" | "analytics" | "support" | "operations" | "settings"
 
+export type OpsSubgroup = "content" | "ai" | "users" | "monetization"
+
 export type NavItem = {
   href: string
   label: string
   icon: LucideIcon
   roles: string[]
   group?: NavGroup
+  subgroup?: OpsSubgroup
   permission?: string
   description?: string
 }
@@ -31,26 +34,26 @@ export const navItems: NavItem[] = [
   { href: "/reports", label: "reports", icon: Flag, roles: ["super_admin", "admin", "operator"], group: "support", permission: "reports", description: "hubDescReports" },
   { href: "/comments", label: "comments", icon: MessageCircle, roles: ["super_admin", "admin", "operator"], group: "support", permission: "comments", description: "hubDescComments" },
   { href: "/notifications", label: "notificationsInbox", icon: Bell, roles: ["super_admin", "admin"], group: "support", permission: "notifications", description: "hubDescNotifications" },
-  { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin"], group: "operations", permission: "content", description: "hubDescContent" },
-  { href: "/fragments", label: "fragments", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", permission: "content", description: "hubDescFragments" },
-  { href: "/storyboards", label: "storyboards", icon: Layers, roles: ["super_admin", "admin"], group: "operations", permission: "content", description: "hubDescStoryboards" },
-  { href: "/characters", label: "characters", icon: Ghost, roles: ["super_admin", "admin"], group: "operations", permission: "characters", description: "hubDescCharacters" },
-  { href: "/tags", label: "tags", icon: Tags, roles: ["super_admin", "admin"], group: "operations", permission: "tags", description: "hubDescTags" },
-  { href: "/genres", label: "genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", permission: "genres", description: "hubDescGenres" },
-  { href: "/topics", label: "topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "operations", permission: "topics", description: "hubDescTopics" },
-  { href: "/ai-tasks", label: "aiTasks", icon: Brain, roles: ["super_admin", "admin"], group: "operations", permission: "ai-tasks", description: "hubDescAiTasks" },
-  { href: "/ai-generations", label: "aiGenerations", icon: Sparkles, roles: ["super_admin", "admin"], group: "operations", permission: "ai-generations", description: "hubDescAiGenerations" },
-  { href: "/agents", label: "agents", icon: Bot, roles: ["super_admin", "admin"], group: "operations", permission: "agents", description: "hubDescAgents" },
-  { href: "/prompts", label: "prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "operations", permission: "prompts", description: "hubDescPrompts" },
-  { href: "/users", label: "users", icon: Users, roles: ["super_admin", "admin"], group: "operations", permission: "users", description: "hubDescUsers" },
-  { href: "/account-deletions", label: "accountDeletions", icon: UserX, roles: ["super_admin", "admin"], group: "operations", permission: "users", description: "hubDescAccountDeletions" },
-  { href: "/devices", label: "devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "operations", permission: "users", description: "hubDescDevices" },
-  { href: "/memberships", label: "memberships", icon: Crown, roles: ["super_admin", "admin"], group: "operations", permission: "memberships", description: "hubDescMemberships" },
-  { href: "/plans", label: "plans", icon: CreditCard, roles: ["super_admin", "admin"], group: "operations", permission: "memberships", description: "hubDescPlans" },
-  { href: "/orders", label: "orders", icon: Receipt, roles: ["super_admin", "admin"], group: "operations", permission: "orders", description: "hubDescOrders" },
-  { href: "/tokens", label: "tokens", icon: Coins, roles: ["super_admin", "admin"], group: "operations", permission: "tokens", description: "hubDescTokens" },
-  { href: "/invitation-codes", label: "invitationCodes", icon: Mail, roles: ["super_admin", "admin"], group: "operations", permission: "invitation-codes", description: "hubDescInvitationCodes" },
-  { href: "/referrals", label: "referrals", icon: UserCheck, roles: ["super_admin", "admin"], group: "operations", permission: "invitation-codes", description: "hubDescReferrals" },
+  { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "content", description: "hubDescContent" },
+  { href: "/fragments", label: "fragments", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "content", description: "hubDescFragments" },
+  { href: "/storyboards", label: "storyboards", icon: Layers, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "content", description: "hubDescStoryboards" },
+  { href: "/characters", label: "characters", icon: Ghost, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "characters", description: "hubDescCharacters" },
+  { href: "/tags", label: "tags", icon: Tags, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "tags", description: "hubDescTags" },
+  { href: "/genres", label: "genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "genres", description: "hubDescGenres" },
+  { href: "/topics", label: "topics", icon: Hash, roles: ["super_admin", "admin", "operator"], group: "operations", subgroup: "content", permission: "topics", description: "hubDescTopics" },
+  { href: "/ai-tasks", label: "aiTasks", icon: Brain, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "ai-tasks", description: "hubDescAiTasks" },
+  { href: "/ai-generations", label: "aiGenerations", icon: Sparkles, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "ai-generations", description: "hubDescAiGenerations" },
+  { href: "/agents", label: "agents", icon: Bot, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "agents", description: "hubDescAgents" },
+  { href: "/prompts", label: "prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "prompts", description: "hubDescPrompts" },
+  { href: "/users", label: "users", icon: Users, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescUsers" },
+  { href: "/account-deletions", label: "accountDeletions", icon: UserX, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescAccountDeletions" },
+  { href: "/devices", label: "devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescDevices" },
+  { href: "/memberships", label: "memberships", icon: Crown, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "memberships", description: "hubDescMemberships" },
+  { href: "/plans", label: "plans", icon: CreditCard, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "memberships", description: "hubDescPlans" },
+  { href: "/orders", label: "orders", icon: Receipt, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "orders", description: "hubDescOrders" },
+  { href: "/tokens", label: "tokens", icon: Coins, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "tokens", description: "hubDescTokens" },
+  { href: "/invitation-codes", label: "invitationCodes", icon: Mail, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "invitation-codes", description: "hubDescInvitationCodes" },
+  { href: "/referrals", label: "referrals", icon: UserCheck, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "invitation-codes", description: "hubDescReferrals" },
   { href: "/admin-users", label: "adminUsers", icon: Shield, roles: ["super_admin"], group: "settings", description: "hubDescAdminUsers" },
   { href: "/audit-log", label: "auditLog", icon: ScrollText, roles: ["super_admin", "admin"], group: "settings", permission: "audit-log", description: "hubDescAuditLog" },
   { href: "/styles", label: "styles", icon: Palette, roles: ["super_admin", "admin"], group: "settings", permission: "styles", description: "hubDescStyles" },
@@ -122,4 +125,29 @@ export function resolveActiveGroup(pathname: string): NavGroup | "dashboard" | "
 export function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard" || pathname === "/"
   return pathname === href || pathname.startsWith(href + "/") || pathname.startsWith(href + "?")
+}
+
+export const opsSubgroupOrder: OpsSubgroup[] = ["content", "ai", "users", "monetization"]
+
+export function groupOpsItems(items: NavItem[]): { key: OpsSubgroup | "other"; items: NavItem[] }[] {
+  const buckets = new Map<OpsSubgroup | "other", NavItem[]>()
+  for (const item of items) {
+    const key = item.subgroup || "other"
+    const list = buckets.get(key) || []
+    list.push(item)
+    buckets.set(key, list)
+  }
+  const ordered: { key: OpsSubgroup | "other"; items: NavItem[] }[] = []
+  for (const key of opsSubgroupOrder) {
+    const list = buckets.get(key)
+    if (list?.length) ordered.push({ key, items: list })
+  }
+  const other = buckets.get("other")
+  if (other?.length) ordered.push({ key: "other", items: other })
+  return ordered
+}
+
+export type HubBadge = {
+  value: number | string
+  tone?: "danger" | "warning" | "neutral"
 }

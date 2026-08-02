@@ -28,6 +28,7 @@ import { ListTodo, Clock, CheckCircle, XCircle, Ban, Brain, Pause, Play, Zap } f
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { LoadErrorBanner } from "@/components/shared/load-error-banner"
 
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -65,6 +66,7 @@ export default function AITasksPage() {
   const [total, setTotal] = useState(0)
   const [summary, setSummary] = useState<AITaskSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState("")
   const [type, setType] = useState("")
@@ -75,6 +77,7 @@ export default function AITasksPage() {
   const [bulkProcessing, setBulkProcessing] = useState(false)
   const [cancelTask, setCancelTask] = useState<AITaskItem | null>(null)
   const pageSize = 20
+  const tc = useTranslations("common")
 
   const fetchData = useCallback(async () => {
     if (quickFilter === "active") {
@@ -104,10 +107,17 @@ export default function AITasksPage() {
     aiTaskApi.summary().then(setSummary).catch(() => {})
   }, [])
 
-  useEffect(() => {
+  const loadPage = useCallback(() => {
     setLoading(true)
-    fetchData().catch(() => {}).finally(() => setLoading(false))
-  }, [fetchData])
+    setError("")
+    fetchData()
+      .catch((err: Error) => setError(err.message || t("toastLoadFailed")))
+      .finally(() => setLoading(false))
+  }, [fetchData, t])
+
+  useEffect(() => {
+    loadPage()
+  }, [loadPage])
 
   useEffect(() => {
     refreshSummary()
@@ -123,6 +133,16 @@ export default function AITasksPage() {
     }, 10000)
     return () => clearInterval(interval)
   }, [autoRefresh, fetchData, refreshSummary, bulkProcessing])
+
+  const clearFilters = () => {
+    setQuickFilter("active")
+    setStatus("")
+    setType("")
+    setPage(1)
+    setSelected(new Set())
+  }
+
+  const hasFilters = quickFilter !== "active" || Boolean(status || type)
 
   const handleQuickFilter = (q: QuickFilter) => {
     setQuickFilter(q)
@@ -313,8 +333,8 @@ export default function AITasksPage() {
       key: "errorMessage",
       header: t("columnError"),
       render: (item: AITaskItem) => (
-        <span className="max-w-[200px] truncate text-xs text-destructive block" title={item.errorMessage}>
-          {item.errorMessage ? (item.errorMessage.length > 40 ? item.errorMessage.slice(0, 40) + "..." : item.errorMessage) : "-"}
+        <span className="max-w-[280px] truncate text-xs text-destructive block" title={item.errorMessage || undefined}>
+          {item.errorMessage || "-"}
         </span>
       ),
     },
@@ -348,6 +368,8 @@ export default function AITasksPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")} icon={Brain} />
+
+      {error && <LoadErrorBanner message={error} onRetry={loadPage} />}
 
       {summary && (
         <div className="grid gap-4 md:grid-cols-4">
@@ -392,6 +414,10 @@ export default function AITasksPage() {
           <SearchInput onSearch={(v) => { setType(v); setPage(1) }} placeholder={t("searchPlaceholder")} />
         </div>
 
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>{tc("clearFilters")}</Button>
+        )}
+
         <div className="ml-auto flex items-center gap-2">
           {selected.size > 0 && (
             <Button size="sm" variant="destructive" onClick={() => setBulkCancelOpen(true)}>
@@ -424,12 +450,16 @@ export default function AITasksPage() {
         <PageSkeleton />
       ) : quickFilter === "active" ? (
         <>
-          <p className="text-xs text-muted-foreground">{t("activeModeHint", { count: items.length, total })}</p>
+          {items.length > 0 && (
+            <p className="text-xs text-muted-foreground">{t("activeModeHint", { count: items.length, total })}</p>
+          )}
           <DataTable
             data={items}
             pagination={{ page: 1, pageSize, total: items.length }}
             onPageChange={() => {}}
             onRowClick={(item) => router.push(`/ai-tasks/detail?id=${item.id}`)}
+            emptyTitle={t("emptyActiveTitle")}
+            emptyDescription={t("emptyActiveDescription")}
             columns={columns}
           />
         </>
@@ -439,6 +469,10 @@ export default function AITasksPage() {
           pagination={{ page, pageSize, total }}
           onPageChange={setPage}
           onRowClick={(item) => router.push(`/ai-tasks/detail?id=${item.id}`)}
+          emptyTitle={hasFilters ? t("emptyFilteredTitle") : undefined}
+          emptyDescription={hasFilters ? t("emptyFilteredDescription") : undefined}
+          emptyActionLabel={hasFilters ? tc("clearFilters") : undefined}
+          onEmptyAction={hasFilters ? clearFilters : undefined}
           columns={columns}
         />
       )}

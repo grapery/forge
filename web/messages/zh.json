@@ -63,7 +63,12 @@
     "toastActionFailed": "操作失败",
     "noPermission": "无权限",
     "noPermissionDesc": "您没有权限访问此页面，请联系管理员。",
-    "backToDashboard": "返回仪表盘"
+    "backToDashboard": "返回仪表盘",
+    "retry": "重试",
+    "clearFilters": "清除筛选",
+    "emptyFilteredTitle": "当前筛选无结果",
+    "emptyFilteredDescription": "请调整筛选条件，或清除筛选后查看全部记录。",
+    "loadFailed": "加载失败"
   },
   "nav": {
     "brandName": "Forge 管理后台",
@@ -118,7 +123,11 @@
     "opsAssistant": "运营助手",
     "commandPalette": "命令面板",
     "commandPlaceholder": "跳转到页面…",
-    "commandEmpty": "无匹配结果"
+    "commandEmpty": "无匹配结果",
+    "opsGroup_content": "内容",
+    "opsGroup_ai": "AI",
+    "opsGroup_users": "用户",
+    "opsGroup_monetization": "变现"
   },
   "hub": {
     "analyticsTitle": "数据分析",
@@ -240,6 +249,9 @@
     "moderationLinkUserReports": "用户举报",
     "moderationLinkContentReports": "内容举报",
     "moderationLinkBlocks": "拉黑关系",
+    "moderationLinkOverdueFeedback": "超时反馈（{n}）",
+    "moderationLinkOpenFeedback": "待处理反馈（{n}）",
+    "buttonRetry": "重试",
     "moderationCountsFailed": "加载拉黑统计失败",
     "range7d": "近一周",
     "range30d": "近一月",
@@ -592,7 +604,12 @@
     "dialogBulkCancelTitle": "批量取消任务",
     "dialogBulkCancelDescription": "确定要取消选中的 {count} 个任务吗？此操作不可撤销。",
     "toastBulkSuccess": "已取消 {count} 个任务",
-    "toastBulkPartial": "{success} 个成功，{failed} 个失败"
+    "toastBulkPartial": "{success} 个成功，{failed} 个失败",
+    "toastLoadFailed": "加载 AI 任务失败",
+    "emptyActiveTitle": "当前没有进行中的 AI 任务",
+    "emptyActiveDescription": "排队中与运行中的任务会显示在这里。",
+    "emptyFilteredTitle": "没有匹配的 AI 任务",
+    "emptyFilteredDescription": "试试其他快捷筛选，或清除状态/类型筛选。"
   },
   "aiGenerations": {
     "title": "AI 生成",
@@ -754,7 +771,10 @@
     "dialogConfirmSuspend": "停用",
     "dialogConfirmActivate": "启用",
     "toastSuspended": "用户 {username} 已停用",
-    "toastActivated": "用户 {username} 已启用"
+    "toastActivated": "用户 {username} 已启用",
+    "toastLoadFailed": "加载用户失败",
+    "emptyFilteredTitle": "没有匹配的用户",
+    "emptyFilteredDescription": "清除搜索或状态筛选以查看更多用户。"
   },
   "usersDetail": {
     "buttonBack": "返回",
