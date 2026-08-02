@@ -6,10 +6,18 @@ Read-only ops analyst for Forge admins.
 
 - `GET /forge/api/admin/ops-assistant/status`
 - `GET /forge/api/admin/ops-assistant/tools`
+- `GET /forge/api/admin/ops-assistant/sessions` — list current admin’s saved analyses
+- `POST /forge/api/admin/ops-assistant/sessions` — create empty session
+- `GET /forge/api/admin/ops-assistant/sessions/:id` — session + messages + tool traces
+- `PATCH /forge/api/admin/ops-assistant/sessions/:id` — rename / archive
+- `DELETE /forge/api/admin/ops-assistant/sessions/:id` — soft-delete (archive)
 - `POST /forge/api/admin/ops-assistant/chat` (SSE: `start` / `tool` / `message` / `error` / `done`)
+  - Body: `{ message, sessionId?, history? }`
+  - Persists turns to `forge_ops` (`ops_assistant_sessions` / `_messages` / `_tool_calls`)
+  - `start` includes `sessionId` for resume
 - `POST /forge/api/admin/ops-assistant/tools/:name`
 
-UI: `/forge/ops-assistant`
+UI: `/forge/ops-assistant` (left history sidebar; chats survive refresh)
 
 ## LLM env
 

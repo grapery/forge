@@ -137,7 +137,8 @@ func main() {
 		Search:    searchSvc,
 	})
 	opsLLM := opsagent.LoadLLMConfig()
-	opsH := handler.NewOpsAssistantHandler(opsReg, opsLLM, logger)
+	opsSvc := service.NewOpsAssistantService(repo, logger)
+	opsH := handler.NewOpsAssistantHandler(opsReg, opsLLM, opsSvc, logger)
 
 	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, shareH, opsH, auditSvc, logger, cfg.AllowOrigins)
 

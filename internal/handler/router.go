@@ -316,6 +316,11 @@ func SetupRouter(
 		{
 			ops.GET("/status", opsH.Status)
 			ops.GET("/tools", opsH.ListTools)
+			ops.GET("/sessions", opsH.ListSessions)
+			ops.POST("/sessions", opsH.CreateSession)
+			ops.GET("/sessions/:id", opsH.GetSession)
+			ops.PATCH("/sessions/:id", opsH.PatchSession)
+			ops.DELETE("/sessions/:id", opsH.DeleteSession)
 			ops.POST("/chat", opsH.Chat)
 			ops.POST("/tools/:name", opsH.ToolCall)
 		}

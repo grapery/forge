@@ -193,7 +193,16 @@
     "statusMcpOn": "MCP enabled",
     "statusMcpOff": "MCP not enabled",
     "citations": "Cited metrics",
-    "moreCounts": "More counts"
+    "moreCounts": "More counts",
+    "sessionsTitle": "History",
+    "newSession": "New chat",
+    "sessionsLoading": "Loading sessions…",
+    "sessionsEmpty": "No saved analyses yet.",
+    "sessionLoading": "Loading conversation…",
+    "untitledSession": "Untitled analysis",
+    "sessionLoadFailed": "Failed to load session",
+    "sessionDeleted": "Session deleted",
+    "sessionDeleteFailed": "Failed to delete session"
   },
   "login": {
     "title": "Forge Admin",

@@ -18,7 +18,14 @@ func NewRepository(db *gorm.DB, logger *zap.Logger) *Repository {
 func (r *Repository) DB() *gorm.DB { return r.db }
 
 func (r *Repository) AutoMigrate() error {
-	return r.db.AutoMigrate(&AdminUser{}, &AdminOperationLog{}, &DailyStat{})
+	return r.db.AutoMigrate(
+		&AdminUser{},
+		&AdminOperationLog{},
+		&DailyStat{},
+		&OpsAssistantSession{},
+		&OpsAssistantMessage{},
+		&OpsAssistantToolCall{},
+	)
 }
 
 func (r *Repository) UpsertDailyStat(stat *DailyStat) error {

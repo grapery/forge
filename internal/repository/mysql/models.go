@@ -64,3 +64,42 @@ type DailyStat struct {
 }
 
 func (DailyStat) TableName() string { return "daily_stats" }
+
+type OpsAssistantSession struct {
+	ID        string `gorm:"column:id;primaryKey;size:36"`
+	AdminID   string `gorm:"column:admin_id;index;size:36"`
+	Title     string `gorm:"column:title;size:200"`
+	Status    string `gorm:"column:status;size:20;index;default:active"`
+	Provider  string `gorm:"column:provider;size:50"`
+	Model     string `gorm:"column:model;size:100"`
+	CreatedAt int64  `gorm:"column:created_at;index"`
+	UpdatedAt int64  `gorm:"column:updated_at;index"`
+}
+
+func (OpsAssistantSession) TableName() string { return "ops_assistant_sessions" }
+
+type OpsAssistantMessage struct {
+	ID        string `gorm:"column:id;primaryKey;size:36"`
+	SessionID string `gorm:"column:session_id;index;size:36"`
+	AdminID   string `gorm:"column:admin_id;index;size:36"`
+	Role      string `gorm:"column:role;size:20"`
+	Content   string `gorm:"column:content;type:mediumtext"`
+	Seq       int    `gorm:"column:seq;index"`
+	CreatedAt int64  `gorm:"column:created_at"`
+}
+
+func (OpsAssistantMessage) TableName() string { return "ops_assistant_messages" }
+
+type OpsAssistantToolCall struct {
+	ID           string `gorm:"column:id;primaryKey;size:36"`
+	MessageID    string `gorm:"column:message_id;index;size:36"`
+	SessionID    string `gorm:"column:session_id;index;size:36"`
+	Name         string `gorm:"column:name;size:100"`
+	InputJSON    string `gorm:"column:input_json;type:mediumtext"`
+	OutputJSON   string `gorm:"column:output_json;type:mediumtext"`
+	Error        string `gorm:"column:error;type:text"`
+	CitationJSON string `gorm:"column:citation_json;type:text"`
+	CreatedAt    int64  `gorm:"column:created_at"`
+}
+
+func (OpsAssistantToolCall) TableName() string { return "ops_assistant_tool_calls" }

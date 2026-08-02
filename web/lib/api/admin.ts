@@ -376,7 +376,56 @@ export type OpsToolDef = {
   parameters: Record<string, unknown>
 }
 
+export type OpsSession = {
+  id: string
+  adminId: string
+  title: string
+  status: string
+  provider?: string
+  model?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export type OpsToolCallRecord = {
+  id: string
+  messageId: string
+  sessionId: string
+  name: string
+  input?: string
+  output?: string
+  error?: string
+  citation?: string
+  createdAt: number
+}
+
+export type OpsSessionMessage = {
+  id: string
+  sessionId: string
+  adminId: string
+  role: "user" | "assistant"
+  content: string
+  seq: number
+  createdAt: number
+  tools?: OpsToolCallRecord[]
+}
+
+export type OpsSessionDetail = {
+  session: OpsSession
+  messages: OpsSessionMessage[]
+}
+
 export const opsAssistantApi = {
   status: () => forgeClient.get<any, OpsAssistantStatus>("/api/admin/ops-assistant/status"),
   tools: () => forgeClient.get<any, OpsToolDef[]>("/api/admin/ops-assistant/tools"),
+  listSessions: (params?: { page?: number; pageSize?: number }) =>
+    forgeClient.get<any, PaginatedData<OpsSession>>("/api/admin/ops-assistant/sessions", { params }),
+  createSession: (data?: { title?: string }) =>
+    forgeClient.post<any, OpsSession>("/api/admin/ops-assistant/sessions", data || {}),
+  getSession: (id: string) =>
+    forgeClient.get<any, OpsSessionDetail>(`/api/admin/ops-assistant/sessions/${id}`),
+  renameSession: (id: string, title: string) =>
+    forgeClient.patch<any, OpsSession>(`/api/admin/ops-assistant/sessions/${id}`, { title }),
+  deleteSession: (id: string) =>
+    forgeClient.delete<any, { id: string; status: string }>(`/api/admin/ops-assistant/sessions/${id}`),
 }
