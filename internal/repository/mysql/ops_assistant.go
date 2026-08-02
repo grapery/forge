@@ -15,6 +15,7 @@ func (r *Repository) CreateOpsSession(s *domain.OpsAssistantSession) error {
 		Status:    s.Status,
 		Provider:  s.Provider,
 		Model:     s.Model,
+		SkillID:   s.SkillID,
 		CreatedAt: s.CreatedAt,
 		UpdatedAt: s.UpdatedAt,
 	}
@@ -30,6 +31,7 @@ func (r *Repository) UpdateOpsSession(s *domain.OpsAssistantSession) error {
 		"status":     s.Status,
 		"provider":   s.Provider,
 		"model":      s.Model,
+		"skill_id":   s.SkillID,
 		"updated_at": s.UpdatedAt,
 	}).Error
 }
@@ -201,6 +203,7 @@ func opsSessionToDomain(m *OpsAssistantSession) *domain.OpsAssistantSession {
 		Status:    m.Status,
 		Provider:  m.Provider,
 		Model:     m.Model,
+		SkillID:   m.SkillID,
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
 	}

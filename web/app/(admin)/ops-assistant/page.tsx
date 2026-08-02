@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
@@ -8,13 +8,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   opsAssistantApi,
+  type OpsAnalysisSkill,
   type OpsAssistantStatus,
   type OpsSession,
   type OpsSessionMessage,
 } from "@/lib/api/admin"
-import { Sparkles, Send, Wrench, ChevronDown, ChevronRight, Plus, Trash2, MessageSquare } from "lucide-react"
+import {
+  Sparkles, Send, Wrench, ChevronDown, ChevronRight, Plus, Trash2,
+  MessageSquare, Copy, Download, BookOpen,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useLocale } from "@/providers/locale-provider"
 
 type Citation = {
   tool?: string
@@ -65,10 +70,50 @@ function fromStoredMessages(rows: OpsSessionMessage[]): ChatMessage[] {
   }))
 }
 
+function sessionToMarkdown(title: string, messages: ChatMessage[]): string {
+  const lines: string[] = [`# ${title || "Ops analysis"}`, ""]
+  for (const m of messages) {
+    if (m.pending && !m.content) continue
+    lines.push(m.role === "user" ? "## User" : "## Assistant")
+    lines.push("")
+    lines.push(m.content || "")
+    if (m.tools?.length) {
+      lines.push("")
+      lines.push("### Tool traces")
+      for (const tool of m.tools) {
+        lines.push(`- **${tool.name}**${tool.error ? ` (error: ${tool.error})` : ""}`)
+        if (tool.citation?.highlights) {
+          const bits = Object.entries(tool.citation.highlights)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(", ")
+          if (bits) lines.push(`  - cites: ${bits}`)
+        }
+      }
+    }
+    lines.push("")
+  }
+  return lines.join("\n")
+}
+
+async function copyText(text: string) {
+  await navigator.clipboard.writeText(text)
+}
+
+function downloadText(filename: string, text: string) {
+  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 async function streamChat(
   message: string,
   history: { role: string; content: string }[],
   sessionId: string | null,
+  skillId: string | null,
   onEvent: (event: string, data: any) => void,
   signal?: AbortSignal,
 ) {
@@ -79,7 +124,12 @@ async function streamChat(
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ message, history, sessionId: sessionId || undefined }),
+    body: JSON.stringify({
+      message,
+      history,
+      sessionId: sessionId || undefined,
+      skillId: skillId || undefined,
+    }),
     signal,
   })
   if (!res.ok || !res.body) {
@@ -183,7 +233,11 @@ function formatSessionTime(ts: number) {
 
 export default function OpsAssistantPage() {
   const t = useTranslations("opsAssistant")
+  const { locale } = useLocale()
+  const zh = locale === "zh"
   const [status, setStatus] = useState<OpsAssistantStatus | null>(null)
+  const [skills, setSkills] = useState<OpsAnalysisSkill[]>([])
+  const [activeSkillId, setActiveSkillId] = useState<string | null>(null)
   const [input, setInput] = useState("")
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sending, setSending] = useState(false)
@@ -193,6 +247,11 @@ export default function OpsAssistantPage() {
   const [loadingSession, setLoadingSession] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+
+  const activeSkill = useMemo(
+    () => skills.find((s) => s.id === activeSkillId) || null,
+    [skills, activeSkillId],
+  )
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -207,6 +266,7 @@ export default function OpsAssistantPage() {
 
   useEffect(() => {
     opsAssistantApi.status().then(setStatus).catch(() => setStatus(null))
+    opsAssistantApi.skills().then(setSkills).catch(() => setSkills([]))
     refreshSessions()
   }, [refreshSessions])
 
@@ -219,6 +279,7 @@ export default function OpsAssistantPage() {
     setSessionId(null)
     setMessages([])
     setInput("")
+    setActiveSkillId(null)
   }
 
   const loadSession = async (id: string) => {
@@ -229,6 +290,7 @@ export default function OpsAssistantPage() {
       const detail = await opsAssistantApi.getSession(id)
       setSessionId(detail.session.id)
       setMessages(fromStoredMessages(detail.messages || []))
+      setActiveSkillId(detail.session.skillId || null)
     } catch (err: any) {
       toast.error(err?.message || t("sessionLoadFailed"))
     } finally {
@@ -248,11 +310,42 @@ export default function OpsAssistantPage() {
     }
   }
 
-  const send = useCallback(async (text: string) => {
+  const handleCopyMessage = async (content: string) => {
+    try {
+      await copyText(content)
+      toast.success(t("copied"))
+    } catch {
+      toast.error(t("copyFailed"))
+    }
+  }
+
+  const handleExport = async (mode: "copy" | "download") => {
+    const sessionTitle = sessions.find((s) => s.id === sessionId)?.title || t("untitledSession")
+    const md = sessionToMarkdown(sessionTitle, messages)
+    if (!md.trim() || messages.length === 0) {
+      toast.error(t("exportEmpty"))
+      return
+    }
+    try {
+      if (mode === "copy") {
+        await copyText(md)
+        toast.success(t("exportCopied"))
+      } else {
+        downloadText(`ops-analysis-${sessionId || "draft"}.md`, md)
+        toast.success(t("exportDownloaded"))
+      }
+    } catch {
+      toast.error(t("copyFailed"))
+    }
+  }
+
+  const send = useCallback(async (text: string, skillId?: string | null) => {
     const message = text.trim()
     if (!message || sending) return
     setInput("")
     setSending(true)
+    const usedSkill = skillId === undefined ? activeSkillId : skillId
+    if (usedSkill) setActiveSkillId(usedSkill)
 
     const history = messages
       .filter((m) => !m.pending && m.content)
@@ -277,6 +370,7 @@ export default function OpsAssistantPage() {
         message,
         history,
         activeSessionId,
+        usedSkill,
         (event, data) => {
           if (event === "start" && data.sessionId) {
             activeSessionId = data.sessionId
@@ -334,9 +428,16 @@ export default function OpsAssistantPage() {
       setSending(false)
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, pending: false } : m)))
     }
-  }, [sending, t, messages, sessionId, refreshSessions])
+  }, [sending, t, messages, sessionId, refreshSessions, activeSkillId])
 
-  const chips = [t("chipGrowth"), t("chipAi"), t("chipModeration"), t("chipRevenue")]
+  const runSkill = (skill: OpsAnalysisSkill) => {
+    const prompt = zh ? skill.chipPromptZh : skill.chipPrompt
+    send(prompt, skill.id)
+  }
+
+  const selectSkill = (skill: OpsAnalysisSkill) => {
+    setActiveSkillId((prev) => (prev === skill.id ? null : skill.id))
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -345,25 +446,42 @@ export default function OpsAssistantPage() {
         description={t("description")}
         icon={Sparkles}
         actions={
-          status ? (
-            <div className="flex flex-col items-end gap-1">
-              <span
-                className={cn(
-                  "text-xs rounded-md border px-2 py-1",
-                  status.configured
-                    ? "border-border text-muted-foreground"
-                    : "border-[var(--status-warning)]/30 text-[var(--status-warning)] bg-[var(--status-warning-bg)]",
-                )}
-              >
-                {status.configured
-                  ? t("statusConfigured", { provider: status.provider, model: status.model, tools: status.tools })
-                  : t("notConfigured")}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {status.mcp ? t("statusMcpOn") : t("statusMcpOff")}
-              </span>
+          <div className="flex flex-col items-end gap-2">
+            {status ? (
+              <div className="flex flex-col items-end gap-1">
+                <span
+                  className={cn(
+                    "text-xs rounded-md border px-2 py-1",
+                    status.configured
+                      ? "border-border text-muted-foreground"
+                      : "border-[var(--status-warning)]/30 text-[var(--status-warning)] bg-[var(--status-warning-bg)]",
+                  )}
+                >
+                  {status.configured
+                    ? t("statusConfigured", {
+                        provider: status.provider,
+                        model: status.model,
+                        tools: status.tools,
+                      })
+                    : t("notConfigured")}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {status.mcp ? t("statusMcpOn") : t("statusMcpOff")}
+                  {typeof status.skills === "number" ? ` · ${t("skillsCount", { n: status.skills })}` : ""}
+                </span>
+              </div>
+            ) : null}
+            <div className="flex gap-1">
+              <Button variant="outline" size="sm" disabled={messages.length === 0} onClick={() => handleExport("copy")}>
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                {t("exportCopy")}
+              </Button>
+              <Button variant="outline" size="sm" disabled={messages.length === 0} onClick={() => handleExport("download")}>
+                <Download className="h-3.5 w-3.5 mr-1" />
+                {t("exportDownload")}
+              </Button>
             </div>
-          ) : null
+          </div>
         }
       />
 
@@ -437,31 +555,81 @@ export default function OpsAssistantPage() {
               </select>
             </div>
 
+            {skills.length > 0 && (
+              <div className="border-b border-border px-4 py-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  {t("skillsTitle")}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((skill) => {
+                    const label = zh ? skill.titleZh : skill.title
+                    const active = activeSkillId === skill.id
+                    return (
+                      <button
+                        key={skill.id}
+                        type="button"
+                        disabled={sending}
+                        title={zh ? skill.processZh : skill.process}
+                        onClick={() => selectSkill(skill)}
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 text-xs transition-colors",
+                          active
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border bg-secondary/50 text-foreground hover:bg-secondary",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+                {activeSkill && (
+                  <div className="rounded-md border border-border bg-secondary/30 px-3 py-2 space-y-2">
+                    <p className="text-xs font-medium text-foreground">
+                      {zh ? activeSkill.titleZh : activeSkill.title}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground/80">{t("skillProcess")}: </span>
+                      {zh ? activeSkill.processZh : activeSkill.process}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground/80">{t("skillHowTo")}: </span>
+                      {zh ? activeSkill.howToAnalyzeZh : activeSkill.howToAnalyze}
+                    </p>
+                    {activeSkill.suggestedTools?.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        <span className="font-medium text-foreground/80">{t("skillTools")}: </span>
+                        {activeSkill.suggestedTools.join(", ")}
+                      </p>
+                    )}
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" className="h-7 text-xs" disabled={sending} onClick={() => runSkill(activeSkill)}>
+                        {t("skillRun")}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setActiveSkillId(null)}>
+                        {t("skillClear")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               {loadingSession ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">{t("sessionLoading")}</p>
               ) : messages.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm text-muted-foreground mb-4">{t("emptyHint")}</p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {chips.map((chip) => (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => send(chip)}
-                        className="rounded-full border border-border bg-secondary/50 px-3 py-1.5 text-xs text-foreground hover:bg-secondary transition-colors"
-                      >
-                        {chip}
-                      </button>
-                    ))}
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{t("emptyHint")}</p>
+                  <p className="text-xs text-muted-foreground">{t("skillsHint")}</p>
                 </div>
               ) : null}
               {messages.map((m) => (
                 <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm whitespace-pre-wrap",
+                      "max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm whitespace-pre-wrap relative group",
                       m.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-foreground",
@@ -477,6 +645,19 @@ export default function OpsAssistantPage() {
                         <CitationCards tools={m.tools} />
                         <ToolTraceBlock tools={m.tools} />
                       </>
+                    )}
+                    {m.role === "assistant" && m.content && !m.pending && (
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-muted-foreground"
+                          onClick={() => handleCopyMessage(m.content)}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          {t("copyAnswer")}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>

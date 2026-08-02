@@ -135,6 +135,11 @@ func main() {
 		Token:     tokenSvc,
 		Audit:     auditSvc,
 		Search:    searchSvc,
+		Feedback:  feedbackSvc,
+		Share:     shareSvc,
+		Agent:     agentSvc,
+		User:      userSvc,
+		Content:   contentSvc,
 	})
 	opsLLM := opsagent.LoadLLMConfig()
 	opsSvc := service.NewOpsAssistantService(repo, logger)

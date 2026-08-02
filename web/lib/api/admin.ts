@@ -367,6 +367,7 @@ export type OpsAssistantStatus = {
   provider: string
   model: string
   tools: number
+  skills?: number
   mcp: boolean
 }
 
@@ -376,6 +377,19 @@ export type OpsToolDef = {
   parameters: Record<string, unknown>
 }
 
+export type OpsAnalysisSkill = {
+  id: string
+  title: string
+  titleZh: string
+  process: string
+  processZh: string
+  howToAnalyze: string
+  howToAnalyzeZh: string
+  suggestedTools: string[]
+  chipPrompt: string
+  chipPromptZh: string
+}
+
 export type OpsSession = {
   id: string
   adminId: string
@@ -383,6 +397,7 @@ export type OpsSession = {
   status: string
   provider?: string
   model?: string
+  skillId?: string
   createdAt: number
   updatedAt: number
 }
@@ -418,6 +433,8 @@ export type OpsSessionDetail = {
 export const opsAssistantApi = {
   status: () => forgeClient.get<any, OpsAssistantStatus>("/api/admin/ops-assistant/status"),
   tools: () => forgeClient.get<any, OpsToolDef[]>("/api/admin/ops-assistant/tools"),
+  skills: () => forgeClient.get<any, OpsAnalysisSkill[]>("/api/admin/ops-assistant/skills"),
+  getSkill: (id: string) => forgeClient.get<any, OpsAnalysisSkill>(`/api/admin/ops-assistant/skills/${id}`),
   listSessions: (params?: { page?: number; pageSize?: number }) =>
     forgeClient.get<any, PaginatedData<OpsSession>>("/api/admin/ops-assistant/sessions", { params }),
   createSession: (data?: { title?: string }) =>

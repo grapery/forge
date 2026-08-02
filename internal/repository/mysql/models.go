@@ -72,6 +72,7 @@ type OpsAssistantSession struct {
 	Status    string `gorm:"column:status;size:20;index;default:active"`
 	Provider  string `gorm:"column:provider;size:50"`
 	Model     string `gorm:"column:model;size:100"`
+	SkillID   string `gorm:"column:skill_id;size:50;index"`
 	CreatedAt int64  `gorm:"column:created_at;index"`
 	UpdatedAt int64  `gorm:"column:updated_at;index"`
 }

@@ -8,6 +8,7 @@ type OpsAssistantSession struct {
 	Status    string `json:"status"` // active | archived
 	Provider  string `json:"provider,omitempty"`
 	Model     string `json:"model,omitempty"`
+	SkillID   string `json:"skillId,omitempty"`
 	CreatedAt int64  `json:"createdAt"`
 	UpdatedAt int64  `json:"updatedAt"`
 }

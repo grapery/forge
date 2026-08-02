@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/grapestree/fgrapery/forge/internal/config"
 	"github.com/grapestree/fgrapery/forge/internal/opsagent"
@@ -32,16 +33,24 @@ func main() {
 	readRepo := mysql.NewReadRepository(mainDB)
 	writeRepo := mysql.NewWriteRepository(mainDB)
 
+	contentSvc := service.NewContentService(readRepo, writeRepo)
+	commentSvc := service.NewCommentService(readRepo, writeRepo, logger)
+	characterSvc := service.NewCharacterService(readRepo, writeRepo)
 	reg := opsagent.NewRegistry(opsagent.Deps{
 		Dashboard: service.NewDashboardService(readRepo, repo, logger),
 		AITask:    service.NewAITaskService(readRepo, writeRepo),
 		AIGen:     service.NewAIGenerationService(readRepo),
-		Report:    service.NewReportService(readRepo, writeRepo, service.NewContentService(readRepo, writeRepo), service.NewCommentService(readRepo, writeRepo, logger), service.NewCharacterService(readRepo, writeRepo), logger),
+		Report:    service.NewReportService(readRepo, writeRepo, contentSvc, commentSvc, characterSvc, logger),
 		Order:     service.NewOrderService(readRepo, writeRepo, logger),
 		Member:    service.NewMembershipService(mainDB, readRepo, writeRepo, logger),
 		Token:     service.NewTokenService(readRepo, logger),
 		Audit:     service.NewAuditLogService(repo, logger),
 		Search:    service.NewSearchAnalyticsService(readRepo),
+		Feedback:  service.NewFeedbackService(readRepo, writeRepo, logger),
+		Share:     service.NewShareAnalyticsService(readRepo),
+		Agent:     service.NewAgentService(readRepo, writeRepo),
+		User:      service.NewUserService(readRepo, writeRepo),
+		Content:   contentSvc,
 	})
 
 	br := bufio.NewReader(os.Stdin)
@@ -59,8 +68,12 @@ func main() {
 		case "initialize":
 			write(mcpResult(req.ID, map[string]any{
 				"protocolVersion": "2024-11-05",
-				"capabilities":    map[string]any{"tools": map[string]any{}},
-				"serverInfo":      map[string]any{"name": "forge-ops", "version": "1.0.0"},
+				"capabilities": map[string]any{
+					"tools":     map[string]any{},
+					"resources": map[string]any{},
+					"prompts":   map[string]any{},
+				},
+				"serverInfo": map[string]any{"name": "forge-ops", "version": "1.1.0"},
 			}))
 		case "notifications/initialized":
 			continue
@@ -95,6 +108,66 @@ func main() {
 			write(mcpResult(req.ID, map[string]any{
 				"content": []map[string]any{{"type": "text", "text": content}},
 				"isError": isErr,
+			}))
+		case "resources/list":
+			resources := make([]map[string]any, 0)
+			for _, s := range opsagent.ListAnalysisSkills() {
+				resources = append(resources, map[string]any{
+					"uri":         "opsagent://skill/" + s.ID,
+					"name":        s.Title,
+					"description": s.Process,
+					"mimeType":    "application/json",
+				})
+			}
+			write(mcpResult(req.ID, map[string]any{"resources": resources}))
+		case "resources/read":
+			var params struct {
+				URI string `json:"uri"`
+			}
+			_ = json.Unmarshal(req.Params, &params)
+			id := strings.TrimPrefix(params.URI, "opsagent://skill/")
+			s := opsagent.GetAnalysisSkill(id)
+			if s == nil {
+				write(mcpError(req.ID, -32002, "resource not found"))
+				continue
+			}
+			b, _ := json.Marshal(s)
+			write(mcpResult(req.ID, map[string]any{
+				"contents": []map[string]any{{
+					"uri":      params.URI,
+					"mimeType": "application/json",
+					"text":     string(b),
+				}},
+			}))
+		case "prompts/list":
+			prompts := make([]map[string]any, 0)
+			for _, s := range opsagent.ListAnalysisSkills() {
+				prompts = append(prompts, map[string]any{
+					"name":        "skill_" + s.ID,
+					"description": s.Title + " — " + s.Process,
+				})
+			}
+			write(mcpResult(req.ID, map[string]any{"prompts": prompts}))
+		case "prompts/get":
+			var params struct {
+				Name string `json:"name"`
+			}
+			_ = json.Unmarshal(req.Params, &params)
+			id := strings.TrimPrefix(params.Name, "skill_")
+			s := opsagent.GetAnalysisSkill(id)
+			if s == nil {
+				write(mcpError(req.ID, -32002, "prompt not found"))
+				continue
+			}
+			write(mcpResult(req.ID, map[string]any{
+				"description": s.Title,
+				"messages": []map[string]any{{
+					"role": "user",
+					"content": map[string]any{
+						"type": "text",
+						"text": s.ChipPrompt + "\n\n" + s.HowToAnalyze,
+					},
+				}},
 			}))
 		case "ping":
 			write(mcpResult(req.ID, map[string]any{}))

@@ -141,13 +141,31 @@ type chatResponse struct {
 
 const systemPrompt = `You are Forge Ops Assistant, a read-only analyst for platform operators.
 Use tools to fetch live metrics before answering. Be concise and factual.
-Prefer short bullet points. Call out risks (overdue moderation, high AI failure rates) clearly.
-Never invent numbers. If a tool fails, say so. Do not perform write actions.`
+Prefer short bullet points. Call out risks (overdue moderation/feedback, high AI failure rates, revenue anomalies) clearly.
+Never invent numbers. If a tool fails, say so. Do not perform write actions.
+When a user asks for a domain review, prefer the matching analysis skill playbook and its SuggestedTools.
+You can call list_analysis_skills or get_analysis_skill to load a playbook.`
 
 type EventWriter func(event string, payload any)
 
+func buildSystemPrompt(skillID string) string {
+	var b strings.Builder
+	b.WriteString(systemPrompt)
+	b.WriteString("\n\n")
+	b.WriteString(skillsCatalogPrompt())
+	if skillID != "" {
+		if s := GetAnalysisSkill(skillID); s != nil {
+			b.WriteString("\n")
+			b.WriteString(s.promptBlock())
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
+
 // RunChat executes a tool-calling loop and streams SSE-like events via writer.
-func RunChat(ctx context.Context, cfg LLMConfig, reg *Registry, caller Caller, userMessage string, history []chatMessage, write EventWriter) error {
+// skillID optionally activates an analysis playbook in the system prompt.
+func RunChat(ctx context.Context, cfg LLMConfig, reg *Registry, caller Caller, userMessage string, history []chatMessage, write EventWriter, skillID string) error {
 	if !cfg.Enabled() {
 		write("error", map[string]string{"error": "ops assistant LLM is not configured (set FORGE_OPS_API_KEY)"})
 		write("done", map[string]any{"finished": true, "message": ""})
@@ -155,11 +173,15 @@ func RunChat(ctx context.Context, cfg LLMConfig, reg *Registry, caller Caller, u
 	}
 
 	messages := make([]chatMessage, 0, len(history)+2)
-	messages = append(messages, chatMessage{Role: "system", Content: systemPrompt})
+	messages = append(messages, chatMessage{Role: "system", Content: buildSystemPrompt(skillID)})
 	messages = append(messages, history...)
 	messages = append(messages, chatMessage{Role: "user", Content: userMessage})
 
-	write("start", map[string]any{"provider": cfg.Provider, "model": cfg.Model, "thinking": cfg.Thinking})
+	startPayload := map[string]any{"provider": cfg.Provider, "model": cfg.Model, "thinking": cfg.Thinking}
+	if skillID != "" {
+		startPayload["skillId"] = skillID
+	}
+	write("start", startPayload)
 
 	tools := reg.OpenAIToolsFor(caller)
 	if len(tools) == 0 {
@@ -234,6 +256,13 @@ func extractCitation(tr ToolResult) map[string]any {
 			"totalUsers", "totalStories", "totalOrders", "totalAITasks",
 			"activeMemberships", "pendingUserReports", "pendingContentReports", "overdueReportsTotal",
 			"overdueTotal", "completedTasks", "failedTasks", "pendingTasks", "totalTasks",
+			"received", "processing", "resolved", "closed", "overdue", "critical",
+			"totalIssues", "totalOpens", "openRate", "issuesToday", "opensToday",
+			"active", "suspended", "deleted", "total", "published", "draft",
+			"totalAgents", "activeAgents", "totalSkills", "totalInteractions",
+			"totalConsumed", "totalRecharged", "totalRefunded", "totalGifted",
+			"totalRevenue", "pendingCount", "completedCount", "refundedCount",
+			"freeCount", "basicCount", "proCount", "premiumCount", "totalActive",
 		}
 		highlights := map[string]any{}
 		for _, k := range keys {
@@ -246,6 +275,37 @@ func extractCitation(tr ToolResult) map[string]any {
 				if v, ok := mod[k]; ok {
 					highlights[k] = v
 				}
+			}
+		}
+		if orders, ok := m["orders"].(map[string]any); ok {
+			for _, k := range []string{"totalOrders", "totalRevenue", "pendingCount", "completedCount", "refundedCount"} {
+				if v, ok := orders[k]; ok {
+					highlights[k] = v
+				}
+			}
+		}
+		if members, ok := m["memberships"].(map[string]any); ok {
+			for _, k := range []string{"freeCount", "basicCount", "proCount", "premiumCount", "totalActive"} {
+				if v, ok := members[k]; ok {
+					highlights[k] = v
+				}
+			}
+		}
+		if counts, ok := m["counts"].(map[string]any); ok {
+			for _, k := range []string{"total", "published", "draft", "other"} {
+				if v, ok := counts[k]; ok {
+					highlights[k] = v
+				}
+			}
+		}
+		if ur, ok := m["userReports"].(map[string]any); ok {
+			if v, ok := ur["total"]; ok {
+				highlights["pendingUserReportsListed"] = v
+			}
+		}
+		if cr, ok := m["contentReports"].(map[string]any); ok {
+			if v, ok := cr["total"]; ok {
+				highlights["pendingContentReportsListed"] = v
 			}
 		}
 		if len(highlights) > 0 {

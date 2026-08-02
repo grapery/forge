@@ -31,12 +31,14 @@ func NewOpsAssistantHandler(reg *opsagent.Registry, llm opsagent.LLMConfig, svc 
 type opsChatRequest struct {
 	Message   string                    `json:"message" binding:"required"`
 	SessionID string                    `json:"sessionId,omitempty"`
+	SkillID   string                    `json:"skillId,omitempty"`
 	History   []opsagent.HistoryMessage `json:"history,omitempty"`
 }
 
 type opsSessionPatchRequest struct {
-	Title  string `json:"title"`
-	Status string `json:"status"`
+	Title   string `json:"title"`
+	Status  string `json:"status"`
+	SkillID string `json:"skillId"`
 }
 
 func (h *OpsAssistantHandler) callerFrom(c *gin.Context) opsagent.Caller {
@@ -63,12 +65,26 @@ func (h *OpsAssistantHandler) Status(c *gin.Context) {
 		"provider":   h.llm.Provider,
 		"model":      h.llm.Model,
 		"tools":      len(tools),
+		"skills":     len(opsagent.ListAnalysisSkills()),
 		"mcp":        os.Getenv("FORGE_OPS_MCP_ENABLED") == "1" || os.Getenv("FORGE_OPS_MCP_ENABLED") == "true",
 	})
 }
 
 func (h *OpsAssistantHandler) ListTools(c *gin.Context) {
 	Success(c, h.reg.ListFor(h.callerFrom(c)))
+}
+
+func (h *OpsAssistantHandler) ListSkills(c *gin.Context) {
+	Success(c, opsagent.ListAnalysisSkills())
+}
+
+func (h *OpsAssistantHandler) GetSkill(c *gin.Context) {
+	s := opsagent.GetAnalysisSkill(c.Param("id"))
+	if s == nil {
+		Error(c, CodeNotFound, "skill not found")
+		return
+	}
+	Success(c, s)
 }
 
 func (h *OpsAssistantHandler) ListSessions(c *gin.Context) {
@@ -97,7 +113,7 @@ func (h *OpsAssistantHandler) CreateSession(c *gin.Context) {
 		Title string `json:"title"`
 	}
 	_ = c.ShouldBindJSON(&req)
-	sess, err := h.svc.CreateSession(adminID, req.Title, h.llm.Provider, h.llm.Model)
+	sess, err := h.svc.CreateSession(adminID, req.Title, h.llm.Provider, h.llm.Model, "")
 	if err != nil {
 		h.logger.Error("create ops session failed", zap.Error(err))
 		Error(c, CodeInternalError, "failed to create session")
@@ -147,6 +163,24 @@ func (h *OpsAssistantHandler) PatchSession(c *gin.Context) {
 			Error(c, CodeNotFound, "session not found")
 			return
 		}
+		if req.SkillID != "" {
+			if updated, err := h.svc.SetSessionSkill(adminID, id, req.SkillID); err == nil && updated != nil {
+				sess = updated
+			}
+		}
+		Success(c, sess)
+		return
+	}
+	if req.SkillID != "" {
+		sess, err := h.svc.SetSessionSkill(adminID, id, req.SkillID)
+		if err != nil {
+			Error(c, CodeInternalError, "failed to update session skill")
+			return
+		}
+		if sess == nil {
+			Error(c, CodeNotFound, "session not found")
+			return
+		}
 		Success(c, sess)
 		return
 	}
@@ -162,7 +196,7 @@ func (h *OpsAssistantHandler) PatchSession(c *gin.Context) {
 		Success(c, gin.H{"id": id, "status": "archived"})
 		return
 	}
-	Error(c, CodeInvalidParams, "title or status=archived required")
+	Error(c, CodeInvalidParams, "title, skillId, or status=archived required")
 }
 
 func (h *OpsAssistantHandler) DeleteSession(c *gin.Context) {
@@ -194,7 +228,7 @@ func (h *OpsAssistantHandler) Chat(c *gin.Context) {
 		return
 	}
 
-	sess, err := h.svc.EnsureSession(adminID, req.SessionID, req.Message, h.llm.Provider, h.llm.Model)
+	sess, err := h.svc.EnsureSession(adminID, req.SessionID, req.Message, h.llm.Provider, h.llm.Model, req.SkillID)
 	if err != nil {
 		h.logger.Error("ensure ops session failed", zap.Error(err))
 		Error(c, CodeInternalError, "failed to prepare session")
@@ -273,7 +307,7 @@ func (h *OpsAssistantHandler) Chat(c *gin.Context) {
 
 	caller := h.callerFrom(c)
 	chatHistory := opsagent.ToChatHistory(history)
-	runErr := opsagent.RunChat(c.Request.Context(), h.llm, h.reg, caller, req.Message, chatHistory, write)
+	runErr := opsagent.RunChat(c.Request.Context(), h.llm, h.reg, caller, req.Message, chatHistory, write, req.SkillID)
 	if runErr != nil {
 		h.logger.Warn("ops assistant chat failed", zap.Error(runErr))
 	}

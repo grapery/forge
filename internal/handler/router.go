@@ -316,6 +316,8 @@ func SetupRouter(
 		{
 			ops.GET("/status", opsH.Status)
 			ops.GET("/tools", opsH.ListTools)
+			ops.GET("/skills", opsH.ListSkills)
+			ops.GET("/skills/:id", opsH.GetSkill)
 			ops.GET("/sessions", opsH.ListSessions)
 			ops.POST("/sessions", opsH.CreateSession)
 			ops.GET("/sessions/:id", opsH.GetSession)

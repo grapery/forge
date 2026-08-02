@@ -48,18 +48,34 @@ func (c Caller) hasAny(perms ...string) bool {
 // toolAccess returns required permission(s). Empty means any authenticated admin.
 func toolAccess(name string) []string {
 	switch name {
-	case "get_dashboard_overview":
-		return nil // dashboard-level; fields redacted below
+	case "list_analysis_skills", "get_analysis_skill", "get_dashboard_overview":
+		return nil // dashboard-level / meta; overview fields redacted below
 	case "get_ai_task_summary":
+		return []string{domain.PermAITasks}
+	case "list_failed_ai_tasks":
 		return []string{domain.PermAITasks}
 	case "get_ai_generation_summary":
 		return []string{domain.PermAIGenerations}
 	case "get_moderation_summary":
 		return []string{domain.PermReports}
+	case "list_pending_reports":
+		return []string{domain.PermReports}
+	case "get_feedback_summary":
+		return []string{domain.PermFeedback}
+	case "list_overdue_feedback":
+		return []string{domain.PermFeedback}
 	case "get_orders_membership_summary":
 		return []string{domain.PermOrders, domain.PermMemberships}
 	case "get_token_summary":
 		return []string{domain.PermTokens}
+	case "get_user_status_counts":
+		return []string{domain.PermUsers}
+	case "get_content_status_counts":
+		return []string{domain.PermContent}
+	case "get_share_overview":
+		return []string{domain.PermContent}
+	case "get_agent_stats":
+		return []string{domain.PermAgents}
 	case "get_recent_audit":
 		return []string{domain.PermAuditLog}
 	case "get_search_trends":

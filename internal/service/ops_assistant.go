@@ -42,7 +42,7 @@ func (s *OpsAssistantService) GetSessionDetail(adminID, sessionID string) (*doma
 	return &domain.OpsAssistantSessionDetail{Session: sess, Messages: msgs}, nil
 }
 
-func (s *OpsAssistantService) CreateSession(adminID, title, provider, model string) (*domain.OpsAssistantSession, error) {
+func (s *OpsAssistantService) CreateSession(adminID, title, provider, model, skillID string) (*domain.OpsAssistantSession, error) {
 	now := NowFunc()
 	title = truncateRunes(strings.TrimSpace(title), 80)
 	if title == "" {
@@ -55,6 +55,7 @@ func (s *OpsAssistantService) CreateSession(adminID, title, provider, model stri
 		Status:    "active",
 		Provider:  provider,
 		Model:     model,
+		SkillID:   strings.TrimSpace(skillID),
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -92,7 +93,8 @@ func (s *OpsAssistantService) ArchiveSession(adminID, sessionID string) error {
 	return nil
 }
 
-func (s *OpsAssistantService) EnsureSession(adminID, sessionID, firstMessage, provider, model string) (*domain.OpsAssistantSession, error) {
+func (s *OpsAssistantService) EnsureSession(adminID, sessionID, firstMessage, provider, model, skillID string) (*domain.OpsAssistantSession, error) {
+	skillID = strings.TrimSpace(skillID)
 	if sessionID != "" {
 		sess, err := s.repo.GetOpsSession(sessionID, adminID)
 		if err != nil {
@@ -101,9 +103,30 @@ func (s *OpsAssistantService) EnsureSession(adminID, sessionID, firstMessage, pr
 		if sess == nil || sess.Status == "archived" {
 			return nil, nil
 		}
+		if skillID != "" && sess.SkillID != skillID {
+			sess.SkillID = skillID
+			sess.UpdatedAt = NowFunc()
+			_ = s.repo.UpdateOpsSession(sess)
+		}
 		return sess, nil
 	}
-	return s.CreateSession(adminID, firstMessage, provider, model)
+	return s.CreateSession(adminID, firstMessage, provider, model, skillID)
+}
+
+func (s *OpsAssistantService) SetSessionSkill(adminID, sessionID, skillID string) (*domain.OpsAssistantSession, error) {
+	sess, err := s.repo.GetOpsSession(sessionID, adminID)
+	if err != nil {
+		return nil, err
+	}
+	if sess == nil || sess.Status == "archived" {
+		return nil, nil
+	}
+	sess.SkillID = strings.TrimSpace(skillID)
+	sess.UpdatedAt = NowFunc()
+	if err := s.repo.UpdateOpsSession(sess); err != nil {
+		return nil, err
+	}
+	return sess, nil
 }
 
 func (s *OpsAssistantService) AppendUserMessage(adminID, sessionID, content string) (*domain.OpsAssistantMessage, error) {

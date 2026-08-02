@@ -18,6 +18,12 @@ func TestCallerToolAccess(t *testing.T) {
 	if viewer.CanUseTool("get_token_summary") {
 		t.Fatal("viewer without tokens must not use token tool")
 	}
+	if !viewer.CanUseTool("get_feedback_summary") {
+		t.Fatal("viewer with feedback should use feedback summary")
+	}
+	if !viewer.CanUseTool("list_analysis_skills") {
+		t.Fatal("viewer should list analysis skills")
+	}
 
 	op := Caller{Role: "operator", Permissions: []string{"reports", "orders"}}
 	if !op.CanUseTool("get_moderation_summary") {
