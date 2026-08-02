@@ -17,7 +17,7 @@ Uses [DeepSeek OpenAI-compatible API](https://api-docs.deepseek.com/zh-cn/quick_
 
 ```
 FORGE_OPS_PROVIDER=deepseek          # deepseek | huoshan | gemini
-FORGE_OPS_API_KEY=sk-...             # or DEEPSEEK_API_KEY
+FORGE_OPS_API_KEY=sk-...             # GitHub Actions Variable (vars), or DEEPSEEK_API_KEY locally
 FORGE_OPS_BASE_URL=https://api.deepseek.com   # optional; /v1 also ok
 FORGE_OPS_MODEL=deepseek-v4-flash    # or deepseek-v4-pro
 FORGE_OPS_THINKING=false             # V4 thinking; default off for simpler tool loops
