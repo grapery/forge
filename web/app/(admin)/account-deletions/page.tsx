@@ -25,6 +25,7 @@ import { UserMinus, UserX, Clock, Loader2, CheckCircle2, XCircle } from "lucide-
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function AccountDeletionsPage() {
@@ -89,7 +90,7 @@ export default function AccountDeletionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={UserX} />
 
       {counts && (
@@ -215,6 +216,6 @@ export default function AccountDeletionsPage() {
         variant={actionType === "cancel" ? "destructive" : "default"}
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

@@ -34,6 +34,7 @@ func (sc *StatsCollector) Collect(date string) error {
 	stat.TotalStories, _ = sc.readRepo.CountStories()
 	stat.TotalCharacters, _ = sc.readRepo.CountCharacters()
 	stat.TotalFragments, _ = sc.readRepo.CountFragments()
+	stat.TotalStoryboards, _ = sc.readRepo.CountStoryboards()
 	stat.ActiveMemberships, _ = sc.readRepo.CountMemberships()
 	stat.TotalOrders, _ = sc.readRepo.CountOrders()
 	stat.TotalAITasks, _ = sc.readRepo.CountAITasks()
@@ -43,9 +44,12 @@ func (sc *StatsCollector) Collect(date string) error {
 	stat.NewStories, _ = sc.readRepo.CountNewStories(since)
 	stat.NewCharacters, _ = sc.readRepo.CountNewCharacters(since)
 	stat.NewFragments, _ = sc.readRepo.CountNewFragments(since)
+	stat.NewStoryboards, _ = sc.readRepo.CountNewStoryboards(since)
 	stat.NewOrders, _ = sc.readRepo.CountNewOrders(since)
 	stat.NewAITasks, _ = sc.readRepo.CountNewAITasks(since)
 	stat.NewTokenTx, _ = sc.readRepo.CountNewTokenTransactions(since)
+	stat.TokenConsumed, _ = sc.readRepo.SumTokenConsumed(since)
+	stat.ForkEvents, _ = sc.readRepo.CountForkEvents(since)
 	stat.NewRevenue, _ = sc.readRepo.SumRevenue(since)
 
 	if prev, err := sc.repo.GetDailyStat(parsed.AddDate(0, 0, -1).Format("2006-01-02")); err == nil {

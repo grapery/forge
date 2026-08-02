@@ -177,7 +177,7 @@ export default function AgentsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-emerald-400"
+                      className="text-[var(--status-success)]"
                       onClick={(e) => { e.stopPropagation(); setActionAgent(a); setActionStatus("active") }}
                     >
                       <Power className="mr-1 h-3 w-3" />{t("buttonActivate")}

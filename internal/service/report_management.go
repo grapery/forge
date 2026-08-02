@@ -59,9 +59,13 @@ func normalizePage(page, pageSize int) (int, int) {
 func (s *ReportService) List(query *domain.ReportListQuery) ([]*domain.Report, int64, error) {
 	page, pageSize := normalizePage(query.Page, query.PageSize)
 	return s.readRepo.ListReports(&mysql.ReportFilter{
-		Page:     page,
-		PageSize: pageSize,
-		Status:   query.Status,
+		Page:       page,
+		PageSize:   pageSize,
+		Status:     query.Status,
+		Overdue:    query.Overdue,
+		Keyword:    query.Keyword,
+		ReporterID: query.ReporterID,
+		ReportedID: query.ReportedID,
 	})
 }
 
@@ -121,6 +125,9 @@ func (s *ReportService) ListContentReports(query *domain.ContentReportListQuery)
 		PageSize:    pageSize,
 		Status:      query.Status,
 		ContentType: query.ContentType,
+		Overdue:     query.Overdue,
+		Keyword:     query.Keyword,
+		ReporterID:  query.ReporterID,
 	})
 }
 

@@ -33,6 +33,7 @@ import { ResetPasswordDialog } from "./reset-password-dialog"
 import { DeleteAdminConfirm } from "./delete-confirm"
 
 import { PermissionEditor } from "@/components/admin/permission-editor"
+import { AdminPage } from "@/components/layout/admin-page"
 
 const TOTAL_PERMISSIONS = 18
 
@@ -92,7 +93,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={t("title")}
         description={t("description")}
@@ -204,6 +205,6 @@ export default function AdminUsersPage() {
           onSaved={fetchData}
         />
       )}
-    </div>
+    </AdminPage>
   )
 }

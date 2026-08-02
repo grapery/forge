@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function UsersPage() {
@@ -97,7 +98,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={UsersIcon} />
 
       {counts && (
@@ -216,6 +217,6 @@ export default function UsersPage() {
         variant={actionType === "suspend" ? "destructive" : "default"}
         onConfirm={handleUserAction}
       />
-    </div>
+    </AdminPage>
   )
 }

@@ -16,11 +16,12 @@ interface ConfirmDialogProps {
   variant?: "default" | "destructive"
   loading?: boolean
   onConfirm: () => void
+  children?: React.ReactNode
 }
 
 export function ConfirmDialog({
   open, onOpenChange, title, description,
-  confirmLabel, cancelLabel, variant = "default", loading = false, onConfirm,
+  confirmLabel, cancelLabel, variant = "default", loading = false, onConfirm, children,
 }: ConfirmDialogProps) {
   const t = useTranslations("common")
   return (
@@ -30,6 +31,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
+        {children}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {cancelLabel || t("cancel")}

@@ -30,6 +30,9 @@ type ContentReportListQuery struct {
 	PageSize    int    `form:"pageSize"`
 	Status      string `form:"status,omitempty"`
 	ContentType string `form:"contentType,omitempty"`
+	Overdue     bool   `form:"overdue,omitempty"`
+	Keyword     string `form:"keyword,omitempty"`
+	ReporterID  string `form:"reporterId,omitempty"`
 }
 
 type ResolveContentReportRequest struct {

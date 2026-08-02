@@ -196,7 +196,7 @@ func (s *OrderService) List(query *domain.PaymentListQuery) ([]*domain.Subscript
 	return s.readRepo.ListOrders(query)
 }
 
-func (s *OrderService) GetDetail(id string) (map[string]any, error) {
+func (s *OrderService) GetDetail(id string) (*domain.SubscriptionOrderItem, error) {
 	return s.readRepo.GetOrderDetail(id)
 }
 

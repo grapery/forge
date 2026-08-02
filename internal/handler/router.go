@@ -39,6 +39,8 @@ func SetupRouter(
 	deviceH *DeviceHandler,
 	notificationH *NotificationHandler,
 	searchH *SearchAnalyticsHandler,
+	shareH *ShareAnalyticsHandler,
+	opsH *OpsAssistantHandler,
 	auditSvc *service.AuditLogService,
 	logger *zap.Logger,
 	allowOrigins []string,
@@ -293,13 +295,29 @@ func SetupRouter(
 
 		notifications := protected.Group("/notifications")
 		notifications.Use(middleware.RequirePermission(domain.PermNotifications))
-		{ notifications.GET("", notificationH.List) }
+		{ notifications.GET("", notificationH.List); notifications.POST("/broadcast", notificationH.Broadcast) }
 
 		search := protected.Group("/search")
 		search.Use(middleware.RequirePermission(domain.PermSearch))
 		{
 			search.GET("/history", searchH.History)
 			search.GET("/trends", searchH.Trends)
+		}
+
+		shares := protected.Group("/shares")
+		shares.Use(middleware.RequirePermission(domain.PermContent))
+		{
+			shares.GET("/overview", shareH.Overview)
+			shares.GET("/events", shareH.Events)
+		}
+
+		ops := protected.Group("/ops-assistant")
+		ops.Use(middleware.RequireRole("super_admin", "admin", "operator", "viewer"))
+		{
+			ops.GET("/status", opsH.Status)
+			ops.GET("/tools", opsH.ListTools)
+			ops.POST("/chat", opsH.Chat)
+			ops.POST("/tools/:name", opsH.ToolCall)
 		}
 	}
 

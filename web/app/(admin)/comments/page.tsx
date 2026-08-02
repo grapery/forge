@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { commentApi } from "@/lib/api/admin"
 
@@ -12,17 +13,17 @@ import { PageHeader } from "@/components/shared/page-header"
 
 import { DataTable } from "@/components/shared/data-table"
 
-import { SearchInput } from "@/components/shared/search-input"
-
 import { StatCard } from "@/components/shared/stat-card"
 
 import { Badge } from "@/components/ui/badge"
 
 import { Button } from "@/components/ui/button"
 
+import { Input } from "@/components/ui/input"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import { MessageSquare, BookOpen, Puzzle, Users, Trash2 } from "lucide-react"
+import { MessageSquare, BookOpen, Puzzle, Users, Trash2, Search } from "lucide-react"
 
 import { toast } from "sonner"
 
@@ -31,13 +32,19 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
 export default function CommentsPage() {
   const t = useTranslations("comments")
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const authorIdFilter = searchParams.get("authorId") || searchParams.get("userId") || ""
+  const targetIdFilter = searchParams.get("targetId") || ""
+
   const [items, setItems] = useState<CommentItem[]>([])
   const [total, setTotal] = useState(0)
   const [counts, setCounts] = useState<CommentStatusCount | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [search, setSearch] = useState("")
-  const [targetType, setTargetType] = useState("")
+  const [keyword, setKeyword] = useState(searchParams.get("search") || searchParams.get("keyword") || "")
+  const [keywordDraft, setKeywordDraft] = useState(searchParams.get("search") || searchParams.get("keyword") || "")
+  const [targetType, setTargetType] = useState(searchParams.get("targetType") || "")
   const pageSize = 20
 
   const [deleteComment, setDeleteComment] = useState<CommentItem | null>(null)
@@ -45,14 +52,21 @@ export default function CommentsPage() {
   const fetchData = useCallback(() => {
     setLoading(true)
     commentApi
-      .list({ page, pageSize, search: search || undefined, targetType: targetType || undefined })
+      .list({
+        page,
+        pageSize,
+        search: keyword || undefined,
+        targetType: targetType || undefined,
+        targetId: targetIdFilter || undefined,
+        authorId: authorIdFilter || undefined,
+      })
       .then((data) => {
         setItems(data.items || [])
         setTotal(data.total)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page, search, targetType])
+  }, [page, keyword, targetType, authorIdFilter, targetIdFilter])
 
   useEffect(() => {
     fetchData()
@@ -61,6 +75,31 @@ export default function CommentsPage() {
   useEffect(() => {
     commentApi.statusCounts().then(setCounts).catch(() => {})
   }, [])
+
+  const syncUrl = (next: { search?: string; targetType?: string }) => {
+    const params = new URLSearchParams()
+    const search = next.search !== undefined ? next.search : keyword
+    const type = next.targetType !== undefined ? next.targetType : targetType
+    if (search) params.set("search", search)
+    if (type) params.set("targetType", type)
+    if (authorIdFilter) params.set("authorId", authorIdFilter)
+    if (targetIdFilter) params.set("targetId", targetIdFilter)
+    const qs = params.toString()
+    router.replace(qs ? `/comments?${qs}` : "/comments")
+  }
+
+  const applyKeyword = () => {
+    const next = keywordDraft.trim()
+    setKeyword(next)
+    setPage(1)
+    syncUrl({ search: next })
+  }
+
+  const applyTargetType = (next: string) => {
+    setTargetType(next)
+    setPage(1)
+    syncUrl({ targetType: next })
+  }
 
   const handleDelete = async () => {
     if (!deleteComment) return
@@ -84,6 +123,20 @@ export default function CommentsPage() {
     return text.slice(0, maxLen) + "..."
   }
 
+  const targetHref = (c: CommentItem) => {
+    if (!c.targetId) return null
+    if (c.targetType === "character") return `/characters/detail?id=${c.targetId}`
+    if (c.targetType === "story" || c.targetType === "storyboard" || c.targetType === "fragment") {
+      return `/content/detail?id=${c.targetId}&type=${c.targetType}`
+    }
+    return null
+  }
+
+  const clearFilters = () => {
+    setPage(1)
+    router.push("/comments")
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")} icon={MessageSquare} />
@@ -97,11 +150,23 @@ export default function CommentsPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-4">
-        <div className="w-64">
-          <SearchInput onSearch={setSearch} placeholder={t("searchPlaceholder")} />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-2">
+          <Input
+            value={keywordDraft}
+            onChange={(e) => setKeywordDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") applyKeyword() }}
+            placeholder={t("searchPlaceholder")}
+            className="w-64"
+          />
+          <Button variant="outline" size="icon" onClick={applyKeyword} aria-label={t("searchPlaceholder")}>
+            <Search className="h-4 w-4" />
+          </Button>
         </div>
-        <Select value={targetType || "all"} onValueChange={(v) => setTargetType(v === "all" ? "" : v)}>
+        <Select
+          value={targetType || "all"}
+          onValueChange={(v) => applyTargetType(v === "all" ? "" : v)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder={t("filterAllTypes")} />
           </SelectTrigger>
@@ -112,7 +177,23 @@ export default function CommentsPage() {
             <SelectItem value="character">{t("filterCharacter")}</SelectItem>
           </SelectContent>
         </Select>
+        {(authorIdFilter || targetIdFilter) && (
+          <Button variant="outline" size="sm" onClick={clearFilters}>
+            {t("clearAuthorFilter")}
+          </Button>
+        )}
       </div>
+
+      {authorIdFilter && (
+        <p className="text-sm text-muted-foreground">
+          {t("filteringByAuthor", { id: authorIdFilter })}
+        </p>
+      )}
+      {targetIdFilter && (
+        <p className="text-sm text-muted-foreground">
+          {t("filteringByTarget", { id: targetIdFilter })}
+        </p>
+      )}
 
       {loading ? (
         <PageSkeleton />
@@ -133,7 +214,16 @@ export default function CommentsPage() {
               key: "author",
               header: t("columnAuthor"),
               render: (c: CommentItem) => (
-                <span className="text-sm text-muted-foreground">{c.authorName}</span>
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/users/detail?id=${c.authorId}`)
+                  }}
+                >
+                  {c.authorName || c.authorId}
+                </button>
               ),
             },
             {
@@ -146,9 +236,24 @@ export default function CommentsPage() {
             {
               key: "targetId",
               header: t("columnTargetId"),
-              render: (c: CommentItem) => (
-                <span className="text-xs text-muted-foreground font-mono">{c.targetId}</span>
-              ),
+              render: (c: CommentItem) => {
+                const href = targetHref(c)
+                if (href) {
+                  return (
+                    <button
+                      type="button"
+                      className="text-xs font-mono text-primary hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push(href)
+                      }}
+                    >
+                      {c.targetId}
+                    </button>
+                  )
+                }
+                return <span className="text-xs text-muted-foreground font-mono">{c.targetId}</span>
+              },
             },
             {
               key: "likes",

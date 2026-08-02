@@ -28,25 +28,37 @@ type OverviewStats struct {
 	PendingUserReports     int64        `json:"pendingUserReports"`
 	PendingContentReports  int64        `json:"pendingContentReports"`
 	OverdueReportsTotal    int64        `json:"overdueReportsTotal"`
+	OpenFeedback           int64        `json:"openFeedback"`
+	OverdueFeedback        int64        `json:"overdueFeedback"`
+	CriticalFeedback       int64        `json:"criticalFeedback"`
 	Trends                 []DailyTrend `json:"trends"`
 }
 
 type DailyTrend struct {
-	Date            string  `json:"date"`
-	TotalUsers      int64   `json:"totalUsers"`
-	NewUsers        int64   `json:"newUsers"`
-	TotalStories    int64   `json:"totalStories"`
-	NewStories      int64   `json:"newStories"`
-	TotalCharacters int64   `json:"totalCharacters"`
-	NewCharacters   int64   `json:"newCharacters"`
-	TotalOrders     int64   `json:"totalOrders"`
-	NewOrders       int64   `json:"newOrders"`
-	NewRevenue      float64 `json:"newRevenue"`
-	TotalAITasks    int64   `json:"totalAITasks"`
-	NewAITasks      int64   `json:"newAITasks"`
+	Date             string  `json:"date"`
+	TotalUsers       int64   `json:"totalUsers"`
+	NewUsers         int64   `json:"newUsers"`
+	TotalStories     int64   `json:"totalStories"`
+	NewStories       int64   `json:"newStories"`
+	TotalCharacters  int64   `json:"totalCharacters"`
+	NewCharacters    int64   `json:"newCharacters"`
+	TotalOrders      int64   `json:"totalOrders"`
+	NewOrders        int64   `json:"newOrders"`
+	NewRevenue       float64 `json:"newRevenue"`
+	TotalAITasks     int64   `json:"totalAITasks"`
+	NewAITasks       int64   `json:"newAITasks"`
+	TotalFragments   int64   `json:"totalFragments"`
+	NewFragments     int64   `json:"newFragments"`
+	TotalStoryboards int64   `json:"totalStoryboards"`
+	NewStoryboards   int64   `json:"newStoryboards"`
+	ForkEvents       int64   `json:"forkEvents"`
+	TokenConsumed    int64   `json:"tokenConsumed"`
 }
 
-func (s *DashboardService) GetOverview() (*OverviewStats, error) {
+func (s *DashboardService) GetOverview(trendDays int) (*OverviewStats, error) {
+	if trendDays <= 0 {
+		trendDays = 30
+	}
 	stats := &OverviewStats{}
 	var err error
 
@@ -108,7 +120,19 @@ func (s *DashboardService) GetOverview() (*OverviewStats, error) {
 		s.logger.Warn("failed to count overdue reports", zap.Error(err))
 	}
 
-	dailyStats, err := s.repo.GetLatestStats(30)
+	if byStatus, ferr := s.readRepo.CountFeedbackByStatus(); ferr != nil {
+		s.logger.Warn("failed to count feedback by status", zap.Error(ferr))
+	} else {
+		stats.OpenFeedback = byStatus["received"] + byStatus["processing"]
+	}
+	if overdue, critical, ferr := s.readRepo.CountFeedbackOverdue(); ferr != nil {
+		s.logger.Warn("failed to count overdue feedback", zap.Error(ferr))
+	} else {
+		stats.OverdueFeedback = overdue
+		stats.CriticalFeedback = critical
+	}
+
+	dailyStats, err := s.repo.GetLatestStats(trendDays)
 	if err != nil {
 		s.logger.Warn("failed to load daily trends", zap.Error(err))
 	} else {
@@ -116,18 +140,24 @@ func (s *DashboardService) GetOverview() (*OverviewStats, error) {
 		for i := len(dailyStats) - 1; i >= 0; i-- {
 			d := dailyStats[i]
 			trends = append(trends, DailyTrend{
-				Date:            d.Date,
-				TotalUsers:      d.TotalUsers,
-				NewUsers:        d.NewUsers,
-				TotalStories:    d.TotalStories,
-				NewStories:      d.NewStories,
-				TotalCharacters: d.TotalCharacters,
-				NewCharacters:   d.NewCharacters,
-				TotalOrders:     d.TotalOrders,
-				NewOrders:       d.NewOrders,
-				NewRevenue:      d.NewRevenue,
-				TotalAITasks:    d.TotalAITasks,
-				NewAITasks:      d.NewAITasks,
+				Date:             d.Date,
+				TotalUsers:       d.TotalUsers,
+				NewUsers:         d.NewUsers,
+				TotalStories:     d.TotalStories,
+				NewStories:       d.NewStories,
+				TotalCharacters:  d.TotalCharacters,
+				NewCharacters:    d.NewCharacters,
+				TotalOrders:      d.TotalOrders,
+				NewOrders:        d.NewOrders,
+				NewRevenue:       d.NewRevenue,
+				TotalAITasks:     d.TotalAITasks,
+				NewAITasks:       d.NewAITasks,
+				TotalFragments:   d.TotalFragments,
+				NewFragments:     d.NewFragments,
+				TotalStoryboards: d.TotalStoryboards,
+				NewStoryboards:   d.NewStoryboards,
+				ForkEvents:       d.ForkEvents,
+				TokenConsumed:    d.TokenConsumed,
 			})
 		}
 		stats.Trends = trends

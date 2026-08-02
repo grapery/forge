@@ -27,6 +27,7 @@ import { Pencil, Trash2, Palette } from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function StylesPage() {
@@ -104,7 +105,7 @@ export default function StylesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Palette} />
 
       <div className="flex items-center gap-4">
@@ -243,6 +244,6 @@ export default function StylesPage() {
         variant="destructive"
         onConfirm={handleDelete}
       />
-    </div>
+    </AdminPage>
   )
 }

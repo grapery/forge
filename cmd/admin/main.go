@@ -12,6 +12,7 @@ import (
 	"github.com/grapestree/fgrapery/forge/internal/auth"
 	"github.com/grapestree/fgrapery/forge/internal/config"
 	"github.com/grapestree/fgrapery/forge/internal/handler"
+	"github.com/grapestree/fgrapery/forge/internal/opsagent"
 	"github.com/grapestree/fgrapery/forge/internal/repository/mysql"
 	"github.com/grapestree/fgrapery/forge/internal/service"
 	"go.uber.org/zap"
@@ -66,7 +67,7 @@ func main() {
 	dashSvc := service.NewDashboardService(readRepo, repo, logger)
 	auditSvc := service.NewAuditLogService(repo, logger)
 	adminUserSvc := service.NewAdminUserMgmtService(repo, logger)
-	feedbackSvc := service.NewFeedbackService(readRepo, logger)
+	feedbackSvc := service.NewFeedbackService(readRepo, writeRepo, logger)
 	userSvc := service.NewUserService(readRepo, writeRepo)
 	contentSvc := service.NewContentService(readRepo, writeRepo)
 	topicSvc := service.NewTopicService(readRepo)
@@ -87,8 +88,9 @@ func main() {
 	genreSvc := service.NewGenreService(readRepo, writeRepo)
 	invitationSvc := service.NewInvitationService(readRepo, writeRepo)
 	deviceSvc := service.NewDeviceService(readRepo)
-	notificationSvc := service.NewNotificationService(readRepo)
+	notificationSvc := service.NewNotificationService(readRepo, writeRepo)
 	searchSvc := service.NewSearchAnalyticsService(readRepo)
+	shareSvc := service.NewShareAnalyticsService(readRepo)
 	collector := service.NewStatsCollector(readRepo, repo, logger)
 
 	authSvc.SeedDefaultAdmin()
@@ -121,8 +123,23 @@ func main() {
 	deviceH := handler.NewDeviceHandler(deviceSvc, logger)
 	notificationH := handler.NewNotificationHandler(notificationSvc, logger)
 	searchH := handler.NewSearchAnalyticsHandler(searchSvc, logger)
+	shareH := handler.NewShareAnalyticsHandler(shareSvc, logger)
 
-	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, auditSvc, logger, cfg.AllowOrigins)
+	opsReg := opsagent.NewRegistry(opsagent.Deps{
+		Dashboard: dashSvc,
+		AITask:    aiTaskSvc,
+		AIGen:     aiGenSvc,
+		Report:    reportSvc,
+		Order:     orderSvc,
+		Member:    membershipSvc,
+		Token:     tokenSvc,
+		Audit:     auditSvc,
+		Search:    searchSvc,
+	})
+	opsLLM := opsagent.LoadLLMConfig()
+	opsH := handler.NewOpsAssistantHandler(opsReg, opsLLM, logger)
+
+	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, shareH, opsH, auditSvc, logger, cfg.AllowOrigins)
 
 	// Daily stats collection (runs at 1:00 AM)
 	go startDailyCollector(collector, logger)

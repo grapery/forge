@@ -31,6 +31,7 @@ import { Eye, Trash2, FileText, Sparkles, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 const publishedStatuses: Record<string, string> = {
@@ -175,7 +176,7 @@ export default function ContentPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={FileText} />
 
       {counts && (
@@ -221,7 +222,7 @@ export default function ContentPage() {
 
         {(tab === "storyboard" || tab === "fragment") && (
           <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-muted-foreground">{t("dedicatedPageHint")}</span>
             <Button
               variant="link"
@@ -259,6 +260,6 @@ export default function ContentPage() {
         variant={actionType === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

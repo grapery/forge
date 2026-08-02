@@ -5,21 +5,23 @@ import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 import { useRouter, useSearchParams } from "next/navigation"
 import { reportApi, blockApi } from "@/lib/api/admin"
-import type { Report, ContentReport, UserBlock, BlockCounts } from "@/lib/types"
+import type { Report, ContentReport, UserBlock, BlockCounts, ModerationSummary } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageHeader } from "@/components/shared/page-header"
 import { Input } from "@/components/ui/input"
-import { Flag, ShieldAlert } from "lucide-react"
+import { Flag, ShieldAlert, Search, Inbox, Clock } from "lucide-react"
+import { StatCard } from "@/components/shared/stat-card"
+import { getReportSlaInfo } from "@/lib/report-sla"
 
 type Tab = "users" | "content" | "blocks"
 
 const statusOptions = ["", "pending", "reviewed", "resolved", "dismissed"]
 
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-500/15 text-yellow-400",
-  reviewed: "bg-blue-500/15 text-blue-400",
-  resolved: "bg-green-500/15 text-emerald-400",
+  pending: "bg-[var(--status-warning-bg)] text-[var(--status-warning)]",
+  reviewed: "bg-[var(--status-info-bg)] text-[var(--status-info)]",
+  resolved: "bg-green-500/15 text-[var(--status-success)]",
   dismissed: "bg-gray-500/15 text-gray-400",
 }
 
@@ -27,6 +29,32 @@ const contentTypes = ["", "storyboard", "fragment", "comment", "story", "charact
 
 function formatTime(ts: number) {
   return new Date(ts * 1000).toLocaleString()
+}
+
+function SlaChip({ createdAt, status, isOverdue, remainingLabel, overdueLabel }: {
+  createdAt: number
+  status: string
+  isOverdue?: boolean
+  remainingLabel: (hours: number) => string
+  overdueLabel: (hours: number) => string
+}) {
+  const sla = getReportSlaInfo(createdAt, status)
+  if (sla.kind === "overdue" || isOverdue) {
+    const hours = sla.kind === "overdue" ? sla.overdueHours : Math.max(1, sla.ageHours - 24)
+    return (
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--status-danger-bg)] text-[var(--status-danger)]">
+        {overdueLabel(hours)}
+      </span>
+    )
+  }
+  if (sla.kind === "remaining") {
+    return (
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--status-warning-bg)] text-[var(--status-warning)]">
+        {remainingLabel(sla.remainingHours)}
+      </span>
+    )
+  }
+  return null
 }
 
 export default function ReportsPage() {
@@ -38,11 +66,15 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "")
+  const [overdueOnly, setOverdueOnly] = useState(searchParams.get("overdue") === "1")
   const [contentTypeFilter, setContentTypeFilter] = useState("")
   const [blockSearch, setBlockSearch] = useState("")
+  const [keywordDraft, setKeywordDraft] = useState(searchParams.get("keyword") || "")
+  const [keyword, setKeyword] = useState(searchParams.get("keyword") || "")
   const pageSize = 20
 
+  const [summary, setSummary] = useState<ModerationSummary | null>(null)
   const [userItems, setUserItems] = useState<Report[]>([])
   const [userTotal, setUserTotal] = useState(0)
   const [userCounts, setUserCounts] = useState<Record<string, number> | null>(null)
@@ -66,10 +98,17 @@ export default function ReportsPage() {
   const setTab = (next: Tab) => {
     setPage(1)
     setStatusFilter("")
+    setOverdueOnly(false)
     setContentTypeFilter("")
     setBlockSearch("")
+    setKeyword("")
+    setKeywordDraft("")
     router.push(`/reports?tab=${next}`)
   }
+
+  useEffect(() => {
+    reportApi.moderationSummary().then(setSummary).catch(() => setSummary(null))
+  }, [])
 
   useEffect(() => {
     setCountsError("")
@@ -104,15 +143,23 @@ export default function ReportsPage() {
     const load = async () => {
       try {
         if (tab === "users") {
-          const data = await reportApi.list({ page, pageSize, status: statusFilter })
+          const data = await reportApi.list({
+            page,
+            pageSize,
+            status: overdueOnly ? undefined : (statusFilter || undefined),
+            overdue: overdueOnly || undefined,
+            keyword: keyword || undefined,
+          })
           setUserItems(data.items || [])
           setUserTotal(data.total)
         } else if (tab === "content") {
           const data = await reportApi.listContent({
             page,
             pageSize,
-            status: statusFilter,
+            status: overdueOnly ? undefined : (statusFilter || undefined),
             contentType: contentTypeFilter || undefined,
+            overdue: overdueOnly || undefined,
+            keyword: keyword || undefined,
           })
           setContentItems(data.items || [])
           setContentTotal(data.total)
@@ -132,10 +179,10 @@ export default function ReportsPage() {
       }
     }
     load()
-  }, [tab, page, statusFilter, contentTypeFilter, blockSearch])
+  }, [tab, page, statusFilter, contentTypeFilter, blockSearch, overdueOnly, keyword, t])
 
   const total = tab === "users" ? userTotal : tab === "content" ? contentTotal : blockTotal
-  const totalPages = Math.ceil(total / pageSize)
+  const totalPages = Math.ceil(total / pageSize) || 1
 
   const contentTypeLabel = (type: string) => {
     const key = `contentType_${type}` as const
@@ -146,9 +193,70 @@ export default function ReportsPage() {
     }
   }
 
+  const applyKeyword = () => {
+    setKeyword(keywordDraft.trim())
+    setPage(1)
+  }
+
+  const toggleOverdue = () => {
+    const next = !overdueOnly
+    setOverdueOnly(next)
+    if (next) setStatusFilter("pending")
+    setPage(1)
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} description={t("description")} icon={Flag} />
+
+      {summary && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <button
+            type="button"
+            className="text-left"
+            onClick={() => {
+              setPage(1)
+              setStatusFilter("pending")
+              setOverdueOnly(false)
+              setKeyword("")
+              setKeywordDraft("")
+              router.push("/reports?tab=users")
+            }}
+          >
+            <StatCard title={t("summaryPendingUsers")} value={summary.pendingUserReports} icon={Inbox} />
+          </button>
+          <button
+            type="button"
+            className="text-left"
+            onClick={() => {
+              setPage(1)
+              setStatusFilter("pending")
+              setOverdueOnly(false)
+              setKeyword("")
+              setKeywordDraft("")
+              router.push("/reports?tab=content")
+            }}
+          >
+            <StatCard title={t("summaryPendingContent")} value={summary.pendingContentReports} icon={Flag} />
+          </button>
+          <button
+            type="button"
+            className="text-left"
+            onClick={() => {
+              const nextTab = summary.pendingUserReports > 0 || tab === "users" ? "users" : "content"
+              setPage(1)
+              setStatusFilter("pending")
+              setOverdueOnly(true)
+              setContentTypeFilter("")
+              setKeyword("")
+              setKeywordDraft("")
+              router.push(`/reports?tab=${nextTab}&overdue=1`)
+            }}
+          >
+            <StatCard title={t("summaryOverdueTotal")} value={summary.overdueTotal} icon={Clock} />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 border-b pb-2">
         {(["users", "content", "blocks"] as Tab[]).map((key) => (
@@ -178,24 +286,31 @@ export default function ReportsPage() {
             return (
               <Card
                 key={s}
-                className={`cursor-pointer transition-colors ${statusFilter === s ? "ring-2 ring-primary" : ""}`}
-                onClick={() => { setStatusFilter(statusFilter === s ? "" : s); setPage(1) }}
+                className={`cursor-pointer transition-colors ${!overdueOnly && statusFilter === s ? "ring-2 ring-primary" : ""}`}
+                onClick={() => {
+                  setOverdueOnly(false)
+                  setStatusFilter(statusFilter === s ? "" : s)
+                  setPage(1)
+                }}
               >
                 <CardContent className="flex items-center gap-3 p-4">
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[s]}`}>
                     {statusLabel[s]}
                   </span>
-                  <span className="text-2xl font-bold">{counts?.[s] || 0}</span>
+                  <span className="text-[28px] font-medium tracking-tight">{counts?.[s] || 0}</span>
                 </CardContent>
               </Card>
             )
           })}
-          <Card className="border-red-500/20 bg-red-500/10">
+          <Card
+            className={`cursor-pointer border-[var(--status-danger)]/20 bg-[var(--status-danger-bg)] transition-colors ${overdueOnly ? "ring-2 ring-[var(--status-danger)]" : ""}`}
+            onClick={toggleOverdue}
+          >
             <CardContent className="flex items-center gap-3 p-4">
-              <ShieldAlert className="h-4 w-4 text-red-400" />
+              <ShieldAlert className="h-4 w-4 text-[var(--status-danger)]" />
               <div>
-                <p className="text-xs text-red-400">{t("slaOverdue")}</p>
-                <span className="text-2xl font-bold text-red-400">
+                <p className="text-xs text-[var(--status-danger)]">{t("slaOverdue")}</p>
+                <span className="text-[28px] font-medium tracking-tight text-[var(--status-danger)]">
                   {(tab === "users" ? userCounts?.overdue : contentCounts?.overdue) || 0}
                 </span>
               </div>
@@ -209,28 +324,54 @@ export default function ReportsPage() {
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{t("blocksTotal")}</p>
-              <span className="text-2xl font-bold">{blockCounts.total}</span>
+              <span className="text-[28px] font-medium tracking-tight">{blockCounts.total}</span>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{t("blocksLast7Days")}</p>
-              <span className="text-2xl font-bold">{blockCounts.last7Days}</span>
+              <span className="text-[28px] font-medium tracking-tight">{blockCounts.last7Days}</span>
             </CardContent>
           </Card>
         </div>
       )}
 
       {tab !== "blocks" && (
-        <div className="flex flex-wrap gap-2">
-          <Button variant={statusFilter === "" ? "default" : "outline"} size="sm" onClick={() => { setStatusFilter(""); setPage(1) }}>
-            {t("filterAll")}
-          </Button>
-          {statusOptions.slice(1).map((s) => (
-            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => { setStatusFilter(s); setPage(1) }}>
-              {statusLabel[s]}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={!overdueOnly && statusFilter === "" ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setOverdueOnly(false); setStatusFilter(""); setPage(1) }}
+            >
+              {t("filterAll")}
             </Button>
-          ))}
+            {statusOptions.slice(1).map((s) => (
+              <Button
+                key={s}
+                variant={!overdueOnly && statusFilter === s ? "default" : "outline"}
+                size="sm"
+                onClick={() => { setOverdueOnly(false); setStatusFilter(s); setPage(1) }}
+              >
+                {statusLabel[s]}
+              </Button>
+            ))}
+            <Button variant={overdueOnly ? "destructive" : "outline"} size="sm" onClick={toggleOverdue}>
+              {t("filterOverdue")}
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={keywordDraft}
+              onChange={(e) => setKeywordDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") applyKeyword() }}
+              placeholder={t("searchPlaceholder")}
+              className="h-9 w-56"
+            />
+            <Button variant="outline" size="sm" onClick={applyKeyword}>
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
@@ -277,16 +418,30 @@ export default function ReportsPage() {
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[r.status]}`}>
                           {statusLabel[r.status] || r.status}
                         </span>
-                        {r.isOverdue && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
-                            {t("slaOverdue")}
-                          </span>
-                        )}
+                        <SlaChip
+                          createdAt={r.createdAt}
+                          status={r.status}
+                          isOverdue={r.isOverdue}
+                          remainingLabel={(hours) => t("slaRemaining", { hours })}
+                          overdueLabel={(hours) => t("slaOverdueBy", { hours })}
+                        />
                       </div>
                       <p className="text-sm line-clamp-2">{r.reason}</p>
                       <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>{t("columnReporter")}: {r.reporterName || r.reporterId.slice(0, 8)}</span>
-                        <span>{t("columnTarget")}: {r.reportedName || r.reportedId.slice(0, 8)}</span>
+                        <button
+                          type="button"
+                          className="hover:text-primary hover:underline"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/users/detail?id=${r.reporterId}`) }}
+                        >
+                          {t("columnReporter")}: {r.reporterName || r.reporterId.slice(0, 8)}
+                        </button>
+                        <button
+                          type="button"
+                          className="hover:text-primary hover:underline"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/users/detail?id=${r.reportedId}`) }}
+                        >
+                          {t("columnTarget")}: {r.reportedName || r.reportedId.slice(0, 8)}
+                        </button>
                         <span>{formatTime(r.createdAt)}</span>
                       </div>
                     </div>
@@ -311,11 +466,13 @@ export default function ReportsPage() {
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[r.status]}`}>
                           {statusLabel[r.status] || r.status}
                         </span>
-                        {r.isOverdue && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
-                            {t("slaOverdue")}
-                          </span>
-                        )}
+                        <SlaChip
+                          createdAt={r.createdAt}
+                          status={r.status}
+                          isOverdue={r.isOverdue}
+                          remainingLabel={(hours) => t("slaRemaining", { hours })}
+                          overdueLabel={(hours) => t("slaOverdueBy", { hours })}
+                        />
                         {r.contentDeleted && (
                           <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-500/15 text-gray-400">
                             {t("contentRemoved")}
@@ -325,8 +482,27 @@ export default function ReportsPage() {
                       <p className="text-sm line-clamp-2">{r.contentPreview || r.contentTitle || r.reason}</p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{t("reportReason")}: {r.reason}</p>
                       <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>{t("columnReporter")}: {r.reporterName || r.reporterId.slice(0, 8)}</span>
-                        <span>{t("columnCreator")}: {r.creatorName || r.creatorId?.slice(0, 8) || "—"}</span>
+                        <button
+                          type="button"
+                          className="hover:text-primary hover:underline"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/users/detail?id=${r.reporterId}`) }}
+                        >
+                          {t("columnReporter")}: {r.reporterName || r.reporterId.slice(0, 8)}
+                        </button>
+                        {r.creatorId ? (
+                          <button
+                            type="button"
+                            className="hover:text-primary hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/users/detail?id=${r.creatorId}`)
+                            }}
+                          >
+                            {t("columnCreator")}: {r.creatorName || r.creatorId.slice(0, 8)}
+                          </button>
+                        ) : (
+                          <span>{t("columnCreator")}: —</span>
+                        )}
                         <span>{formatTime(r.createdAt)}</span>
                       </div>
                     </div>

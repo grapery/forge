@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/auth"
@@ -19,6 +20,13 @@ func AuditMiddleware(auditSvc *service.AuditLogService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
 		if method != http.MethodPost && method != http.MethodPut && method != http.MethodDelete && method != http.MethodPatch {
+			c.Next()
+			return
+		}
+
+		// Skip noisy / non-mutating ops-assistant chat & tool calls
+		path := c.Request.URL.Path
+		if strings.Contains(path, "/ops-assistant/chat") || strings.Contains(path, "/ops-assistant/tools/") {
 			c.Next()
 			return
 		}
@@ -80,10 +88,14 @@ func methodToAction(method string) string {
 }
 
 func extractResource(c *gin.Context) string {
-	// Path pattern: /api/admin/<resource>/...
+	// Path pattern: /forge/api/admin/<resource>/... or /api/admin/<resource>/...
 	path := c.Request.URL.Path
 	parts := splitPath(path)
-	// Expected: ["api", "admin", "<resource>", ...]
+	for i, p := range parts {
+		if p == "admin" && i+1 < len(parts) {
+			return parts[i+1]
+		}
+	}
 	if len(parts) >= 3 {
 		return parts[2]
 	}

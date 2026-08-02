@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "forge-ops": {
+      "command": "go",
+      "args": [
+        "run",
+        "./cmd/ops-mcp"
+      ],
+      "cwd": "forge",
+      "env": {
+        "DB_ADDRESS": "127.0.0.1:3306",
+        "DB_DATABASE": "grapery",
+        "DB_USERNAME": "root",
+        "DB_PASSWORD": "",
+        "FORGE_DB_DATABASE": "forge_ops"
+      }
+    }
+  }
+}

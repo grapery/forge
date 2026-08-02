@@ -152,7 +152,7 @@ export default function FragmentDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
             {t("cardAIGenerations")}
             <Badge variant="secondary">{generations.length}</Badge>
           </CardTitle>
@@ -163,7 +163,7 @@ export default function FragmentDetailPage() {
           ) : (
             <div className="space-y-2">
               {generations.map((g) => (
-                <div key={g.id} className="flex items-center justify-between rounded-lg border border-glass-border p-3 hover:bg-secondary/30 transition-colors">
+                <div key={g.id} className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-secondary/30 transition-colors">
                   <div className="flex items-center gap-3">
                     <Badge variant={g.status === "completed" ? "default" : g.status === "failed" ? "destructive" : "outline"}>{g.status}</Badge>
                     <div>

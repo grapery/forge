@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { dashboardApi, orderApi, membershipApi, tokenApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
 import { CreditCard, Receipt, Coins, TrendingUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { PageSkeleton } from "@/components/shared/skeleton"
 import { LineChart } from "@/components/charts/line-chart"
 import { DonutChart } from "@/components/charts/donut-chart"
@@ -43,21 +42,30 @@ export default function RevenueAnalyticsPage() {
 
   const revenueSeries = dailyTrendToSeries(trends, [
     { key: "newRevenue", label: t("revenue"), color: "#10b981" },
-    { key: "newOrders", label: t("orders"), color: "#7A39EC" },
+    { key: "newOrders", label: t("orders"), color: "#2383E2" },
   ])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
-        <div className="flex gap-1">
+        <div className="inline-flex rounded-md border border-border bg-secondary p-0.5">
           {(["7d", "30d", "90d"] as Range[]).map((r) => (
-            <Button key={r} variant={range === r ? "default" : "outline"} size="sm" onClick={() => setRange(r)}>
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRange(r)}
+              className={`rounded-[5px] px-2.5 py-1 text-xs transition-colors ${
+                range === r
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
               {r === "7d" ? dt("range7d") : r === "30d" ? dt("range30d") : dt("range90d")}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
@@ -76,8 +84,8 @@ export default function RevenueAnalyticsPage() {
             <FunnelChart
               data={[
                 { label: t("totalOrders"), value: orderSummary.totalOrders },
-                { label: t("paid"), value: orderSummary.paidOrders },
-                { label: t("pending"), value: orderSummary.pendingOrders },
+                { label: t("paid"), value: orderSummary.completedCount ?? orderSummary.paidOrders ?? 0 },
+                { label: t("pending"), value: orderSummary.pendingCount ?? orderSummary.pendingOrders ?? 0 },
               ]}
               title={t("orderFunnel")}
             />

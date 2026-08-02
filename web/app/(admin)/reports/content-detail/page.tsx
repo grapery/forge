@@ -9,13 +9,15 @@ import type { ContentReport } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { ReportSlaPanel } from "@/components/shared/report-sla-panel"
 import Link from "next/link"
 import { toast } from "sonner"
 
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-500/15 text-yellow-400",
-  reviewed: "bg-blue-500/15 text-blue-400",
-  resolved: "bg-green-500/15 text-emerald-400",
+  pending: "bg-[var(--status-warning-bg)] text-[var(--status-warning)]",
+  reviewed: "bg-[var(--status-info-bg)] text-[var(--status-info)]",
+  resolved: "bg-green-500/15 text-[var(--status-success)]",
   dismissed: "bg-gray-500/15 text-gray-400",
 }
 
@@ -38,6 +40,9 @@ export default function ContentReportDetailPage() {
   const [remarks, setRemarks] = useState("")
   const [saving, setSaving] = useState(false)
   const [actionLoading, setActionLoading] = useState("")
+  const [pendingConfirm, setPendingConfirm] = useState<
+    null | { kind: "resolve"; actions: string[]; label: string } | { kind: "takedown" } | { kind: "suspend" }
+  >(null)
 
   useEffect(() => {
     if (!id) { router.push("/reports?tab=content"); return }
@@ -84,13 +89,6 @@ export default function ContentReportDetailPage() {
 
   const handleResolve = async (actions: string[]) => {
     if (!report) return
-    const label = actions.includes("takedown") && actions.includes("suspend_creator")
-      ? t("confirmResolveBoth")
-      : actions.includes("takedown")
-        ? t("confirmTakedown")
-        : t("confirmSuspend")
-    if (!window.confirm(label)) return
-
     setActionLoading(actions.join(","))
     try {
       const updated = await reportApi.resolveContent(id, {
@@ -102,6 +100,9 @@ export default function ContentReportDetailPage() {
       setReviewStatus(updated.status)
       setRemarks("")
       showReviewOutcome(updated)
+      setPendingConfirm(null)
+    } catch (err: any) {
+      toast.error(err?.message || t("toastActionFailed"))
     } finally {
       setActionLoading("")
     }
@@ -109,7 +110,6 @@ export default function ContentReportDetailPage() {
 
   const handleTakedownOnly = async () => {
     if (!report) return
-    if (!window.confirm(t("confirmTakedown"))) return
     setActionLoading("takedown-only")
     try {
       const ct = report.contentType
@@ -121,6 +121,10 @@ export default function ContentReportDetailPage() {
         await contentApi.action(ct, report.contentId, { action: "force_delete" })
       }
       await reload()
+      toast.success(t("toastTakedownDone"))
+      setPendingConfirm(null)
+    } catch (err: any) {
+      toast.error(err?.message || t("toastActionFailed"))
     } finally {
       setActionLoading("")
     }
@@ -128,19 +132,33 @@ export default function ContentReportDetailPage() {
 
   const handleSuspendCreator = async () => {
     if (!report?.creatorId) return
-    if (!window.confirm(t("confirmSuspend", { name: report.creatorName || report.creatorId.slice(0, 8) }))) return
     setActionLoading("suspend-only")
     try {
       await userApi.suspend(report.creatorId)
+      toast.success(t("toastCreatorSuspended"))
+      setPendingConfirm(null)
+    } catch (err: any) {
+      toast.error(err?.message || t("toastActionFailed"))
     } finally {
       setActionLoading("")
+    }
+  }
+
+  const runPendingConfirm = async () => {
+    if (!pendingConfirm) return
+    if (pendingConfirm.kind === "resolve") {
+      await handleResolve(pendingConfirm.actions)
+    } else if (pendingConfirm.kind === "takedown") {
+      await handleTakedownOnly()
+    } else {
+      await handleSuspendCreator()
     }
   }
 
   const contentAdminLink = () => {
     if (!report) return null
     const ct = report.contentType
-    if (ct === "comment") return `/comments`
+    if (ct === "comment") return `/comments?targetId=${encodeURIComponent(report.contentId)}`
     if (ct === "character") return `/characters`
     if (["story", "storyboard", "fragment"].includes(ct)) {
       return `/content?contentType=${ct}`
@@ -157,7 +175,7 @@ export default function ContentReportDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("titleId", { id: report.id })}</p>
         </div>
         <Button variant="outline" onClick={() => router.push("/reports?tab=content")}>
@@ -165,7 +183,7 @@ export default function ContentReportDetailPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-400">
+      <div className="rounded-lg border border-[var(--status-warning)]/20 bg-[var(--status-warning-bg)] p-3 text-sm text-[var(--status-warning)]">
         {t("slaGuidance")}
       </div>
 
@@ -183,12 +201,24 @@ export default function ContentReportDetailPage() {
                     {statusLabel[report.status] || report.status}
                   </span>
                   {report.isOverdue && (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--status-danger-bg)] text-[var(--status-danger)]">
                       {t("slaOverdue")}
                     </span>
                   )}
                 </div>
               </div>
+              <ReportSlaPanel
+                createdAt={report.createdAt}
+                status={report.status}
+                isOverdue={report.isOverdue}
+                labels={{
+                  fieldSla: t("fieldSla"),
+                  slaOverdue: t("slaOverdue"),
+                  slaOverdueBy: (hours) => t("slaOverdueBy", { hours }),
+                  slaRemaining: (hours) => t("slaRemaining", { hours }),
+                  slaClosed: (hours) => t("slaClosed", { hours }),
+                }}
+              />
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldSubmitted")}</p>
                 <p className="text-sm">{new Date(report.createdAt * 1000).toLocaleString()}</p>
@@ -203,11 +233,19 @@ export default function ContentReportDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldReporter")}</p>
-                <p className="text-sm">{report.reporterName || report.reporterId.slice(0, 8)}</p>
+                <Link href={`/users/detail?id=${report.reporterId}`} className="text-sm text-primary hover:underline">
+                  {report.reporterName || report.reporterId.slice(0, 8)}
+                </Link>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldCreator")}</p>
-                <p className="text-sm">{report.creatorName || report.creatorId?.slice(0, 8) || "—"}</p>
+                {report.creatorId ? (
+                  <Link href={`/users/detail?id=${report.creatorId}`} className="text-sm text-primary hover:underline">
+                    {report.creatorName || report.creatorId.slice(0, 8)}
+                  </Link>
+                ) : (
+                  <p className="text-sm">—</p>
+                )}
               </div>
             </div>
 
@@ -258,7 +296,7 @@ export default function ContentReportDetailPage() {
                   variant="destructive"
                   size="sm"
                   disabled={!!actionLoading || report.contentDeleted}
-                  onClick={() => handleTakedownOnly()}
+                  onClick={() => setPendingConfirm({ kind: "takedown" })}
                 >
                   {actionLoading === "takedown-only" ? t("buttonWorking") : t("buttonTakedown")}
                 </Button>
@@ -266,7 +304,7 @@ export default function ContentReportDetailPage() {
                   variant="outline"
                   size="sm"
                   disabled={!!actionLoading || !report.creatorId}
-                  onClick={handleSuspendCreator}
+                  onClick={() => setPendingConfirm({ kind: "suspend" })}
                 >
                   {actionLoading === "suspend-only" ? t("buttonWorking") : t("buttonSuspendCreator")}
                 </Button>
@@ -274,7 +312,11 @@ export default function ContentReportDetailPage() {
                   variant="default"
                   size="sm"
                   disabled={!!actionLoading}
-                  onClick={() => handleResolve(["takedown", "suspend_creator"])}
+                  onClick={() => setPendingConfirm({
+                    kind: "resolve",
+                    actions: ["takedown", "suspend_creator"],
+                    label: t("confirmResolveBoth"),
+                  })}
                 >
                   {actionLoading === "takedown,suspend_creator" ? t("buttonWorking") : t("buttonResolveBoth")}
                 </Button>
@@ -329,6 +371,35 @@ export default function ContentReportDetailPage() {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingConfirm}
+        onOpenChange={(open) => { if (!open) setPendingConfirm(null) }}
+        title={
+          pendingConfirm?.kind === "takedown"
+            ? t("buttonTakedown")
+            : pendingConfirm?.kind === "suspend"
+              ? t("buttonSuspendCreator")
+              : t("buttonResolveBoth")
+        }
+        description={
+          pendingConfirm?.kind === "takedown"
+            ? t("confirmTakedown")
+            : pendingConfirm?.kind === "suspend"
+              ? t("confirmSuspend", { name: report.creatorName || report.creatorId?.slice(0, 8) || "" })
+              : (pendingConfirm?.kind === "resolve" ? pendingConfirm.label : "")
+        }
+        confirmLabel={
+          pendingConfirm?.kind === "takedown"
+            ? t("buttonTakedown")
+            : pendingConfirm?.kind === "suspend"
+              ? t("buttonSuspendCreator")
+              : t("buttonResolveBoth")
+        }
+        variant="destructive"
+        loading={!!actionLoading}
+        onConfirm={runPendingConfirm}
+      />
     </div>
   )
 }

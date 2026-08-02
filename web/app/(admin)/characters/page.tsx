@@ -28,6 +28,7 @@ import { Users, Eye, EyeOff, Trash2, Ghost } from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function CharactersPage() {
@@ -89,7 +90,7 @@ export default function CharactersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Ghost} />
 
       {counts && (
@@ -209,6 +210,6 @@ export default function CharactersPage() {
         variant="destructive"
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

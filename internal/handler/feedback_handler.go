@@ -20,12 +20,15 @@ func NewFeedbackHandler(feedbackSvc *service.FeedbackService, logger *zap.Logger
 func (h *FeedbackHandler) List(c *gin.Context) {
 	page, pageSize := parsePagination(c)
 
+	overdue := c.Query("overdue")
 	query := &domain.FeedbackListQuery{
 		Page:     page,
 		PageSize: pageSize,
 		Status:   c.Query("status"),
 		Category: c.Query("category"),
 		UserID:   c.Query("userId"),
+		Keyword:  c.Query("keyword"),
+		Overdue:  overdue == "1" || overdue == "true",
 	}
 
 	items, total, err := h.feedbackSvc.List(query)

@@ -30,6 +30,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { Layers, Eye, CheckCircle2, FileEdit, Trash2 } from "lucide-react"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 const statusVariant: Record<string, "default" | "secondary" | "outline"> = {
@@ -102,7 +103,7 @@ export default function StoryboardsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Layers} />
 
       {counts && (
@@ -211,6 +212,6 @@ export default function StoryboardsPage() {
         variant={actionType === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

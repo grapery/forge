@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Pencil, BookOpen } from "lucide-react"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function GenresPage() {
@@ -94,7 +95,7 @@ export default function GenresPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={BookOpen} />
 
       {loading ? (
@@ -248,6 +249,6 @@ export default function GenresPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPage>
   )
 }

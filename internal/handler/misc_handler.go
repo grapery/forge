@@ -320,6 +320,20 @@ func (h *NotificationHandler) List(c *gin.Context) {
 	Paginated(c, items, total, page, pageSize)
 }
 
+func (h *NotificationHandler) Broadcast(c *gin.Context) {
+	var req domain.BroadcastNotificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	result, err := h.svc.Broadcast(&req)
+	if err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	Success(c, result)
+}
+
 // --- Search Analytics Handler ---
 
 type SearchAnalyticsHandler struct {
@@ -360,4 +374,45 @@ func (h *SearchAnalyticsHandler) Trends(c *gin.Context) {
 		return
 	}
 	Success(c, trends)
+}
+
+type ShareAnalyticsHandler struct {
+	svc    *service.ShareAnalyticsService
+	logger *zap.Logger
+}
+
+func NewShareAnalyticsHandler(svc *service.ShareAnalyticsService, logger *zap.Logger) *ShareAnalyticsHandler {
+	return &ShareAnalyticsHandler{svc: svc, logger: logger}
+}
+
+func (h *ShareAnalyticsHandler) Overview(c *gin.Context) {
+	days := 30
+	switch c.Query("range") {
+	case "7d":
+		days = 7
+	case "90d":
+		days = 90
+	}
+	out, err := h.svc.Overview(days)
+	if err != nil {
+		Error(c, CodeInternalError, err.Error())
+		return
+	}
+	Success(c, out)
+}
+
+func (h *ShareAnalyticsHandler) Events(c *gin.Context) {
+	page, pageSize := parsePagination(c)
+	query := domain.ShareEventQuery{
+		Page:      page,
+		PageSize:  pageSize,
+		EventType: c.Query("eventType"),
+		Kind:      c.Query("kind"),
+	}
+	items, total, err := h.svc.ListEvents(&query)
+	if err != nil {
+		Error(c, CodeInternalError, err.Error())
+		return
+	}
+	Paginated(c, items, total, page, pageSize)
 }

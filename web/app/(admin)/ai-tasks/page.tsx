@@ -231,7 +231,7 @@ export default function AITasksPage() {
             checked={selected.has(item.id)}
             onClick={(e) => e.stopPropagation()}
             onChange={() => toggleSelect(item.id)}
-            className="h-4 w-4 rounded border-glass-border"
+            className="h-4 w-4 rounded border-border"
           />
         )
       },
@@ -265,7 +265,7 @@ export default function AITasksPage() {
           <div className="flex items-center gap-2 min-w-[120px]">
             <div className="h-2 flex-1 rounded bg-secondary/60 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-500"
+                className="h-full bg-primary transition-all duration-500"
                 style={{ width: `${Math.min(100, Math.max(0, item.progress))}%` }}
               />
             </div>
@@ -359,7 +359,7 @@ export default function AITasksPage() {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1 rounded-lg border border-glass-border bg-secondary/40 p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-secondary/40 p-1">
           {quickFilterButtons.map((q) => (
             <Button
               key={q.value}

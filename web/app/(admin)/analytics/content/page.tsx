@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { dashboardApi, characterApi, contentApi } from "@/lib/api/admin"
 import { StatCard } from "@/components/shared/stat-card"
 import { BookOpen, Layers, Puzzle, UserCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { PageSkeleton } from "@/components/shared/skeleton"
 import { LineChart } from "@/components/charts/line-chart"
 import { DonutChart } from "@/components/charts/donut-chart"
@@ -40,8 +39,8 @@ export default function ContentAnalyticsPage() {
   const trends = stats?.trends || []
 
   const contentSeries = dailyTrendToSeries(trends, [
-    { key: "newStories", label: t("stories"), color: "#7A39EC" },
-    { key: "newStoryboards", label: t("storyboards"), color: "#8b5cf6" },
+    { key: "newStories", label: t("stories"), color: "#2383E2" },
+    { key: "newStoryboards", label: t("storyboards"), color: "#0F7B6C" },
     { key: "newFragments", label: t("fragments"), color: "#10b981" },
     { key: "newCharacters", label: t("characters"), color: "#f59e0b" },
   ])
@@ -57,14 +56,23 @@ export default function ContentAnalyticsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
-        <div className="flex gap-1">
+        <div className="inline-flex rounded-md border border-border bg-secondary p-0.5">
           {(["7d", "30d", "90d"] as Range[]).map((r) => (
-            <Button key={r} variant={range === r ? "default" : "outline"} size="sm" onClick={() => setRange(r)}>
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRange(r)}
+              className={`rounded-[5px] px-2.5 py-1 text-xs transition-colors ${
+                range === r
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
               {r === "7d" ? dt("range7d") : r === "30d" ? dt("range30d") : dt("range90d")}
-            </Button>
+            </button>
           ))}
         </div>
       </div>

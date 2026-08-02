@@ -1,62 +1,71 @@
 @import "tailwindcss";
 
 :root {
-  /* Backgrounds */
-  --background: #0a0a12;
-  --foreground: #e8e8f0;
-  --card: #12121e;
-  --card-foreground: #e8e8f0;
-  --popover: #12121e;
-  --popover-foreground: #e8e8f0;
+  /* Notion-inspired light paper */
+  --background: #ffffff;
+  --foreground: #37352f;
+  --card: #ffffff;
+  --card-foreground: #37352f;
+  --popover: #ffffff;
+  --popover-foreground: #37352f;
 
-  /* Primary — Deep Purple */
-  --primary: #7A39EC;
+  /* Accent — Notion blue */
+  --primary: #2383e2;
   --primary-foreground: #ffffff;
 
-  /* Secondary */
-  --secondary: #1a1a2e;
-  --secondary-foreground: #c4c4d8;
+  --secondary: #f7f7f5;
+  --secondary-foreground: #37352f;
 
-  /* Muted */
-  --muted: #1a1a2e;
-  --muted-foreground: #6b6b8a;
+  --muted: #f7f7f5;
+  --muted-foreground: #787774;
 
-  /* Accent */
-  --accent: #1a1a2e;
-  --accent-foreground: #e8e8f0;
+  --accent: #f1f1ef;
+  --accent-foreground: #37352f;
 
-  /* Destructive */
-  --destructive: #ef4444;
+  --destructive: #e03e3e;
   --destructive-foreground: #ffffff;
 
-  /* Borders / Inputs */
-  --border: rgba(255, 255, 255, 0.06);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: #7A39EC;
-  --radius: 0.75rem;
+  --border: #e9e9e7;
+  --input: #e9e9e7;
+  --ring: #2383e2;
+  --radius: 0.5rem;
 
-  /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #7A39EC 0%, #5B21B6 100%);
-  --gradient-subtle: linear-gradient(135deg, #12121e 0%, #0a0a12 100%);
-  --gradient-card: linear-gradient(180deg, rgba(18, 18, 30, 0.6) 0%, rgba(10, 10, 18, 0.8) 100%);
+  /* Semantic status */
+  --status-success: #0f7b6c;
+  --status-success-bg: rgba(15, 123, 108, 0.1);
+  --status-warning: #cb912f;
+  --status-warning-bg: rgba(203, 145, 47, 0.12);
+  --status-danger: #e03e3e;
+  --status-danger-bg: rgba(224, 62, 62, 0.1);
+  --status-info: #2383e2;
+  --status-info-bg: rgba(35, 131, 226, 0.1);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 25px -5px rgb(0 0 0 / 0.5), 0 4px 10px -6px rgb(0 0 0 / 0.4);
-  --shadow-glow: 0 0 30px rgba(122, 57, 236, 0.15);
-  --shadow-glow-lg: 0 0 60px rgba(122, 57, 236, 0.1);
+  /* Surfaces */
+  --topbar-bg: #f7f7f5;
+  --hub-bg: #f7f7f5;
 
-  /* Sidebar */
-  --sidebar-bg: rgba(18, 18, 30, 0.7);
-  --sidebar-active: linear-gradient(90deg, rgba(122, 57, 236, 0.15) 0%, transparent 100%);
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-active-border: #7A39EC;
+  /* Flat fills (no glow) */
+  --gradient-primary: #2383e2;
+  --gradient-subtle: #f7f7f5;
+  --gradient-card: #ffffff;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 2px 8px 0 rgb(0 0 0 / 0.06);
+  --shadow-glow: none;
+  --shadow-glow-lg: none;
 
-  /* Glass */
-  --glass-bg: rgba(18, 18, 30, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  /* Legacy aliases → light surfaces */
+  --sidebar-bg: #f7f7f5;
+  --sidebar-active: #efefed;
+  --sidebar-border: #e9e9e7;
+  --sidebar-active-border: #2383e2;
+  --glass-bg: #ffffff;
+  --glass-border: #e9e9e7;
+  --glass-shadow: none;
+
+  /* Icons */
+  --icon-default: #787774;
+  --icon-active: #37352f;
 }
 
 @theme inline {
@@ -80,19 +89,24 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --radius: var(--radius);
-  --font-sans: var(--font-dm-sans);
-  --font-heading: var(--font-space-grotesk);
+  --font-sans: var(--font-geist-sans);
+  --font-heading: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-active-border: var(--sidebar-active-border);
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
-  --animate-fade-in: fade-in 0.3s ease-out both;
-  --animate-fade-in-up: fade-in-up 0.4s ease-out both;
-  --animate-fade-in-down: fade-in-down 0.3s ease-out both;
-  --animate-slide-in-left: slide-in-left 0.3s ease-out both;
-  --animate-scale-in: scale-in 0.3s ease-out both;
+  --color-topbar-bg: var(--topbar-bg);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger: var(--status-danger);
+  --color-status-info: var(--status-info);
+  --animate-fade-in: fade-in 0.2s ease-out both;
+  --animate-fade-in-up: fade-in-up 0.25s ease-out both;
+  --animate-fade-in-down: fade-in-down 0.2s ease-out both;
+  --animate-slide-in-left: slide-in-left 0.2s ease-out both;
+  --animate-scale-in: scale-in 0.2s ease-out both;
   --animate-shimmer: shimmer 2s infinite linear;
   --animate-pulse-subtle: pulse-subtle 2s infinite ease-in-out;
 }
@@ -100,8 +114,8 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  color-scheme: dark;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  color-scheme: light;
 }
 
 @layer utilities {
@@ -125,10 +139,8 @@ body {
   }
   .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    box-shadow: none;
   }
   .glass-border {
     border-color: var(--glass-border);
@@ -141,22 +153,22 @@ body {
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in-down {
-  from { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slide-in-left {
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
 }
 

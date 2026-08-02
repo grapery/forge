@@ -19,7 +19,18 @@ func NewDashboardHandler(dashSvc *service.DashboardService, collector *service.S
 }
 
 func (h *DashboardHandler) GetOverview(c *gin.Context) {
-	stats, err := h.dashSvc.GetOverview()
+	days := 30
+	switch c.Query("range") {
+	case "7d":
+		days = 7
+	case "90d":
+		days = 90
+	case "30d", "":
+		days = 30
+	default:
+		days = 30
+	}
+	stats, err := h.dashSvc.GetOverview(days)
 	if err != nil {
 		Error(c, CodeInternalError, "failed to load overview stats")
 		return

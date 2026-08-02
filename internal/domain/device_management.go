@@ -35,6 +35,7 @@ type NotificationItem struct {
 	Type      string `json:"type"`
 	Title     string `json:"title"`
 	Content   string `json:"content"`
+	Link      string `json:"link,omitempty"`
 	Read      bool   `json:"read"`
 	CreatedAt int64  `json:"createdAt"`
 }
@@ -47,7 +48,17 @@ type NotificationListQuery struct {
 }
 
 type BroadcastNotificationRequest struct {
-	Title   string `json:"title" binding:"required"`
-	Content string `json:"content" binding:"required"`
-	Platform string `json:"platform"`
+	Title     string   `json:"title" binding:"required"`
+	Content   string   `json:"content" binding:"required"`
+	Type      string   `json:"type"`
+	Link      string   `json:"link"`
+	UserIDs   []string `json:"userIds"`
+	AllActive bool     `json:"allActive"`
+	Platform  string   `json:"platform"`
+}
+
+type BroadcastNotificationResult struct {
+	Sent   int `json:"sent"`
+	Failed int `json:"failed"`
+	Total  int `json:"total"`
 }

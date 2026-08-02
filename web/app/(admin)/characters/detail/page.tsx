@@ -23,6 +23,7 @@ import { ArrowLeft, Eye, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function CharacterDetailPage() {
@@ -99,7 +100,7 @@ export default function CharacterDetailPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={detail.name || "Character Detail"}
         description={`Character — ${detail.id?.slice(0, 8)}...`}
@@ -168,6 +169,6 @@ export default function CharacterDetailPage() {
         variant={action === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

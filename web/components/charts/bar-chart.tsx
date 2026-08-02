@@ -202,7 +202,7 @@ export function BarChart({
       <div ref={containerRef} style={{ width: "100%", height }} />
       <div
         ref={tooltipRef}
-        className="pointer-events-none absolute border-glass-border bg-[#12121e]/95 backdrop-blur-xl shadow-glow-lg rounded-lg px-3 py-2 transition-opacity duration-100"
+        className="pointer-events-none absolute border-border bg-popover  rounded-lg px-3 py-2 transition-opacity duration-100"
         style={{ opacity: 0, zIndex: 50, minWidth: 120 }}
       />
     </div>

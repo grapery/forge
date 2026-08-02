@@ -15,6 +15,7 @@ import { DataTable } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge"
 
 import { Users, UserCheck } from "lucide-react"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function ReferralsPage() {
@@ -47,7 +48,7 @@ export default function ReferralsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={UserCheck} />
 
       {loading ? (
@@ -105,6 +106,6 @@ export default function ReferralsPage() {
           ]}
         />
       )}
-    </div>
+    </AdminPage>
   )
 }

@@ -1,12 +1,10 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo } from "react"
-import { dashboardApi, userApi, characterApi, membershipApi, aiTaskApi, deviceApi, blockApi } from "@/lib/api/admin"
-import { StatCard } from "@/components/shared/stat-card"
-import { Users, BookOpen, Layers, Puzzle, UserCircle, Brain, CreditCard, Receipt, Coins, RefreshCw, GitFork, Zap, Flag, ShieldAlert } from "lucide-react"
 import Link from "next/link"
+import { dashboardApi, blockApi } from "@/lib/api/admin"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { PageSkeleton } from "@/components/shared/skeleton"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
@@ -16,19 +14,26 @@ import { HeatmapCalendar } from "@/components/charts/heatmap-calendar"
 import { ChartLegend } from "@/components/charts/chart-legend"
 import { ClientOnly } from "@/components/charts/client-only"
 import { dailyTrendToSeries } from "@/lib/chart-data"
-import type { OverviewStats, DailyTrend, UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary, DevicePlatformCount, BlockCounts } from "@/lib/types"
+import { SERIES_COLORS } from "@/components/charts/chart-theme"
+import type { OverviewStats, BlockCounts } from "@/lib/types"
+import { RefreshCw, Flag, ShieldAlert, Sparkles, ArrowRight } from "lucide-react"
+import { userApi, characterApi, membershipApi, aiTaskApi } from "@/lib/api/admin"
+import type { UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary } from "@/lib/types"
+import { cn } from "@/lib/utils"
 
 type Range = "7d" | "30d" | "90d"
 
 const TREND_KEYS = [
-  { key: "newUsers" as const, labelKey: "trendNewUsers", color: "#7A39EC" },
-  { key: "newStories" as const, labelKey: "trendNewStories", color: "#8b5cf6" },
-  { key: "newOrders" as const, labelKey: "trendNewOrders", color: "#10b981" },
-  { key: "newFragments" as const, labelKey: "trendNewFragments", color: "#f59e0b" },
-  { key: "newStoryboards" as const, labelKey: "trendNewStoryboards", color: "#06b6d4" },
-  { key: "forkEvents" as const, labelKey: "trendForkEvents", color: "#ec4899" },
-  { key: "tokenConsumed" as const, labelKey: "trendTokenConsumed", color: "#ef4444" },
+  { key: "newUsers" as const, labelKey: "trendNewUsers", color: SERIES_COLORS[0] },
+  { key: "newStories" as const, labelKey: "trendNewStories", color: SERIES_COLORS[1] },
+  { key: "newOrders" as const, labelKey: "trendNewOrders", color: SERIES_COLORS[2] },
+  { key: "newFragments" as const, labelKey: "trendNewFragments", color: SERIES_COLORS[3] },
+  { key: "newStoryboards" as const, labelKey: "trendNewStoryboards", color: SERIES_COLORS[4] },
+  { key: "forkEvents" as const, labelKey: "trendForkEvents", color: SERIES_COLORS[5] },
+  { key: "tokenConsumed" as const, labelKey: "trendTokenConsumed", color: SERIES_COLORS[6] },
 ]
+
+const DEFAULT_VISIBLE = new Set(["newUsers", "newStories", "newOrders"])
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<OverviewStats | null>(null)
@@ -36,18 +41,16 @@ export default function DashboardPage() {
   const [collecting, setCollecting] = useState(false)
   const [error, setError] = useState("")
   const [range, setRange] = useState<Range>("30d")
-
   const [userCounts, setUserCounts] = useState<UserStatusCount | null>(null)
   const [charCounts, setCharCounts] = useState<CharacterStatusCount | null>(null)
   const [memberSummary, setMemberSummary] = useState<MembershipSummary | null>(null)
   const [aiSummary, setAiSummary] = useState<AITaskSummary | null>(null)
-  const [deviceCounts, setDeviceCounts] = useState<DevicePlatformCount | null>(null)
   const [blockCounts, setBlockCounts] = useState<BlockCounts | null>(null)
   const [moderationCountsError, setModerationCountsError] = useState("")
-
-  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(() => new Set(TREND_KEYS.map((k) => k.key)))
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(() => new Set(DEFAULT_VISIBLE))
 
   const t = useTranslations("dashboard")
+  const to = useTranslations("opsAssistant")
 
   const fetchData = useCallback((r?: Range) => {
     setLoading(true)
@@ -61,14 +64,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData(range)
-  }, [range])
+  }, [range, fetchData])
 
   useEffect(() => {
     userApi.statusCounts().then(setUserCounts).catch(() => {})
     characterApi.statusCounts().then(setCharCounts).catch(() => {})
     membershipApi.summary().then(setMemberSummary).catch(() => {})
     aiTaskApi.summary().then(setAiSummary).catch(() => {})
-    deviceApi.platformCounts().then(setDeviceCounts).catch(() => {})
     blockApi.counts().then(setBlockCounts).catch((err: Error) => {
       setBlockCounts(null)
       setModerationCountsError(err.message || t("moderationCountsFailed"))
@@ -116,7 +118,7 @@ export default function DashboardPage() {
   )
 
   const heatmapData = useMemo(
-    () => trends.map((t) => ({ date: t.date, value: t.newUsers })),
+    () => trends.map((row) => ({ date: row.date, value: row.newUsers })),
     [trends],
   )
 
@@ -124,30 +126,28 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{t("title")}</h1>
-            <p className="text-muted-foreground">{t("description")}</p>
-          </div>
-        </div>
-        <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+      <div className="space-y-4">
+        <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
+        <div className="rounded-md bg-[var(--status-danger-bg)] p-3 text-sm text-[var(--status-danger)]">{error}</div>
       </div>
     )
   }
 
-  const statCards = [
-    { title: t("statTotalUsers"), value: stats?.totalUsers ?? 0, icon: Users },
-    { title: t("statTotalStories"), value: stats?.totalStories ?? 0, icon: BookOpen },
-    { title: t("statTotalStoryboards"), value: stats?.totalStoryboards ?? 0, icon: Layers },
-    { title: t("statTotalFragments"), value: stats?.totalFragments ?? 0, icon: Puzzle },
-    { title: t("statTotalCharacters"), value: stats?.totalCharacters ?? 0, icon: UserCircle },
-    { title: t("statAiTasks"), value: stats?.totalAITasks ?? 0, icon: Brain },
-    { title: t("statActiveMemberships"), value: stats?.activeMemberships ?? 0, icon: CreditCard },
-    { title: t("statTotalOrders"), value: stats?.totalOrders ?? 0, icon: Receipt },
-    { title: t("statTokenTransactions"), value: stats?.totalTokenTransactions ?? 0, icon: Coins },
-    { title: t("statForkEvents"), value: stats?.totalForkEvents ?? 0, icon: GitFork },
-    { title: t("statTokenConsumed"), value: stats?.totalTokenConsumed ?? 0, icon: Zap },
+  const keyMetrics = [
+    { label: t("statTotalUsers"), value: stats?.totalUsers ?? 0 },
+    { label: t("statTotalStories"), value: stats?.totalStories ?? 0 },
+    { label: t("statTotalOrders"), value: stats?.totalOrders ?? 0 },
+    { label: t("statTokenConsumed"), value: stats?.totalTokenConsumed ?? 0 },
+  ]
+
+  const moreCounts = [
+    { label: t("statTotalStoryboards"), value: stats?.totalStoryboards ?? 0 },
+    { label: t("statTotalFragments"), value: stats?.totalFragments ?? 0 },
+    { label: t("statTotalCharacters"), value: stats?.totalCharacters ?? 0 },
+    { label: t("statAiTasks"), value: stats?.totalAITasks ?? 0 },
+    { label: t("statActiveMemberships"), value: stats?.activeMemberships ?? 0 },
+    { label: t("statTokenTransactions"), value: stats?.totalTokenTransactions ?? 0 },
+    { label: t("statForkEvents"), value: stats?.totalForkEvents ?? 0 },
   ]
 
   const rangeOptions: { value: Range; label: string }[] = [
@@ -156,90 +156,112 @@ export default function DashboardPage() {
     { value: "90d", label: t("range90d") },
   ]
 
+  const overdue = stats?.overdueReportsTotal ?? 0
+  const pendingTotal = (stats?.pendingUserReports ?? 0) + (stats?.pendingContentReports ?? 0)
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">{t("description")}</p>
+          <h1 className="text-[28px] font-medium tracking-tight text-foreground">{t("title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleCollect} disabled={collecting} className="active:scale-[0.97] transition-all duration-200">
-          <RefreshCw className={`mr-2 h-4 w-4 ${collecting ? "animate-spin" : ""}`} />
+        <Button variant="outline" size="sm" onClick={handleCollect} disabled={collecting}>
+          <RefreshCw className={cn("mr-2 h-3.5 w-3.5", collecting && "animate-spin")} />
           {collecting ? t("buttonCollecting") : t("buttonCollect")}
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        {statCards.map((card, i) => (
-          <div key={card.title} className="animate-fade-in-up" style={{ animationDelay: `${i * 50}ms` }}>
-            <StatCard title={card.title} value={card.value} icon={card.icon} />
+      <section className={cn(
+        "rounded-lg border border-border px-4 py-3",
+        overdue > 0 ? "border-l-2 border-l-[var(--status-danger)]" : "border-l-2 border-l-[var(--status-warning)]",
+      )}>
+        <div className="flex items-center gap-2 mb-3">
+          <Flag className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-medium">{t("moderationCardTitle")}</h2>
+        </div>
+        {moderationCountsError && (
+          <div className="mb-2 rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger)]">
+            {moderationCountsError}
           </div>
-        ))}
-      </div>
+        )}
+        {pendingTotal === 0 && overdue === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {t("moderationPendingUser")}: 0 · {t("moderationPendingContent")}: 0
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">{t("moderationPendingUser")}</p>
+              <p className="text-lg font-medium tabular-nums">{stats?.pendingUserReports ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t("moderationPendingContent")}</p>
+              <p className="text-lg font-medium tabular-nums">{stats?.pendingContentReports ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[var(--status-danger)] flex items-center gap-1">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                {t("moderationOverdue")}
+              </p>
+              <p className="text-lg font-medium tabular-nums text-[var(--status-danger)]">{overdue}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t("moderationBlocksTotal")}</p>
+              <p className="text-lg font-medium tabular-nums">{blockCounts?.total ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t("moderationBlocksLast7Days")}</p>
+              <p className="text-lg font-medium tabular-nums">{blockCounts?.last7Days ?? "—"}</p>
+            </div>
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <Link href="/reports?tab=users" className="text-primary hover:underline">{t("moderationLinkUserReports")}</Link>
+          <Link href="/reports?tab=content" className="text-primary hover:underline">{t("moderationLinkContentReports")}</Link>
+          <Link href="/reports?tab=blocks" className="text-primary hover:underline">{t("moderationLinkBlocks")}</Link>
+        </div>
+      </section>
 
-      <Card className="border-amber-500/20 bg-amber-500/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Flag className="h-4 w-4" />
-              {t("moderationCardTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {moderationCountsError && (
-              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {moderationCountsError}
-              </div>
-            )}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              <div>
-                <p className="text-xs text-muted-foreground">{t("moderationPendingUser")}</p>
-                <p className="text-2xl font-bold">{stats?.pendingUserReports ?? 0}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("moderationPendingContent")}</p>
-                <p className="text-2xl font-bold">{stats?.pendingContentReports ?? 0}</p>
-              </div>
-              <div>
-                <p className="text-xs text-red-400 flex items-center gap-1">
-                  <ShieldAlert className="h-3.5 w-3.5" />
-                  {t("moderationOverdue")}
-                </p>
-                <p className="text-2xl font-bold text-red-400">{stats?.overdueReportsTotal ?? 0}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("moderationBlocksTotal")}</p>
-                <p className="text-2xl font-bold">{blockCounts?.total ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("moderationBlocksLast7Days")}</p>
-                <p className="text-2xl font-bold">{blockCounts?.last7Days ?? "—"}</p>
-              </div>
+      <section>
+        <h2 className="text-sm font-medium text-muted-foreground mb-3">{t("keyMetrics")}</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {keyMetrics.map((m) => (
+            <div key={m.label} className="rounded-lg border border-border px-4 py-3">
+              <p className="text-xs text-muted-foreground">{m.label}</p>
+              <p className="text-2xl font-medium tabular-nums tracking-tight mt-1">{m.value.toLocaleString()}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/reports?tab=users">{t("moderationLinkUserReports")}</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/reports?tab=content">{t("moderationLinkContentReports")}</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/reports?tab=blocks">{t("moderationLinkBlocks")}</Link>
-              </Button>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+          {moreCounts.map((m) => (
+            <div key={m.label} className="flex items-center justify-between border-b border-border py-2 text-sm">
+              <span className="text-muted-foreground">{m.label}</span>
+              <span className="font-medium tabular-nums">{m.value.toLocaleString()}</span>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
+      </section>
 
       {trends.length > 0 && (
         <ClientOnly>
           <>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">{t("trendsTitle", { n: trends.length })}</h2>
-                <div className="flex gap-1">
+            <section>
+              <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <h2 className="text-sm font-medium">{t("trendsTitle", { n: trends.length })}</h2>
+                <div className="inline-flex rounded-md border border-border bg-secondary p-0.5">
                   {rangeOptions.map((opt) => (
-                    <Button key={opt.value} variant={range === opt.value ? "default" : "outline"} size="sm" onClick={() => setRange(opt.value)}>
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setRange(opt.value)}
+                      className={cn(
+                        "rounded-[5px] px-2.5 py-1 text-xs transition-colors",
+                        range === opt.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
                       {opt.label}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -249,16 +271,16 @@ export default function DashboardPage() {
                   <div className="mt-3">
                     <LineChart
                       series={trendSeries}
-                      height={340}
+                      height={300}
                       visibleKeys={visibleKeys}
                       ariaLabel={t("trendsTitle", { n: trends.length })}
                     />
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </section>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               {userCounts && (
                 <DonutChart
                   data={[
@@ -307,7 +329,7 @@ export default function DashboardPage() {
                   centerValue={String(aiSummary.totalTasks)}
                 />
               )}
-            </div>
+            </section>
 
             <HeatmapCalendar data={heatmapData} title={t("chartRegistrationActivity")} weeks={12} />
           </>
@@ -316,11 +338,27 @@ export default function DashboardPage() {
 
       {trends.length === 0 && (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <p>{t("noTrendData")}</p>
+          <CardContent className="py-8 text-center text-muted-foreground text-sm">
+            {t("noTrendData")}
           </CardContent>
         </Card>
       )}
+
+      <Link
+        href="/ops-assistant"
+        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/50 px-4 py-3 hover:bg-secondary transition-colors"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-background border border-border">
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{to("dashboardCta")}</p>
+            <p className="text-xs text-muted-foreground">{to("dashboardCtaDesc")}</p>
+          </div>
+        </div>
+        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+      </Link>
     </div>
   )
 }

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { AdminPage } from "@/components/layout/admin-page"
 
 export default function ChangePasswordPage() {
   const t = useTranslations("changePassword")
@@ -49,7 +50,7 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} />
 
       <Card className="max-w-md">
@@ -88,6 +89,6 @@ export default function ChangePasswordPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AdminPage>
   )
 }

@@ -1,0 +1,77 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { cn } from "@/lib/utils"
+import { itemsForGroup, isNavItemActive, type NavGroup } from "@/lib/nav"
+import { useAuth } from "@/providers/auth-provider"
+
+export function SectionSubnav({ group }: { group: NavGroup }) {
+  const { user } = useAuth()
+  const pathname = usePathname()
+  const router = useRouter()
+  const t = useTranslations("nav")
+
+  if (!user || !group) return null
+
+  const items = itemsForGroup(group, user)
+  if (items.length === 0) return null
+
+  return (
+    <div className="mb-6 -mx-1 overflow-x-auto">
+      <div className="flex items-center gap-1 min-w-max px-1 pb-1 border-b border-border">
+        {items.map((item) => {
+          const active = isNavItemActive(pathname, item.href)
+          return (
+            <button
+              key={item.href}
+              type="button"
+              onClick={() => router.push(item.href)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors",
+                active
+                  ? "bg-secondary text-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
+              )}
+            >
+              <item.icon className="h-3.5 w-3.5" />
+              {t(item.label)}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export function HubGrid({ group }: { group: NavGroup }) {
+  const { user } = useAuth()
+  const t = useTranslations("nav")
+  const th = useTranslations("hub")
+
+  if (!user) return null
+  const items = itemsForGroup(group, user)
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className="group flex items-start gap-3 rounded-lg border border-border bg-card p-4 hover:bg-secondary/50 transition-colors"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary">
+            <item.icon className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground group-hover:text-foreground">{t(item.label)}</p>
+            {item.description && (
+              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{th(item.description)}</p>
+            )}
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}

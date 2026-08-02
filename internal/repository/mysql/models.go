@@ -47,6 +47,8 @@ type DailyStat struct {
 	NewCharacters     int64   `gorm:"column:new_characters"`
 	TotalFragments    int64   `gorm:"column:total_fragments"`
 	NewFragments      int64   `gorm:"column:new_fragments"`
+	TotalStoryboards  int64   `gorm:"column:total_storyboards"`
+	NewStoryboards    int64   `gorm:"column:new_storyboards"`
 	ActiveMemberships int64   `gorm:"column:active_memberships"`
 	TotalOrders       int64   `gorm:"column:total_orders"`
 	NewOrders         int64   `gorm:"column:new_orders"`
@@ -56,6 +58,8 @@ type DailyStat struct {
 	NewAITasks        int64   `gorm:"column:new_ai_tasks"`
 	TotalTokenTx      int64   `gorm:"column:total_token_tx"`
 	NewTokenTx        int64   `gorm:"column:new_token_tx"`
+	TokenConsumed     int64   `gorm:"column:token_consumed"`
+	ForkEvents        int64   `gorm:"column:fork_events"`
 	CreatedAt         int64   `gorm:"column:created_at;autoCreateTime"`
 }
 

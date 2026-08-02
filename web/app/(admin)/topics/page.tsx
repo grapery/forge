@@ -17,6 +17,7 @@ import { SearchInput } from "@/components/shared/search-input"
 import { Hash, BookOpen, Layers } from "lucide-react"
 
 import { useRouter } from "next/navigation"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function TopicsPage() {
@@ -48,7 +49,7 @@ export default function TopicsPage() {
   const formatTime = (ts: number) => new Date(ts * 1000).toLocaleDateString()
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Hash} />
 
       <div className="w-64">
@@ -102,6 +103,6 @@ export default function TopicsPage() {
           ]}
         />
       )}
-    </div>
+    </AdminPage>
   )
 }

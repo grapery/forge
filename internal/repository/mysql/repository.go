@@ -27,9 +27,10 @@ func (r *Repository) UpsertDailyStat(stat *DailyStat) error {
 		DoUpdates: clause.AssignmentColumns([]string{
 			"total_users", "new_users", "total_stories", "new_stories",
 			"total_characters", "new_characters", "total_fragments", "new_fragments",
+			"total_storyboards", "new_storyboards",
 			"active_memberships", "total_orders", "new_orders",
 			"total_revenue", "new_revenue", "total_ai_tasks", "new_ai_tasks",
-			"total_token_tx", "new_token_tx",
+			"total_token_tx", "new_token_tx", "token_consumed", "fork_events",
 		}),
 	}).Create(stat).Error
 }

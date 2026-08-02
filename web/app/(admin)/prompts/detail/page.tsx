@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
 import { useRouter } from "next/navigation"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function PromptDetailPage() {
@@ -43,7 +44,7 @@ export default function PromptDetailPage() {
   const formatTime = (ts: number) => new Date(ts * 1000).toLocaleString()
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={t("title")}
         description={t("description", { provider: record.provider, model: record.model, time: formatTime(record.createdAt) })}
@@ -101,6 +102,6 @@ export default function PromptDetailPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </AdminPage>
   )
 }

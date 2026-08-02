@@ -39,6 +39,9 @@ export interface OverviewStats {
   pendingUserReports?: number
   pendingContentReports?: number
   overdueReportsTotal?: number
+  openFeedback?: number
+  overdueFeedback?: number
+  criticalFeedback?: number
   trends: DailyTrend[]
 }
 
@@ -88,6 +91,7 @@ export interface AdminOperationLog {
 export interface Feedback {
   id: string
   userId: string
+  userName?: string
   category: string
   content: string
   contactInfo?: string
@@ -95,6 +99,7 @@ export interface Feedback {
   response?: string
   createdAt: number
   updatedAt?: number
+  userNotified?: boolean
 }
 
 export interface FeedbackStatusCount {
@@ -102,6 +107,8 @@ export interface FeedbackStatusCount {
   processing: number
   resolved: number
   closed: number
+  overdue?: number
+  critical?: number
 }
 
 export interface Report {
@@ -410,17 +417,26 @@ export interface SubscriptionOrderItem {
   planName: string
   status: string
   paymentMethod: string
+  paymentId?: string
   amount: number
   currency: string
+  startDate?: number
+  endDate?: number
   createdAt: number
+  updatedAt?: number
   paidAt: number | null
 }
 
 export interface OrderSummary {
   totalRevenue: number
   totalOrders: number
-  pendingOrders: number
-  paidOrders: number
+  pendingCount: number
+  completedCount: number
+  refundedCount: number
+  /** @deprecated use pendingCount */
+  pendingOrders?: number
+  /** @deprecated use completedCount */
+  paidOrders?: number
 }
 
 // Token transaction types
@@ -639,6 +655,7 @@ export interface NotificationItem {
   type: string
   title: string
   content: string
+  link?: string
   read: boolean
   createdAt: number
 }
@@ -657,4 +674,39 @@ export interface SearchHistoryItem {
 export interface SearchTrend {
   query: string
   count: number
+}
+
+// Share analytics types
+export interface ShareEventItem {
+  id: string
+  eventType: string
+  kind: string
+  contentId: string
+  userId?: string
+  userName?: string
+  platform?: string
+  source?: string
+  createdAt: number
+}
+
+export interface ShareKindCount {
+  kind: string
+  count: number
+}
+
+export interface ShareTrendPoint {
+  date: string
+  issues: number
+  opens: number
+}
+
+export interface ShareOverview {
+  totalIssues: number
+  totalOpens: number
+  issuesToday: number
+  opensToday: number
+  openRate: number
+  byKindIssues: ShareKindCount[]
+  byKindOpens: ShareKindCount[]
+  daily: ShareTrendPoint[]
 }

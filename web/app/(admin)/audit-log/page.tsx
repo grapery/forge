@@ -20,10 +20,10 @@ import { ScrollText } from "lucide-react"
 
 
 const actionColors: Record<string, string> = {
-  create: "bg-emerald-500/15 text-emerald-400",
+  create: "bg-[var(--status-success-bg)] text-[var(--status-success)]",
   update: "bg-primary/15 text-primary",
-  delete: "bg-red-500/15 text-red-400",
-  login: "bg-purple-500/15 text-purple-400",
+  delete: "bg-[var(--status-danger-bg)] text-[var(--status-danger)]",
+  login: "bg-[var(--status-info-bg)] text-[var(--status-info)]",
 }
 
 export default function AuditLogPage() {

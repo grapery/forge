@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { Search, TrendingUp } from "lucide-react"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function SearchAnalyticsPage() {
@@ -66,7 +67,7 @@ export default function SearchAnalyticsPage() {
   const maxTrendCount = trends.length > 0 ? Math.max(...trends.map((t) => t.count)) : 1
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Search} />
 
       <div className="flex items-center gap-4">
@@ -158,6 +159,6 @@ export default function SearchAnalyticsPage() {
           </div>
         )}
       </div>
-    </div>
+    </AdminPage>
   )
 }

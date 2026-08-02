@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { aiTaskApi } from "@/lib/api/admin"
+import { AdminPage } from "@/components/layout/admin-page"
 
 export default function AITaskDetailPage() {
   const searchParams = useSearchParams()
@@ -97,7 +98,7 @@ export default function AITaskDetailPage() {
   ].filter((f) => f.value !== undefined && f.value !== null && f.value !== "")
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={`AI Task — ${detail.id?.slice(0, 8) || "Detail"}...`}
         description={detail.type || ""}
@@ -182,6 +183,6 @@ export default function AITaskDetailPage() {
         onConfirm={handleCancel}
         loading={cancelling}
       />
-    </div>
+    </AdminPage>
   )
 }

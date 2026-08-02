@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
 import { useRouter } from "next/navigation"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function TopicDetailPage() {
@@ -53,7 +54,7 @@ export default function TopicDetailPage() {
   const formatTime = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString() : "-"
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={`#${topic}`}
         description={t("description", { topic })}
@@ -97,6 +98,6 @@ export default function TopicDetailPage() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </AdminPage>
   )
 }

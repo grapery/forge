@@ -18,6 +18,7 @@ import type {
   InvitationCodeItem, ReferralItem,
   UserDeviceItem, DevicePlatformCount, NotificationItem,
   SearchHistoryItem, SearchTrend,
+  ShareEventItem, ShareOverview,
 } from "../types"
 
 export const authApi = {
@@ -61,8 +62,10 @@ export const auditLogApi = {
 }
 
 export const feedbackApi = {
-  list: (params: { page?: number; pageSize?: number; status?: string; category?: string }) =>
-    forgeClient.get<any, PaginatedData<Feedback>>("/api/admin/feedback", { params }),
+  list: (params: { page?: number; pageSize?: number; status?: string; category?: string; userId?: string; keyword?: string; overdue?: boolean }) =>
+    forgeClient.get<any, PaginatedData<Feedback>>("/api/admin/feedback", {
+      params: { ...params, overdue: params.overdue ? "1" : undefined },
+    }),
   get: (id: string) =>
     forgeClient.get<any, Feedback>(`/api/admin/feedback/${id}`),
   update: (id: string, data: { status?: string; response?: string }) =>
@@ -72,16 +75,26 @@ export const feedbackApi = {
 }
 
 export const reportApi = {
-  list: (params: { page?: number; pageSize?: number; status?: string }) =>
-    forgeClient.get<any, PaginatedData<Report>>("/api/admin/reports", { params }),
+  list: (params: { page?: number; pageSize?: number; status?: string; overdue?: boolean; keyword?: string; reporterId?: string; reportedId?: string }) =>
+    forgeClient.get<any, PaginatedData<Report>>("/api/admin/reports", {
+      params: {
+        ...params,
+        overdue: params.overdue ? "1" : undefined,
+      },
+    }),
   get: (id: string) =>
     forgeClient.get<any, Report>(`/api/admin/reports/${id}`),
   review: (id: string, data: { status: string; remarks?: string }) =>
     forgeClient.put<any, Report>(`/api/admin/reports/${id}/review`, data),
   statusCounts: () =>
     forgeClient.get<any, ReportStatusCounts>("/api/admin/reports/counts"),
-  listContent: (params: { page?: number; pageSize?: number; status?: string; contentType?: string }) =>
-    forgeClient.get<any, PaginatedData<ContentReport>>("/api/admin/reports/content", { params }),
+  listContent: (params: { page?: number; pageSize?: number; status?: string; contentType?: string; overdue?: boolean; keyword?: string; reporterId?: string }) =>
+    forgeClient.get<any, PaginatedData<ContentReport>>("/api/admin/reports/content", {
+      params: {
+        ...params,
+        overdue: params.overdue ? "1" : undefined,
+      },
+    }),
   getContent: (id: string) =>
     forgeClient.get<any, ContentReport>(`/api/admin/reports/content/${id}`),
   reviewContent: (id: string, data: { status: string; remarks?: string }) =>
@@ -208,10 +221,10 @@ export const planApi = {
 
 // Order API
 export const orderApi = {
-  list: (params: { page?: number; pageSize?: number; status?: string }) =>
+  list: (params: { page?: number; pageSize?: number; status?: string; userId?: string; dateFrom?: string; dateTo?: string }) =>
     forgeClient.get<any, PaginatedData<SubscriptionOrderItem>>("/api/admin/orders", { params }),
   get: (id: string) =>
-    forgeClient.get<any, Record<string, any>>(`/api/admin/orders/${id}`),
+    forgeClient.get<any, SubscriptionOrderItem>(`/api/admin/orders/${id}`),
   summary: () =>
     forgeClient.get<any, OrderSummary>("/api/admin/orders/summary"),
   refund: (id: string, data: { reason: string }) =>
@@ -322,6 +335,16 @@ export const deviceApi = {
 export const notificationApi = {
   list: (params: { page?: number; pageSize?: number; userId?: string; type?: string }) =>
     forgeClient.get<any, PaginatedData<NotificationItem>>("/api/admin/notifications", { params }),
+  broadcast: (data: {
+    title: string
+    content: string
+    type?: string
+    link?: string
+    userIds?: string[]
+    allActive?: boolean
+    platform?: string
+  }) =>
+    forgeClient.post<any, { sent: number; failed: number; total: number }>("/api/admin/notifications/broadcast", data),
 }
 
 // Search Analytics API
@@ -330,4 +353,30 @@ export const searchApi = {
     forgeClient.get<any, PaginatedData<SearchHistoryItem>>("/api/admin/search/history", { params }),
   trends: (limit?: number) =>
     forgeClient.get<any, SearchTrend[]>("/api/admin/search/trends", { params: { limit } }),
+}
+
+export const shareApi = {
+  overview: (range?: "7d" | "30d" | "90d") =>
+    forgeClient.get<any, ShareOverview>("/api/admin/shares/overview", { params: range ? { range } : undefined }),
+  events: (params: { page?: number; pageSize?: number; eventType?: string; kind?: string }) =>
+    forgeClient.get<any, PaginatedData<ShareEventItem>>("/api/admin/shares/events", { params }),
+}
+
+export type OpsAssistantStatus = {
+  configured: boolean
+  provider: string
+  model: string
+  tools: number
+  mcp: boolean
+}
+
+export type OpsToolDef = {
+  name: string
+  description: string
+  parameters: Record<string, unknown>
+}
+
+export const opsAssistantApi = {
+  status: () => forgeClient.get<any, OpsAssistantStatus>("/api/admin/ops-assistant/status"),
+  tools: () => forgeClient.get<any, OpsToolDef[]>("/api/admin/ops-assistant/tools"),
 }

@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input"
 import { SearchInput } from "@/components/shared/search-input"
 
 import { Image, Video, Type, BarChart3, Sparkles } from "lucide-react"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -86,7 +87,7 @@ export default function AIGenerationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Sparkles} />
 
       {summary && (
@@ -282,6 +283,6 @@ export default function AIGenerationsPage() {
           ]}
         />
       )}
-    </div>
+    </AdminPage>
   )
 }

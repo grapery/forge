@@ -36,6 +36,7 @@ import { CreditCard, Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 interface PlanFormData {
@@ -167,7 +168,7 @@ export default function PlansPage() {
   const dialogOpen = showCreateDialog || !!editPlan
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={t("title")}
         description={t("description")}
@@ -377,6 +378,6 @@ export default function PlansPage() {
         variant="destructive"
         onConfirm={handleDelete}
       />
-    </div>
+    </AdminPage>
   )
 }

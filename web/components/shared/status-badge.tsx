@@ -4,15 +4,15 @@ import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 
 const roleColors: Record<string, string> = {
-  super_admin: "bg-red-500/15 text-red-400 border border-red-500/20",
-  admin: "bg-amber-500/15 text-amber-400 border border-amber-500/20",
-  operator: "bg-primary/15 text-primary border border-primary/20",
-  viewer: "bg-secondary/60 text-muted-foreground border border-glass-border",
+  super_admin: "bg-[var(--status-danger-bg)] text-[var(--status-danger)] border border-[var(--status-danger)]/20",
+  admin: "bg-[var(--status-warning-bg)] text-[var(--status-warning)] border border-[var(--status-warning)]/20",
+  operator: "bg-[var(--status-info-bg)] text-[var(--status-info)] border border-[var(--status-info)]/20",
+  viewer: "bg-secondary text-muted-foreground border border-border",
 }
 
 const statusColors: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20",
-  disabled: "bg-red-500/15 text-red-400 border border-red-500/20",
+  active: "bg-[var(--status-success-bg)] text-[var(--status-success)] border border-[var(--status-success)]/20",
+  disabled: "bg-[var(--status-danger-bg)] text-[var(--status-danger)] border border-[var(--status-danger)]/20",
 }
 
 const roleKeyMap: Record<string, string> = {
@@ -25,7 +25,13 @@ const roleKeyMap: Record<string, string> = {
 export function RoleBadge({ role }: { role: string }) {
   const t = useTranslations("common")
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", roleColors[role] || "bg-secondary/60 text-muted-foreground border border-glass-border")}>      {roleKeyMap[role] ? t(roleKeyMap[role]) : role}
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        roleColors[role] || "bg-secondary text-muted-foreground border border-border",
+      )}
+    >
+      {roleKeyMap[role] ? t(roleKeyMap[role]) : role}
     </span>
   )
 }
@@ -33,7 +39,12 @@ export function RoleBadge({ role }: { role: string }) {
 export function StatusBadge({ status }: { status: string }) {
   const t = useTranslations("common")
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", statusColors[status] || "bg-secondary/60 text-muted-foreground border border-glass-border")}>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        statusColors[status] || "bg-secondary text-muted-foreground border border-border",
+      )}
+    >
       {status === "active" ? t("statusActive") : t("statusDisabled")}
     </span>
   )

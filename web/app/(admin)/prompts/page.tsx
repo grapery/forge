@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Cpu, Zap, Terminal } from "lucide-react"
 
 import { useRouter } from "next/navigation"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function PromptsPage() {
@@ -56,7 +57,7 @@ export default function PromptsPage() {
   const formatTime = (ts: number) => new Date(ts * 1000).toLocaleString()
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Terminal} />
 
       {summary && (
@@ -142,6 +143,6 @@ export default function PromptsPage() {
           ]}
         />
       )}
-    </div>
+    </AdminPage>
   )
 }

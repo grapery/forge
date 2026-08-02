@@ -89,6 +89,33 @@ func (rr *ReadRepository) CountNewFragments(since int64) (int64, error) {
 	return count, err
 }
 
+func (rr *ReadRepository) CountNewStoryboards(since int64) (int64, error) {
+	var count int64
+	err := rr.db.Table("storyboards").Where("(deleted_at IS NULL OR deleted_at = 0) AND created_at >= ?", since).Count(&count).Error
+	return count, err
+}
+
+func (rr *ReadRepository) CountForkEvents(since int64) (int64, error) {
+	var count int64
+	if !rr.db.Migrator().HasTable("story_forks") {
+		return 0, nil
+	}
+	err := rr.db.Table("story_forks").Where("created_at >= ?", since).Count(&count).Error
+	if err != nil {
+		return 0, nil
+	}
+	return count, nil
+}
+
+func (rr *ReadRepository) SumTokenConsumed(since int64) (int64, error) {
+	var total int64
+	err := rr.db.Table("token_transactions").
+		Select("COALESCE(SUM(ABS(amount)), 0)").
+		Where("created_at >= ? AND type IN ?", since, []string{"consume", "deduct"}).
+		Scan(&total).Error
+	return total, err
+}
+
 func (rr *ReadRepository) CountNewOrders(since int64) (int64, error) {
 	var count int64
 	err := rr.db.Table("subscription_orders").Where("created_at >= ?", since).Count(&count).Error
@@ -98,7 +125,7 @@ func (rr *ReadRepository) CountNewOrders(since int64) (int64, error) {
 func (rr *ReadRepository) SumRevenue(since int64) (float64, error) {
 	var total float64
 	err := rr.db.Table("subscription_orders").
-		Where("status = ? AND created_at >= ?", "paid", since).
+		Where("status IN ? AND created_at >= ?", []string{"completed", "paid"}, since).
 		Select("COALESCE(SUM(amount), 0)").Scan(&total).Error
 	return total, err
 }

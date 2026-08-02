@@ -19,6 +19,9 @@ type ContentReportFilter struct {
 	PageSize    int
 	Status      string
 	ContentType string
+	Overdue     bool
+	Keyword     string
+	ReporterID  string
 }
 
 type contentReportRow struct {
@@ -38,11 +41,25 @@ type contentReportRow struct {
 func (rr *ReadRepository) ListContentReports(f *ContentReportFilter) ([]*domain.ContentReport, int64, error) {
 	q := rr.db.Table("content_reports").Where("deleted_at IS NULL")
 
-	if f.Status != "" {
+	if f.Overdue {
+		cutoff := time.Now().Add(-reportSLADuration)
+		q = q.Where("status = ? AND created_at < ?", "pending", cutoff)
+	} else if f.Status != "" {
 		q = q.Where("status = ?", f.Status)
 	}
 	if f.ContentType != "" {
 		q = q.Where("content_type = ?", f.ContentType)
+	}
+	if f.ReporterID != "" {
+		q = q.Where("reporter_id = ?", f.ReporterID)
+	}
+	if kw := strings.TrimSpace(f.Keyword); kw != "" {
+		like := "%" + kw + "%"
+		userSub := rr.db.Table("users").Select("id").Where("username LIKE ? OR display_name LIKE ?", like, like)
+		q = q.Where(
+			"(reason LIKE ? OR content_id LIKE ? OR reporter_id LIKE ? OR id LIKE ? OR reporter_id IN (?))",
+			like, like, like, like, userSub,
+		)
 	}
 
 	var total int64

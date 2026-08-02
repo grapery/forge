@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
@@ -20,8 +21,10 @@ func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domai
 		if query.AuthorID != "" {
 			db = db.Where("author_id = ?", query.AuthorID)
 		}
-		if query.Search != "" {
-			db = db.Where("content LIKE ?", "%"+query.Search+"%")
+		if kw := strings.TrimSpace(query.Search); kw != "" {
+			like := "%" + kw + "%"
+			userSub := rr.db.Table("users").Select("id").Where("username LIKE ? OR display_name LIKE ?", like, like)
+			db = db.Where("content LIKE ? OR author_id LIKE ? OR author_id IN (?)", like, like, userSub)
 		}
 		return db
 	}

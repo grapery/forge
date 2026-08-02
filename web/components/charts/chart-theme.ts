@@ -1,11 +1,11 @@
 const SERIES_COLORS = [
-  "#7A39EC", // primary purple
-  "#8b5cf6", // violet
-  "#10b981", // emerald
-  "#f59e0b", // amber
-  "#06b6d4", // cyan
-  "#ec4899", // pink
-  "#ef4444", // red
+  "#2383E2", // notion blue
+  "#0F7B6C", // teal
+  "#CB912F", // amber
+  "#D9730D", // orange
+  "#337EA9", // slate blue
+  "#E03E3E", // red
+  "#5D6B7A", // cool gray
 ] as const
 
 function getCssVar(name: string): string {
@@ -15,14 +15,14 @@ function getCssVar(name: string): string {
 
 export function getThemeColors() {
   return {
-    primary: getCssVar("--primary") || "#7A39EC",
-    text: getCssVar("--muted-foreground") || "#6b6b8a",
-    grid: "rgba(255,255,255,0.06)",
-    card: getCssVar("--card") || "#12121e",
-    background: getCssVar("--background") || "#0a0a12",
-    positive: "#10b981",
-    negative: "#ef4444",
-    neutral: "#6b6b8a",
+    primary: getCssVar("--primary") || "#2383E2",
+    text: getCssVar("--muted-foreground") || "#787774",
+    grid: "rgba(55, 53, 47, 0.08)",
+    card: getCssVar("--card") || "#ffffff",
+    background: getCssVar("--background") || "#ffffff",
+    positive: "#0F7B6C",
+    negative: "#E03E3E",
+    neutral: "#787774",
     series: [...SERIES_COLORS],
   }
 }

@@ -3,26 +3,21 @@
 import { useEffect, useState } from "react"
 import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
-
 import { useRouter, useSearchParams } from "next/navigation"
-
 import { reportApi, userApi } from "@/lib/api/admin"
-
 import type { Report } from "@/lib/types"
-
 import { Button } from "@/components/ui/button"
-
 import { Label } from "@/components/ui/label"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfirmDialog } from "@/components/shared/confirm-dialog"
+import { ReportSlaPanel } from "@/components/shared/report-sla-panel"
 import Link from "next/link"
 import { toast } from "sonner"
 
-
 const statusColor: Record<string, string> = {
-  pending: "bg-yellow-500/15 text-yellow-400",
-  reviewed: "bg-blue-500/15 text-blue-400",
-  resolved: "bg-green-500/15 text-emerald-400",
+  pending: "bg-[var(--status-warning-bg)] text-[var(--status-warning)]",
+  reviewed: "bg-[var(--status-info-bg)] text-[var(--status-info)]",
+  resolved: "bg-green-500/15 text-[var(--status-success)]",
   dismissed: "bg-gray-500/15 text-gray-400",
 }
 
@@ -44,7 +39,8 @@ export default function ReportDetailPage() {
   const [reviewStatus, setReviewStatus] = useState("")
   const [remarks, setRemarks] = useState("")
   const [saving, setSaving] = useState(false)
-  const [actionLoading, setActionLoading] = useState("")
+  const [actionLoading, setActionLoading] = useState(false)
+  const [pendingAction, setPendingAction] = useState<"suspend" | "activate" | null>(null)
 
   useEffect(() => {
     if (!id) { router.push("/reports"); return }
@@ -74,51 +70,52 @@ export default function ReportDetailPage() {
       } else {
         toast.success(t("toastReviewSaved"))
       }
-    } catch {
-      // error handled by interceptor
+    } catch (err: any) {
+      toast.error(err?.message || t("toastReviewFailed"))
     } finally {
       setSaving(false)
     }
   }
 
-  const handleUserAction = async (action: "suspend" | "activate") => {
-    if (!report) return
+  const handleUserAction = async () => {
+    if (!report || !pendingAction) return
     const userId = report.reportedId
-    const confirmed = window.confirm(
-      action === "suspend"
-        ? `Suspend user ${report.reportedName || userId.slice(0, 8)}?`
-        : `Activate user ${report.reportedName || userId.slice(0, 8)}?`
-    )
-    if (!confirmed) return
-
-    setActionLoading(action)
+    setActionLoading(true)
     try {
-      if (action === "suspend") {
+      if (pendingAction === "suspend") {
         await userApi.suspend(userId)
+        toast.success(t("alertUserSuspended"))
       } else {
         await userApi.activate(userId)
+        toast.success(t("alertUserActivated"))
       }
-      alert(`User ${action === "suspend" ? "suspended" : "activated"} successfully`)
-    } catch {
-      // error handled by interceptor
+      setPendingAction(null)
+    } catch (err: any) {
+      toast.error(err?.message || t("toastActionFailed"))
     } finally {
-      setActionLoading("")
+      setActionLoading(false)
     }
   }
 
   if (loading) return <PageSkeleton />
   if (!report) return null
 
+  const reportedLabel = report.reportedName || report.reportedId.slice(0, 8)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("titleId", { id: report.id })}</p>
         </div>
         <Button variant="outline" onClick={() => router.push("/reports")}>
           {t("buttonBackToList")}
         </Button>
+      </div>
+
+      <div className="rounded-lg border border-[var(--status-warning)]/20 bg-[var(--status-warning-bg)] p-3 text-sm text-[var(--status-warning)]">
+        {t("slaGuidance")}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -135,23 +132,41 @@ export default function ReportDetailPage() {
                     {statusLabel[report.status] || report.status}
                   </span>
                   {report.isOverdue && (
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-500/15 text-red-400">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--status-danger-bg)] text-[var(--status-danger)]">
                       {t("slaOverdue")}
                     </span>
                   )}
                 </div>
               </div>
+              <ReportSlaPanel
+                createdAt={typeof report.createdAt === "number" ? report.createdAt : Math.floor(new Date(report.createdAt).getTime() / 1000)}
+                status={report.status}
+                isOverdue={report.isOverdue}
+                labels={{
+                  fieldSla: t("fieldSla"),
+                  slaOverdue: t("slaOverdue"),
+                  slaOverdueBy: (hours) => t("slaOverdueBy", { hours }),
+                  slaRemaining: (hours) => t("slaRemaining", { hours }),
+                  slaClosed: (hours) => t("slaClosed", { hours }),
+                }}
+              />
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldSubmitted")}</p>
                 <p className="text-sm">{typeof report.createdAt === "number" ? new Date(report.createdAt * 1000).toLocaleString() : new Date(report.createdAt).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldReporter")}</p>
-                <p className="text-sm">{report.reporterName || report.reporterId.slice(0, 8)}</p>
+                <Link href={`/users/detail?id=${report.reporterId}`} className="text-sm text-primary hover:underline">
+                  {report.reporterName || report.reporterId.slice(0, 8)}
+                </Link>
+                <p className="text-xs font-mono text-muted-foreground mt-0.5">{report.reporterId}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t("fieldReportedUser")}</p>
-                <p className="text-sm">{report.reportedName || report.reportedId.slice(0, 8)}</p>
+                <Link href={`/users/detail?id=${report.reportedId}`} className="text-sm text-primary hover:underline">
+                  {reportedLabel}
+                </Link>
+                <p className="text-xs font-mono text-muted-foreground mt-0.5">{report.reportedId}</p>
               </div>
             </div>
 
@@ -230,30 +245,48 @@ export default function ReportDetailPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                {t("userActionDescription")} <span className="font-medium text-foreground">{report.reportedName || report.reportedId.slice(0, 8)}</span>
+                {t("userActionDescription")}{" "}
+                <Link href={`/users/detail?id=${report.reportedId}`} className="font-medium text-primary hover:underline">
+                  {reportedLabel}
+                </Link>
               </p>
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
                   size="sm"
-                  disabled={!!actionLoading}
-                  onClick={() => handleUserAction("suspend")}
+                  disabled={actionLoading}
+                  onClick={() => setPendingAction("suspend")}
                 >
-                  {actionLoading === "suspend" ? t("buttonSuspending") : t("buttonSuspendUser")}
+                  {t("buttonSuspendUser")}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!!actionLoading}
-                  onClick={() => handleUserAction("activate")}
+                  disabled={actionLoading}
+                  onClick={() => setPendingAction("activate")}
                 >
-                  {actionLoading === "activate" ? t("buttonActivating") : t("buttonActivateUser")}
+                  {t("buttonActivateUser")}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={(open) => { if (!open) setPendingAction(null) }}
+        title={pendingAction === "suspend" ? t("buttonSuspendUser") : t("buttonActivateUser")}
+        description={
+          pendingAction === "suspend"
+            ? t("confirmSuspendUser", { name: reportedLabel })
+            : t("confirmActivateUser", { name: reportedLabel })
+        }
+        confirmLabel={pendingAction === "suspend" ? t("buttonSuspendUser") : t("buttonActivateUser")}
+        variant={pendingAction === "suspend" ? "destructive" : "default"}
+        loading={actionLoading}
+        onConfirm={handleUserAction}
+      />
     </div>
   )
 }

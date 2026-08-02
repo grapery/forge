@@ -30,6 +30,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 import { BookOpen, Eye, Globe, Lock, Users, Trash2 } from "lucide-react"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 const visibilityVariant: Record<string, "default" | "secondary" | "outline"> = {
@@ -103,7 +104,7 @@ export default function FragmentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={BookOpen} />
 
       {counts && (
@@ -213,6 +214,6 @@ export default function FragmentsPage() {
         variant={actionType === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label"
 import { Ticket, ToggleLeft, ToggleRight, Mail } from "lucide-react"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function InvitationCodesPage() {
@@ -106,7 +107,7 @@ export default function InvitationCodesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={t("title")}
         description={t("description")}
@@ -266,6 +267,6 @@ export default function InvitationCodesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPage>
   )
 }

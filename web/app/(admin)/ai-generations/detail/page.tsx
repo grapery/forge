@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { aiGenerationApi } from "@/lib/api/admin"
+import { AdminPage } from "@/components/layout/admin-page"
 
 const statusVariant: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   pending: "outline",
@@ -81,7 +82,7 @@ export default function AIGenerationDetailPage() {
   const errorMessage = detail.error_message ?? detail.errorMessage
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={`AI Generation — ${String(detail.id || "").slice(0, 8)}...`}
         description={detail.type || ""}
@@ -184,6 +185,6 @@ export default function AIGenerationDetailPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </AdminPage>
   )
 }

@@ -2,22 +2,44 @@ package mysql
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
 )
 
 type ReportFilter struct {
-	Page     int
-	PageSize int
-	Status   string
+	Page       int
+	PageSize   int
+	Status     string
+	Overdue    bool
+	Keyword    string
+	ReporterID string
+	ReportedID string
 }
 
 func (rr *ReadRepository) ListReports(f *ReportFilter) ([]*domain.Report, int64, error) {
 	q := rr.db.Table("user_reports").Where("deleted_at IS NULL")
 
-	if f.Status != "" {
+	if f.Overdue {
+		cutoff := time.Now().Add(-reportSLADuration)
+		q = q.Where("status = ? AND created_at < ?", "pending", cutoff)
+	} else if f.Status != "" {
 		q = q.Where("status = ?", f.Status)
+	}
+	if f.ReporterID != "" {
+		q = q.Where("reporter_id = ?", f.ReporterID)
+	}
+	if f.ReportedID != "" {
+		q = q.Where("reported_id = ?", f.ReportedID)
+	}
+	if kw := strings.TrimSpace(f.Keyword); kw != "" {
+		like := "%" + kw + "%"
+		userSub := rr.db.Table("users").Select("id").Where("username LIKE ? OR display_name LIKE ?", like, like)
+		q = q.Where(
+			"(reason LIKE ? OR reporter_id LIKE ? OR reported_id LIKE ? OR id LIKE ? OR reporter_id IN (?) OR reported_id IN (?))",
+			like, like, like, like, userSub, userSub,
+		)
 	}
 
 	var total int64

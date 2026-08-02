@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, Shield, Crown, User, Sparkles, Pencil, RefreshCw, XCircle } from "lucide-react"
 
 import { MembershipFormDialog } from "@/components/shared/membership-form-dialog"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 const tierVariant: Record<string, "default" | "secondary" | "outline"> = {
@@ -86,7 +87,7 @@ export default function MembershipsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Crown} />
 
       {summary && (
@@ -257,7 +258,7 @@ export default function MembershipsPage() {
         membershipId={cancelTarget?.id}
         onSubmitted={refreshAfterMutation}
       />
-    </div>
+    </AdminPage>
   )
 }
 

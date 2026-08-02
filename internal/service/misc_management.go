@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
 	"github.com/grapestree/fgrapery/forge/internal/repository/mysql"
@@ -181,11 +182,12 @@ func (s *DeviceService) PlatformCounts() (*domain.DevicePlatformCount, error) {
 }
 
 type NotificationService struct {
-	readRepo *mysql.ReadRepository
+	readRepo  *mysql.ReadRepository
+	writeRepo *mysql.WriteRepository
 }
 
-func NewNotificationService(readRepo *mysql.ReadRepository) *NotificationService {
-	return &NotificationService{readRepo: readRepo}
+func NewNotificationService(readRepo *mysql.ReadRepository, writeRepo *mysql.WriteRepository) *NotificationService {
+	return &NotificationService{readRepo: readRepo, writeRepo: writeRepo}
 }
 
 func (s *NotificationService) List(query *domain.NotificationListQuery) ([]*domain.NotificationItem, int64, error) {
@@ -196,6 +198,61 @@ func (s *NotificationService) List(query *domain.NotificationListQuery) ([]*doma
 		query.PageSize = 20
 	}
 	return s.readRepo.ListNotifications(query)
+}
+
+func (s *NotificationService) Broadcast(req *domain.BroadcastNotificationRequest) (*domain.BroadcastNotificationResult, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request required")
+	}
+	title := strings.TrimSpace(req.Title)
+	content := strings.TrimSpace(req.Content)
+	if title == "" || content == "" {
+		return nil, fmt.Errorf("title and content are required")
+	}
+	typ := strings.TrimSpace(req.Type)
+	if typ == "" {
+		typ = "system"
+	}
+	link := strings.TrimSpace(req.Link)
+
+	userIDs := make([]string, 0)
+	seen := map[string]struct{}{}
+	for _, id := range req.UserIDs {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		userIDs = append(userIDs, id)
+	}
+
+	if len(userIDs) == 0 {
+		if !req.AllActive {
+			return nil, fmt.Errorf("provide userIds or set allActive=true")
+		}
+		ids, err := s.readRepo.ListActiveUserIDs(strings.TrimSpace(req.Platform), 5000)
+		if err != nil {
+			return nil, err
+		}
+		userIDs = ids
+	}
+	if len(userIDs) == 0 {
+		return &domain.BroadcastNotificationResult{}, nil
+	}
+
+	sent, failed, err := s.writeRepo.CreateSystemNotificationsBatch(userIDs, typ, title, content, link)
+	result := &domain.BroadcastNotificationResult{
+		Sent:   sent,
+		Failed: failed,
+		Total:  len(userIDs),
+	}
+	if err != nil && sent == 0 {
+		return result, err
+	}
+	return result, nil
 }
 
 type SearchAnalyticsService struct {
@@ -218,4 +275,26 @@ func (s *SearchAnalyticsService) ListHistory(query *domain.SearchHistoryQuery) (
 
 func (s *SearchAnalyticsService) GetTrends(limit int) ([]*domain.SearchTrend, error) {
 	return s.readRepo.GetSearchTrends(limit)
+}
+
+type ShareAnalyticsService struct {
+	readRepo *mysql.ReadRepository
+}
+
+func NewShareAnalyticsService(readRepo *mysql.ReadRepository) *ShareAnalyticsService {
+	return &ShareAnalyticsService{readRepo: readRepo}
+}
+
+func (s *ShareAnalyticsService) Overview(days int) (*domain.ShareOverview, error) {
+	return s.readRepo.GetShareOverview(days)
+}
+
+func (s *ShareAnalyticsService) ListEvents(query *domain.ShareEventQuery) ([]*domain.ShareEventItem, int64, error) {
+	if query.Page < 1 {
+		query.Page = 1
+	}
+	if query.PageSize < 1 || query.PageSize > 100 {
+		query.PageSize = 20
+	}
+	return s.readRepo.ListShareEvents(query)
 }

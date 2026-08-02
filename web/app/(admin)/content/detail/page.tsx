@@ -23,6 +23,7 @@ import { ArrowLeft, Eye, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { toast } from "sonner"
+import { AdminPage } from "@/components/layout/admin-page"
 
 
 export default function ContentDetailPage() {
@@ -86,7 +87,7 @@ export default function ContentDetailPage() {
   ].filter(f => f.value !== undefined && f.value !== null && f.value !== "")
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         title={detail.title || detail.name || t("detailTitle", { typeLabel })}
         description={`${typeLabel} — ${detail.id?.slice(0, 8)}...`}
@@ -160,6 +161,6 @@ export default function ContentDetailPage() {
         variant={action === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />
-    </div>
+    </AdminPage>
   )
 }

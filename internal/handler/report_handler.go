@@ -30,9 +30,13 @@ func reviewerFromContext(c *gin.Context) string {
 func (h *ReportHandler) List(c *gin.Context) {
 	page, pageSize := parsePagination(c)
 	query := &domain.ReportListQuery{
-		Page:     page,
-		PageSize: pageSize,
-		Status:   c.Query("status"),
+		Page:       page,
+		PageSize:   pageSize,
+		Status:     c.Query("status"),
+		Overdue:    c.Query("overdue") == "1" || c.Query("overdue") == "true",
+		Keyword:    c.Query("keyword"),
+		ReporterID: c.Query("reporterId"),
+		ReportedID: c.Query("reportedId"),
 	}
 
 	items, total, err := h.reportSvc.List(query)
@@ -123,6 +127,9 @@ func (h *ReportHandler) ListContentReports(c *gin.Context) {
 		PageSize:    pageSize,
 		Status:      c.Query("status"),
 		ContentType: c.Query("contentType"),
+		Overdue:     c.Query("overdue") == "1" || c.Query("overdue") == "true",
+		Keyword:     c.Query("keyword"),
+		ReporterID:  c.Query("reporterId"),
 	}
 	items, total, err := h.reportSvc.ListContentReports(query)
 	if err != nil {

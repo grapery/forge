@@ -181,10 +181,10 @@ func (rr *ReadRepository) ListOrders(query *domain.PaymentListQuery) ([]*domain.
 		q = q.Where("subscription_orders.user_id = ?", query.UserID)
 	}
 	if query.DateFrom != "" {
-		q = q.Where("subscription_orders.created_at >= ?", query.DateFrom)
+		q = q.Where("subscription_orders.created_at >= UNIX_TIMESTAMP(?)", query.DateFrom)
 	}
 	if query.DateTo != "" {
-		q = q.Where("subscription_orders.created_at <= ?", query.DateTo)
+		q = q.Where("subscription_orders.created_at < UNIX_TIMESTAMP(?) + 86400", query.DateTo)
 	}
 
 	if err := q.Count(&total).Error; err != nil {
@@ -272,30 +272,80 @@ func (rr *ReadRepository) ListOrders(query *domain.PaymentListQuery) ([]*domain.
 	return items, total, nil
 }
 
-func (rr *ReadRepository) GetOrderDetail(id string) (map[string]any, error) {
-	var result map[string]any
-	if err := rr.db.Table("subscription_orders").Where("id = ?", id).Take(&result).Error; err != nil {
+func (rr *ReadRepository) GetOrderDetail(id string) (*domain.SubscriptionOrderItem, error) {
+	type row struct {
+		ID            string  `gorm:"column:id"`
+		UserID        string  `gorm:"column:user_id"`
+		PlanID        string  `gorm:"column:plan_id"`
+		Amount        float64 `gorm:"column:amount"`
+		Currency      string  `gorm:"column:currency"`
+		Status        string  `gorm:"column:status"`
+		PaymentMethod string  `gorm:"column:payment_method"`
+		PaymentID     string  `gorm:"column:payment_id"`
+		StartDate     int64   `gorm:"column:start_date"`
+		EndDate       int64   `gorm:"column:end_date"`
+		CreatedAt     int64   `gorm:"column:created_at"`
+		UpdatedAt     int64   `gorm:"column:updated_at"`
+	}
+	var r row
+	if err := rr.db.Table("subscription_orders").
+		Select("id, user_id, COALESCE(plan_id, '') as plan_id, COALESCE(amount, 0) as amount, "+
+			"COALESCE(currency, 'USD') as currency, status, COALESCE(payment_method, '') as payment_method, "+
+			"COALESCE(payment_id, '') as payment_id, COALESCE(UNIX_TIMESTAMP(start_date), 0) as start_date, "+
+			"COALESCE(UNIX_TIMESTAMP(end_date), 0) as end_date, created_at, updated_at").
+		Where("id = ?", id).Take(&r).Error; err != nil {
 		return nil, fmt.Errorf("get order detail: %w", err)
 	}
-	return result, nil
+
+	names, _ := batchUserNames(rr, []string{r.UserID})
+	planName := ""
+	if r.PlanID != "" {
+		_ = rr.db.Table("subscription_plans").Select("name").Where("id = ?", r.PlanID).Scan(&planName).Error
+	}
+
+	return &domain.SubscriptionOrderItem{
+		ID:            r.ID,
+		UserID:        r.UserID,
+		UserName:      names[r.UserID],
+		PlanID:        r.PlanID,
+		PlanName:      planName,
+		Amount:        r.Amount,
+		Currency:      r.Currency,
+		Status:        r.Status,
+		PaymentMethod: r.PaymentMethod,
+		PaymentID:     r.PaymentID,
+		StartDate:     r.StartDate,
+		EndDate:       r.EndDate,
+		CreatedAt:     r.CreatedAt,
+		UpdatedAt:     r.UpdatedAt,
+	}, nil
 }
 
 func (rr *ReadRepository) GetOrderSummary() (*domain.OrderSummary, error) {
 	var summary domain.OrderSummary
-	base := rr.db.Table("subscription_orders")
-	base.Count(&summary.TotalOrders)
-	base.Where("status = ?", "completed").Count(&summary.CompletedCount)
-	base.Where("status = ?", "pending").Count(&summary.PendingCount)
-	base.Where("status = ?", "refunded").Count(&summary.RefundedCount)
+	if err := rr.db.Table("subscription_orders").Count(&summary.TotalOrders).Error; err != nil {
+		return nil, fmt.Errorf("count orders: %w", err)
+	}
+	if err := rr.db.Table("subscription_orders").Where("status = ?", "completed").Count(&summary.CompletedCount).Error; err != nil {
+		return nil, fmt.Errorf("count completed orders: %w", err)
+	}
+	if err := rr.db.Table("subscription_orders").Where("status = ?", "pending").Count(&summary.PendingCount).Error; err != nil {
+		return nil, fmt.Errorf("count pending orders: %w", err)
+	}
+	if err := rr.db.Table("subscription_orders").Where("status = ?", "refunded").Count(&summary.RefundedCount).Error; err != nil {
+		return nil, fmt.Errorf("count refunded orders: %w", err)
+	}
 
 	type revenueRow struct {
 		Total float64 `gorm:"column:total"`
 	}
 	var rev revenueRow
-	rr.db.Table("subscription_orders").
+	if err := rr.db.Table("subscription_orders").
 		Select("COALESCE(SUM(amount), 0) as total").
 		Where("status = ?", "completed").
-		Take(&rev)
+		Take(&rev).Error; err != nil {
+		return nil, fmt.Errorf("sum order revenue: %w", err)
+	}
 	summary.TotalRevenue = rev.Total
 
 	return &summary, nil

@@ -49,8 +49,8 @@ func Load() *Config {
 		Env:          getEnv("FORGE_ENV", "development"),
 		HTTPPort:     getEnv("FORGE_HTTP_PORT", "9010"),
 		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		WriteTimeout:  mustParseDuration(getEnv("FORGE_HTTP_WRITE_TIMEOUT", "180s")),
+		IdleTimeout:   60 * time.Second,
 		LogLevel:     getEnv("FORGE_LOG_LEVEL", "info"),
 		AllowOrigins: parseOrigins(getEnv("FORGE_ALLOW_ORIGINS", "http://localhost:3000")),
 		Database: DatabaseConfig{
