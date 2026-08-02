@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useLocale } from "@/providers/locale-provider"
+import { MarkdownContent } from "@/components/shared/markdown-content"
 
 type Citation = {
   tool?: string
@@ -629,14 +630,16 @@ export default function OpsAssistantPage() {
                 <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm whitespace-pre-wrap relative group",
+                      "max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm relative group",
                       m.role === "user"
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-primary-foreground whitespace-pre-wrap"
                         : "bg-secondary text-foreground",
                     )}
                   >
                     {m.pending && !m.content ? (
                       <span className="text-muted-foreground">{t("thinking")}</span>
+                    ) : m.role === "assistant" ? (
+                      <MarkdownContent content={m.content} />
                     ) : (
                       m.content
                     )}
