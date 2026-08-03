@@ -112,7 +112,7 @@ function hasValidSettings(settings: WorkflowSettings) {
   const durationHours = Number(settings.maxDurationHours)
   const maxParallelism = Number(settings.maxParallelism)
   const maxAttempts = Number(settings.maxAttempts)
-  return Number.isFinite(durationHours) && durationHours > 0 && durationHours <= 12
+  return Number.isFinite(durationHours) && durationHours >= 5 / 60 && durationHours <= 12
     && Number.isInteger(maxParallelism) && maxParallelism >= 1 && maxParallelism <= 32
     && Number.isInteger(maxAttempts) && maxAttempts >= 1 && maxAttempts <= 10
 }
@@ -125,6 +125,9 @@ export default function WorkflowsPage() {
   const [editing, setEditing] = useState<WorkflowDraft | null>(null)
   const [bindingTarget, setBindingTarget] = useState<WorkflowDraft | null>(null)
   const [saving, setSaving] = useState(false)
+	const [aiOpen, setAiOpen] = useState(false)
+	const [aiPrompt, setAiPrompt] = useState("")
+	const [aiGenerating, setAiGenerating] = useState(false)
   const [form, setForm] = useState({ key: "", name: "", description: "", manifest: {} as Record<string, unknown>, nodes: defaultCanvas(), promptBundle: {} as Record<string, string>, settings: defaultSettings() })
   const [binding, setBinding] = useState({ surface: "voyager.storyboard", action: "generate", tenantId: "", priority: "100" })
   const [draggedNodeID, setDraggedNodeID] = useState<string | null>(null)
@@ -240,6 +243,30 @@ export default function WorkflowsPage() {
       setSaving(false)
     }
   }
+	const generateWithAI = async () => {
+		if (!aiPrompt.trim()) return
+		try {
+			setAiGenerating(true)
+			const generated = await workflowApi.generate(aiPrompt.trim())
+			const nodes = canvasFromDefinition(generated.definition)
+			setForm((current) => ({
+				key: editing ? current.key : generated.key,
+				name: generated.name,
+				description: generated.description || "",
+				manifest: generated.manifest || {},
+				nodes,
+				promptBundle: generated.promptBundle || {},
+				settings: settingsFromPolicies(generated.policies),
+			}))
+			setSelectedNodeID(nodes[0]?.id || null)
+			setAiOpen(false)
+			toast.success(t("aiApplied"))
+		} catch (error: unknown) {
+			toast.error(error instanceof Error ? error.message : t("aiGenerateFailed"))
+		} finally {
+			setAiGenerating(false)
+		}
+	}
   const publishAndBind = async () => {
     if (!bindingTarget) return
     try {
@@ -278,6 +305,7 @@ export default function WorkflowsPage() {
   }
 
   const bindingDialog = <Dialog open={!!bindingTarget} onOpenChange={(value) => { if (!value) setBindingTarget(null) }}><DialogContent><DialogHeader><DialogTitle>{t("bindingTitle")}</DialogTitle><DialogDescription>{t("bindingDescription")}</DialogDescription></DialogHeader><div className="grid gap-4"><div><Label>{t("surface")}</Label><Input value={binding.surface} onChange={(event) => setBinding({ ...binding, surface: event.target.value })} /></div><div><Label>{t("action")}</Label><Input value={binding.action} onChange={(event) => setBinding({ ...binding, action: event.target.value })} /></div><div className="grid grid-cols-2 gap-3"><div><Label>{t("tenantId")}</Label><Input value={binding.tenantId} onChange={(event) => setBinding({ ...binding, tenantId: event.target.value })} placeholder={t("globalBinding")} /></div><div><Label>{t("priority")}</Label><Input type="number" value={binding.priority} onChange={(event) => setBinding({ ...binding, priority: event.target.value })} /></div></div></div><DialogFooter><Button variant="outline" onClick={() => setBindingTarget(null)}>{t("cancel")}</Button><Button disabled={saving || !binding.surface.trim() || !binding.action.trim()} onClick={publishAndBind}>{saving ? t("saving") : t("confirmBinding")}</Button></DialogFooter></DialogContent></Dialog>
+	const aiDialog = <Dialog open={aiOpen} onOpenChange={setAiOpen}><DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />{t("aiGenerateTitle")}</DialogTitle><DialogDescription>{t("aiGenerateDescription")}</DialogDescription></DialogHeader><div className="space-y-2"><Label htmlFor="workflow-ai-prompt">{t("aiRequirements")}</Label><Textarea id="workflow-ai-prompt" className="min-h-48 resize-y" value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder={t("aiPromptPlaceholder")} /><p className="text-xs leading-5 text-muted-foreground">{t("aiGenerateHelp")}</p></div><DialogFooter><Button variant="outline" onClick={() => setAiOpen(false)}>{t("cancel")}</Button><Button disabled={aiGenerating || !aiPrompt.trim()} onClick={generateWithAI}><Sparkles className="mr-2 h-4 w-4" />{aiGenerating ? t("aiGenerating") : t("aiGenerateAndApply")}</Button></DialogFooter></DialogContent></Dialog>
 
   if (open) {
     return <AdminPage className="-mx-2 -mt-2 space-y-0">
@@ -287,14 +315,14 @@ export default function WorkflowsPage() {
             <Button size="icon" variant="ghost" aria-label={t("backToWorkflows")} onClick={() => setOpen(false)}><ArrowLeft className="h-4 w-4" /></Button>
             <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t("builderEyebrow")}</p><h1 className="truncate text-xl font-semibold tracking-tight">{editing ? t("editTitle") : t("createTitle")}</h1></div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pl-12 md:pl-0"><div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${builderReady ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>{builderReady ? <CircleCheck className="h-3.5 w-3.5" /> : <CircleDashed className="h-3.5 w-3.5" />}{builderReady ? t("readyToSave") : t("incompleteSetup")}</div><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button disabled={saving || !builderReady} onClick={save}><Save className="mr-2 h-4 w-4" />{saving ? t("saving") : t(editing ? "saveChanges" : "create")}</Button></div>
+          <div className="flex flex-wrap items-center gap-2 pl-12 md:pl-0"><div className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${builderReady ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>{builderReady ? <CircleCheck className="h-3.5 w-3.5" /> : <CircleDashed className="h-3.5 w-3.5" />}{builderReady ? t("readyToSave") : t("incompleteSetup")}</div><Button variant="outline" onClick={() => setAiOpen(true)}><Sparkles className="mr-2 h-4 w-4" />{t("aiGenerate")}</Button><Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button><Button disabled={saving || !builderReady} onClick={save}><Save className="mr-2 h-4 w-4" />{saving ? t("saving") : t(editing ? "saveChanges" : "create")}</Button></div>
         </header>
 
         <div className="grid xl:grid-cols-[290px_minmax(430px,1fr)_350px]">
           <aside className="border-b border-border bg-[#fbfbfa] p-5 xl:border-b-0 xl:border-r">
             <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">1</span><div><h2 className="text-sm font-semibold">{t("workflowDetails")}</h2><p className="text-xs text-muted-foreground">{t("workflowDetailsHelp")}</p></div></div><div className="space-y-4"><div><Label htmlFor="workflow-key">{t("key")}</Label><Input id="workflow-key" className="mt-1.5 bg-background" disabled={!!editing} value={form.key} onChange={(event) => setForm({ ...form, key: event.target.value })} placeholder="storyboard_generation" /></div><div><Label htmlFor="workflow-name">{t("name")}</Label><Input id="workflow-name" className="mt-1.5 bg-background" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("namePlaceholder")} /></div><div><Label htmlFor="workflow-description">{t("workflowDescription")}</Label><Textarea id="workflow-description" className="mt-1.5 min-h-24 bg-background" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t("descriptionPlaceholder")} /></div></div></section>
             <div className="my-6 border-t border-border" />
-            <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-[11px] font-semibold">2</span><div><h2 className="text-sm font-semibold">{t("settingsTableTitle")}</h2><p className="text-xs text-muted-foreground">{t("executionPolicyHelp")}</p></div></div><div className="space-y-3"><div className="rounded-lg border border-border bg-background p-3"><div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-muted-foreground" /><Label htmlFor="workflow-duration" className="text-xs">{t("maxDuration")}</Label></div><Input id="workflow-duration" className="mt-2" type="number" min="1" max="12" step="0.5" value={form.settings.maxDurationHours} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxDurationHours: event.target.value } }))} /><p className="mt-1 text-[11px] text-muted-foreground">{t("maxDurationHelp")}</p></div><div className="grid grid-cols-2 gap-2"><div className="rounded-lg border border-border bg-background p-3"><Label htmlFor="workflow-parallelism" className="text-xs">{t("maxParallelism")}</Label><Input id="workflow-parallelism" className="mt-2" type="number" min="1" max="32" step="1" value={form.settings.maxParallelism} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxParallelism: event.target.value } }))} /></div><div className="rounded-lg border border-border bg-background p-3"><Label htmlFor="workflow-attempts" className="text-xs">{t("maxAttempts")}</Label><Input id="workflow-attempts" className="mt-2" type="number" min="1" max="10" step="1" value={form.settings.maxAttempts} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxAttempts: event.target.value } }))} /></div></div></div></section>
+            <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-[11px] font-semibold">2</span><div><h2 className="text-sm font-semibold">{t("settingsTableTitle")}</h2><p className="text-xs text-muted-foreground">{t("executionPolicyHelp")}</p></div></div><div className="space-y-3"><div className="rounded-lg border border-border bg-background p-3"><div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-muted-foreground" /><Label htmlFor="workflow-duration" className="text-xs">{t("maxDuration")}</Label></div><Input id="workflow-duration" className="mt-2" type="number" min="0.0834" max="12" step="0.0834" value={form.settings.maxDurationHours} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxDurationHours: event.target.value } }))} /><p className="mt-1 text-[11px] text-muted-foreground">{t("maxDurationHelp")}</p></div><div className="grid grid-cols-2 gap-2"><div className="rounded-lg border border-border bg-background p-3"><Label htmlFor="workflow-parallelism" className="text-xs">{t("maxParallelism")}</Label><Input id="workflow-parallelism" className="mt-2" type="number" min="1" max="32" step="1" value={form.settings.maxParallelism} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxParallelism: event.target.value } }))} /></div><div className="rounded-lg border border-border bg-background p-3"><Label htmlFor="workflow-attempts" className="text-xs">{t("maxAttempts")}</Label><Input id="workflow-attempts" className="mt-2" type="number" min="1" max="10" step="1" value={form.settings.maxAttempts} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxAttempts: event.target.value } }))} /></div></div></div></section>
           </aside>
 
           <main onDragOver={(event) => event.preventDefault()} onDrop={(event) => onDrop(event)} className="min-h-[720px] border-b border-border bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.045),_transparent_42%)] px-5 py-6 xl:border-b-0">
@@ -314,6 +342,7 @@ export default function WorkflowsPage() {
         </div>
       </div>
       {bindingDialog}
+	  {aiDialog}
     </AdminPage>
   }
 

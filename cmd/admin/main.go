@@ -97,6 +97,7 @@ func main() {
 	collector := service.NewStatsCollector(readRepo, repo, logger)
 
 	authSvc.SeedDefaultAdmin()
+	opsLLM := opsagent.LoadLLMConfig()
 
 	// Handlers
 	authH := handler.NewAuthHandler(authSvc, auditSvc, logger)
@@ -109,7 +110,7 @@ func main() {
 	contentH := handler.NewContentHandler(contentSvc, logger)
 	topicH := handler.NewTopicHandler(topicSvc, logger)
 	promptH := handler.NewPromptHandler(promptSvc, logger)
-	workflowH := handler.NewWorkflowHandler(workflowSvc, logger)
+	workflowH := handler.NewWorkflowHandler(workflowSvc, opsLLM, logger)
 	promptTemplateH := handler.NewPromptTemplateHandler(promptTemplateSvc)
 	characterH := handler.NewCharacterHandler(characterSvc, logger)
 	commentH := handler.NewCommentHandler(commentSvc, logger)
@@ -145,8 +146,9 @@ func main() {
 		Agent:     agentSvc,
 		User:      userSvc,
 		Content:   contentSvc,
+		Workflow:  workflowSvc,
+		LLM:       opsLLM,
 	})
-	opsLLM := opsagent.LoadLLMConfig()
 	opsSvc := service.NewOpsAssistantService(repo, logger)
 	opsH := handler.NewOpsAssistantHandler(opsReg, opsLLM, opsSvc, logger)
 

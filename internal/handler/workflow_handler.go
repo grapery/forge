@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/auth"
 	"github.com/grapestree/fgrapery/forge/internal/domain"
+	"github.com/grapestree/fgrapery/forge/internal/opsagent"
 	"github.com/grapestree/fgrapery/forge/internal/service"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -13,11 +14,32 @@ import (
 
 type WorkflowHandler struct {
 	service *service.WorkflowService
+	llm     opsagent.LLMConfig
 	logger  *zap.Logger
 }
 
-func NewWorkflowHandler(workflowService *service.WorkflowService, logger *zap.Logger) *WorkflowHandler {
-	return &WorkflowHandler{service: workflowService, logger: logger}
+func NewWorkflowHandler(workflowService *service.WorkflowService, llm opsagent.LLMConfig, logger *zap.Logger) *WorkflowHandler {
+	return &WorkflowHandler{service: workflowService, llm: llm, logger: logger}
+}
+
+type generateWorkflowRequest struct {
+	Prompt string `json:"prompt" binding:"required"`
+}
+
+// Generate turns operator intent into a canonical form payload. It intentionally
+// does not persist anything; Workflow Studio keeps the generated content editable.
+func (h *WorkflowHandler) Generate(c *gin.Context) {
+	var req generateWorkflowRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	generated, err := opsagent.GenerateWorkflowDraft(c.Request.Context(), h.llm, req.Prompt)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, generated)
 }
 
 func (h *WorkflowHandler) List(c *gin.Context) {
@@ -115,7 +137,7 @@ func (h *WorkflowHandler) Review(c *gin.Context) {
 		Error(c, CodeInvalidParams, err.Error())
 		return
 	}
-	if err := h.service.Review(c.Param("id"), admin.AdminID, &req); err != nil {
+	if err := h.service.Review(c.Param("id"), admin.AdminID, domain.AdminRole(admin.Role), &req); err != nil {
 		h.fail(c, err)
 		return
 	}

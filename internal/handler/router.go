@@ -167,6 +167,7 @@ func SetupRouter(
 		{
 			workflows.GET("", middleware.RequirePermission(domain.PermWorkflowView), workflowH.List)
 			workflows.GET("/bindings", middleware.RequirePermission(domain.PermWorkflowView), workflowH.ListBindings)
+			workflows.POST("/generate", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.Generate)
 			workflows.GET("/:id", middleware.RequirePermission(domain.PermWorkflowView), workflowH.Get)
 			workflows.POST("", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.Create)
 			workflows.PUT("/:id", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.Update)

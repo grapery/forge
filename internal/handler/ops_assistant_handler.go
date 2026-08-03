@@ -46,7 +46,7 @@ func (h *OpsAssistantHandler) callerFrom(c *gin.Context) opsagent.Caller {
 	if ac == nil {
 		return opsagent.Caller{}
 	}
-	return opsagent.Caller{Role: ac.Role, Permissions: ac.Permissions}
+	return opsagent.Caller{AdminID: ac.AdminID, Role: ac.Role, Permissions: ac.Permissions}
 }
 
 func (h *OpsAssistantHandler) adminID(c *gin.Context) string {
@@ -319,7 +319,7 @@ func (h *OpsAssistantHandler) Chat(c *gin.Context) {
 	}
 }
 
-// ToolCall allows MCP/HTTP to invoke a single read-only tool.
+// ToolCall allows MCP/HTTP to invoke one permission-gated ops tool.
 func (h *OpsAssistantHandler) ToolCall(c *gin.Context) {
 	name := c.Param("name")
 	body, _ := io.ReadAll(c.Request.Body)

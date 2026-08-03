@@ -185,6 +185,8 @@ export const workflowApi = {
     forgeClient.get<any, { draft: WorkflowDraft; approvals: Array<Record<string, unknown>> }>(`/api/admin/workflows/${id}`),
   create: (data: CreateWorkflowDraftRequest) =>
     forgeClient.post<any, WorkflowDraft>("/api/admin/workflows", data),
+  generate: (prompt: string) =>
+    forgeClient.post<any, CreateWorkflowDraftRequest>("/api/admin/workflows/generate", { prompt }),
   update: (id: string, data: Partial<CreateWorkflowDraftRequest> & { revision: number }) =>
     forgeClient.put<any, WorkflowDraft>(`/api/admin/workflows/${id}`, data),
   cloneNextVersion: (id: string) =>

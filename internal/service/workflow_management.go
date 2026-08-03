@@ -138,13 +138,13 @@ func (s *WorkflowService) SubmitForReview(id, actor string) error {
 	return s.repo.TransitionWorkflowDraft(id, draft.Status, domain.WorkflowDraftStatusReviewing, actor, "", "")
 }
 
-func (s *WorkflowService) Review(id, reviewer string, req *domain.ReviewWorkflowRequest) error {
+func (s *WorkflowService) Review(id, reviewer string, reviewerRole domain.AdminRole, req *domain.ReviewWorkflowRequest) error {
 	draft, err := s.repo.GetWorkflowDraft(id)
 	if err != nil {
 		return err
 	}
-	if draft.CreatedBy == reviewer {
-		return errors.New("workflow creator cannot approve their own draft")
+	if !canReviewWorkflow(draft.CreatedBy, reviewer, reviewerRole) {
+		return errors.New("workflow creator cannot review their own draft")
 	}
 	if req.Decision == "approved" {
 		return s.repo.TransitionWorkflowDraft(id, domain.WorkflowDraftStatusReviewing, domain.WorkflowDraftStatusApproved, reviewer, req.Decision, req.Comment)
@@ -153,6 +153,10 @@ func (s *WorkflowService) Review(id, reviewer string, req *domain.ReviewWorkflow
 		return s.repo.TransitionWorkflowDraft(id, domain.WorkflowDraftStatusReviewing, domain.WorkflowDraftStatusRejected, reviewer, req.Decision, req.Comment)
 	}
 	return errors.New("review decision must be approved or rejected")
+}
+
+func canReviewWorkflow(creatorID, reviewerID string, reviewerRole domain.AdminRole) bool {
+	return creatorID != reviewerID || reviewerRole == domain.RoleSuperAdmin
 }
 
 func (s *WorkflowService) Publish(ctx context.Context, id, actor string) (*domain.WorkflowRelease, error) {

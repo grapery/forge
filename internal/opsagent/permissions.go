@@ -10,6 +10,7 @@ import (
 
 // Caller is the admin invoking tools (chat or HTTP).
 type Caller struct {
+	AdminID     string
 	Role        string
 	Permissions []string
 }
@@ -80,6 +81,8 @@ func toolAccess(name string) []string {
 		return []string{domain.PermAuditLog}
 	case "get_search_trends":
 		return []string{domain.PermSearch}
+	case "create_workflow_draft":
+		return []string{domain.PermWorkflowEdit}
 	default:
 		return []string{"__deny__"}
 	}
@@ -134,7 +137,7 @@ func (r *Registry) CallFor(ctx context.Context, caller Caller, name, argsJSON st
 			Output: `{"error":"permission denied"}`,
 		}
 	}
-	res := r.Call(ctx, name, argsJSON)
+	res := r.callFor(ctx, caller, name, argsJSON)
 	if res.Error == "" && name == "get_dashboard_overview" && !caller.isFullAdmin() {
 		res.Output = redactOverview(res.Output, caller)
 	}

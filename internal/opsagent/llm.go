@@ -142,7 +142,8 @@ type chatResponse struct {
 const systemPrompt = `You are Forge Ops Assistant, a read-only analyst for platform operators.
 Use tools to fetch live metrics before answering. Be concise and factual.
 Prefer short bullet points. Call out risks (overdue moderation/feedback, high AI failure rates, revenue anomalies) clearly.
-Never invent numbers. If a tool fails, say so. Do not perform write actions.
+Never invent numbers. If a tool fails, say so. Do not perform write actions except creating a workflow draft when the operator explicitly asks you to create or save a workflow.
+For workflow creation, call create_workflow_draft with the operator's complete natural-language requirements. This tool creates a draft only. Never submit, approve, publish, or bind a workflow.
 When a user asks for a domain review, prefer the matching analysis skill playbook and its SuggestedTools.
 You can call list_analysis_skills or get_analysis_skill to load a playbook.`
 
@@ -358,6 +359,41 @@ func (c LLMConfig) chat(ctx context.Context, messages []chatMessage, tools []map
 		return nil, fmt.Errorf("llm error: %s", out.Error.Message)
 	}
 	return &out, nil
+}
+
+// CompleteJSON asks the configured model for one JSON object and decodes it.
+// Callers must still validate and normalize the decoded value before using it.
+func (c LLMConfig) CompleteJSON(ctx context.Context, system, user string, out any) error {
+	if !c.Enabled() {
+		return fmt.Errorf("ops assistant LLM is not configured (set FORGE_OPS_API_KEY)")
+	}
+	resp, err := c.chat(ctx, []chatMessage{
+		{Role: "system", Content: system},
+		{Role: "user", Content: user},
+	}, nil)
+	if err != nil {
+		return err
+	}
+	if len(resp.Choices) == 0 {
+		return fmt.Errorf("empty model response")
+	}
+	raw, err := extractJSONObject(resp.Choices[0].Message.Content)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal([]byte(raw), out); err != nil {
+		return fmt.Errorf("invalid model JSON: %w", err)
+	}
+	return nil
+}
+
+func extractJSONObject(content string) (string, error) {
+	start := strings.Index(content, "{")
+	end := strings.LastIndex(content, "}")
+	if start < 0 || end < start {
+		return "", fmt.Errorf("model did not return a JSON object")
+	}
+	return content[start : end+1], nil
 }
 
 func (c LLMConfig) chatCompletionsURL() string {

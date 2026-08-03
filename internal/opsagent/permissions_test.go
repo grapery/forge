@@ -35,6 +35,13 @@ func TestCallerToolAccess(t *testing.T) {
 	if op.CanUseTool("get_ai_task_summary") {
 		t.Fatal("operator without ai-tasks must not use ai task tool")
 	}
+	if op.CanUseTool("create_workflow_draft") {
+		t.Fatal("operator without workflow-edit must not create workflow drafts")
+	}
+	op.Permissions = append(op.Permissions, "workflow-edit")
+	if !op.CanUseTool("create_workflow_draft") {
+		t.Fatal("operator with workflow-edit should create workflow drafts")
+	}
 }
 
 func TestRedactOverview(t *testing.T) {

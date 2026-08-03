@@ -50,6 +50,28 @@ func TestWorkflowDraftCloneRequestCopiesExecutableConfigurationOnly(t *testing.T
 	}
 }
 
+func TestCanReviewWorkflowAllowsOnlySuperAdminSelfReview(t *testing.T) {
+	tests := []struct {
+		name     string
+		role     domain.AdminRole
+		creator  string
+		reviewer string
+		want     bool
+	}{
+		{name: "super admin can review own workflow", role: domain.RoleSuperAdmin, creator: "admin-1", reviewer: "admin-1", want: true},
+		{name: "admin cannot review own workflow", role: domain.RoleAdmin, creator: "admin-1", reviewer: "admin-1", want: false},
+		{name: "operator cannot review own workflow", role: domain.RoleOperator, creator: "admin-1", reviewer: "admin-1", want: false},
+		{name: "different reviewer remains allowed", role: domain.RoleAdmin, creator: "admin-1", reviewer: "admin-2", want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := canReviewWorkflow(tt.creator, tt.reviewer, tt.role); got != tt.want {
+				t.Fatalf("canReviewWorkflow() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestStableWorkflowBindingIDSupportsUpgradeAndRollback(t *testing.T) {
 	base := &domain.WorkflowBinding{Surface: "voyager.storyboard", Action: "generate", WorkflowKey: "storyboard_generation", ReleaseID: "wfr_v1", Priority: 100}
 	upgraded := *base

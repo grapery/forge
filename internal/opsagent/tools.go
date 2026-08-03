@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
 	"github.com/grapestree/fgrapery/forge/internal/service"
 )
 
-// ToolDef describes a read-only ops tool shared by chat + MCP.
+// ToolDef describes an ops tool shared by chat + MCP.
 type ToolDef struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
@@ -39,6 +40,8 @@ type Deps struct {
 	Agent     *service.AgentService
 	User      *service.UserService
 	Content   *service.ContentService
+	Workflow  *service.WorkflowService
+	LLM       LLMConfig
 }
 
 type Registry struct {
@@ -56,7 +59,8 @@ func (r *Registry) List() []ToolDef {
 	skillParams := json.RawMessage(`{"type":"object","properties":{"id":{"type":"string","description":"Skill id, e.g. growth, ai_health, moderation, revenue, growth_share, audit_security"}},"required":["id"],"additionalProperties":false}`)
 	contentParams := json.RawMessage(`{"type":"object","properties":{"contentType":{"type":"string","description":"Optional: story | storyboard | fragment. Empty returns story counts.","default":"story"}},"additionalProperties":false}`)
 	triageParams := json.RawMessage(`{"type":"object","properties":{"limit":{"type":"integer","description":"Max items (1-20)","default":10},"overdueOnly":{"type":"boolean","description":"For reports: only overdue pending items","default":false}},"additionalProperties":false}`)
-	return []ToolDef{
+	workflowParams := json.RawMessage(`{"type":"object","properties":{"request":{"type":"string","description":"The operator's complete natural-language requirements for the workflow, including purpose, content guidance, image needs, and execution constraints."}},"required":["request"],"additionalProperties":false}`)
+	tools := []ToolDef{
 		{Name: "list_analysis_skills", Description: "List available ops analysis skills (business process + how-to-analyze playbooks).", Parameters: emptyObj},
 		{Name: "get_analysis_skill", Description: "Get one analysis skill playbook by id for structured investigation.", Parameters: skillParams},
 		{Name: "get_dashboard_overview", Description: "Get platform overview stats including users, stories, orders, tokens, and daily trends.", Parameters: rangeParams},
@@ -76,6 +80,10 @@ func (r *Registry) List() []ToolDef {
 		{Name: "get_recent_audit", Description: "List recent admin audit log entries.", Parameters: limitParams},
 		{Name: "get_search_trends", Description: "Get top search query trends.", Parameters: limitParams},
 	}
+	if r.deps.Workflow != nil {
+		tools = append(tools, ToolDef{Name: "create_workflow_draft", Description: "Create a reviewable workflow draft from the operator's natural-language requirements. This never submits, approves, publishes, or binds the workflow.", Parameters: workflowParams})
+	}
+	return tools
 }
 
 func (r *Registry) OpenAITools() []map[string]any {
@@ -96,9 +104,12 @@ func (r *Registry) OpenAITools() []map[string]any {
 }
 
 func (r *Registry) Call(ctx context.Context, name, argsJSON string) ToolResult {
-	_ = ctx
+	return r.callFor(ctx, Caller{}, name, argsJSON)
+}
+
+func (r *Registry) callFor(ctx context.Context, caller Caller, name, argsJSON string) ToolResult {
 	res := ToolResult{Name: name, Input: argsJSON}
-	out, err := r.call(name, argsJSON)
+	out, err := r.call(ctx, caller, name, argsJSON)
 	if err != nil {
 		res.Error = err.Error()
 		res.Output = fmt.Sprintf(`{"error":%q}`, err.Error())
@@ -108,7 +119,7 @@ func (r *Registry) Call(ctx context.Context, name, argsJSON string) ToolResult {
 	return res
 }
 
-func (r *Registry) call(name, argsJSON string) (string, error) {
+func (r *Registry) call(ctx context.Context, caller Caller, name, argsJSON string) (string, error) {
 	args := map[string]any{}
 	if argsJSON != "" && argsJSON != "{}" {
 		if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
@@ -116,6 +127,27 @@ func (r *Registry) call(name, argsJSON string) (string, error) {
 		}
 	}
 	switch name {
+	case "create_workflow_draft":
+		if r.deps.Workflow == nil {
+			return "", fmt.Errorf("workflow service unavailable")
+		}
+		if strings.TrimSpace(caller.AdminID) == "" {
+			return "", fmt.Errorf("authenticated admin identity is required")
+		}
+		request, _ := args["request"].(string)
+		generated, err := GenerateWorkflowDraft(ctx, r.deps.LLM, request)
+		if err != nil {
+			return "", err
+		}
+		draft, err := r.deps.Workflow.CreateDraft(generated, caller.AdminID)
+		if err != nil {
+			return "", err
+		}
+		return marshal(map[string]any{
+			"id": draft.ID, "key": draft.Key, "version": draft.Version,
+			"name": draft.Name, "description": draft.Description, "status": draft.Status,
+			"message": "Workflow draft created. Review it in Workflow Studio before submitting.",
+		})
 	case "list_analysis_skills":
 		return marshal(ListAnalysisSkills())
 	case "get_analysis_skill":
