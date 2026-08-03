@@ -4,7 +4,7 @@ import {
   MessageSquare, MessageCircle, Hash, Sparkles, KeyRound, Ghost, Brain,
   CreditCard, Coins, Tags, Palette, BookOpen, Mail, Search,
   UserX, Smartphone, Bot, Terminal, Receipt, Flag, Bell,
-  Crown, UserCheck, ScrollText, BarChart3, Layers, Share2,
+  Crown, UserCheck, ScrollText, BarChart3, Layers, Share2, Workflow,
 } from "lucide-react"
 
 export type NavGroup = "" | "analytics" | "support" | "operations" | "settings"
@@ -45,6 +45,8 @@ export const navItems: NavItem[] = [
   { href: "/ai-generations", label: "aiGenerations", icon: Sparkles, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "ai-generations", description: "hubDescAiGenerations" },
   { href: "/agents", label: "agents", icon: Bot, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "agents", description: "hubDescAgents" },
   { href: "/prompts", label: "prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "prompts", description: "hubDescPrompts" },
+	{ href: "/prompt-templates", label: "promptTemplates", icon: FileText, roles: ["super_admin", "admin", "operator"], group: "operations", subgroup: "ai", permission: "prompts", description: "hubDescPromptTemplates" },
+  { href: "/workflows", label: "workflows", icon: Workflow, roles: ["super_admin", "admin", "operator", "viewer"], group: "operations", subgroup: "ai", permission: "workflow-view", description: "hubDescWorkflows" },
   { href: "/users", label: "users", icon: Users, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescUsers" },
   { href: "/account-deletions", label: "accountDeletions", icon: UserX, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescAccountDeletions" },
   { href: "/devices", label: "devices", icon: Smartphone, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescDevices" },

@@ -72,6 +72,9 @@ func main() {
 	contentSvc := service.NewContentService(readRepo, writeRepo)
 	topicSvc := service.NewTopicService(readRepo)
 	promptSvc := service.NewPromptService(readRepo)
+	workflowPublisher := service.NewGraperyWorkflowPublisher(cfg.WorkflowRuntime)
+	workflowSvc := service.NewWorkflowService(repo, workflowPublisher, logger)
+	promptTemplateSvc := service.NewPromptTemplateService(repo, workflowPublisher)
 	characterSvc := service.NewCharacterService(readRepo, writeRepo)
 	commentSvc := service.NewCommentService(readRepo, writeRepo, logger)
 	reportSvc := service.NewReportService(readRepo, writeRepo, contentSvc, commentSvc, characterSvc, logger)
@@ -106,6 +109,8 @@ func main() {
 	contentH := handler.NewContentHandler(contentSvc, logger)
 	topicH := handler.NewTopicHandler(topicSvc, logger)
 	promptH := handler.NewPromptHandler(promptSvc, logger)
+	workflowH := handler.NewWorkflowHandler(workflowSvc, logger)
+	promptTemplateH := handler.NewPromptTemplateHandler(promptTemplateSvc)
 	characterH := handler.NewCharacterHandler(characterSvc, logger)
 	commentH := handler.NewCommentHandler(commentSvc, logger)
 	deletionH := handler.NewDeletionHandler(deletionSvc, logger)
@@ -145,7 +150,7 @@ func main() {
 	opsSvc := service.NewOpsAssistantService(repo, logger)
 	opsH := handler.NewOpsAssistantHandler(opsReg, opsLLM, opsSvc, logger)
 
-	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, shareH, opsH, auditSvc, logger, cfg.AllowOrigins)
+	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, shareH, opsH, workflowH, promptTemplateH, auditSvc, logger, cfg.AllowOrigins)
 
 	// Daily stats collection (runs at 1:00 AM)
 	go startDailyCollector(collector, logger)

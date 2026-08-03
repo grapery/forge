@@ -104,3 +104,71 @@ type OpsAssistantToolCall struct {
 }
 
 func (OpsAssistantToolCall) TableName() string { return "ops_assistant_tool_calls" }
+
+type WorkflowDraft struct {
+	ID               string    `gorm:"column:id;primaryKey;size:80"`
+	WorkflowKey      string    `gorm:"column:workflow_key;size:120;not null;uniqueIndex:idx_forge_workflow_version,priority:1"`
+	Version          int       `gorm:"column:version;not null;uniqueIndex:idx_forge_workflow_version,priority:2"`
+	Revision         int       `gorm:"column:revision;not null;default:1"`
+	Name             string    `gorm:"column:name;size:200;not null"`
+	Description      string    `gorm:"column:description;type:text"`
+	Status           string    `gorm:"column:status;size:24;not null;index"`
+	ManifestJSON     string    `gorm:"column:manifest_json;type:longtext"`
+	DefinitionJSON   string    `gorm:"column:definition_json;type:longtext;not null"`
+	PromptBundleJSON string    `gorm:"column:prompt_bundle_json;type:longtext"`
+	PoliciesJSON     string    `gorm:"column:policies_json;type:text"`
+	CreatedBy        string    `gorm:"column:created_by;size:64;index"`
+	UpdatedBy        string    `gorm:"column:updated_by;size:64"`
+	ApprovedByJSON   string    `gorm:"column:approved_by_json;type:text"`
+	ReleaseID        string    `gorm:"column:release_id;size:80;index"`
+	ReleaseChecksum  string    `gorm:"column:release_checksum;size:64"`
+	CreatedAt        time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt        time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (WorkflowDraft) TableName() string { return "workflow_drafts" }
+
+type WorkflowApproval struct {
+	ID         string    `gorm:"column:id;primaryKey;size:80"`
+	DraftID    string    `gorm:"column:draft_id;size:80;not null;index"`
+	ReviewerID string    `gorm:"column:reviewer_id;size:64;not null;index"`
+	Decision   string    `gorm:"column:decision;size:24;not null;index"`
+	Comment    string    `gorm:"column:comment;type:text"`
+	CreatedAt  time.Time `gorm:"column:created_at;autoCreateTime"`
+}
+
+func (WorkflowApproval) TableName() string { return "workflow_approvals" }
+
+type PromptTemplateDraft struct {
+	ID                  string    `gorm:"column:id;primaryKey;size:100"`
+	PromptKey           string    `gorm:"column:prompt_key;size:140;not null;uniqueIndex:idx_forge_prompt_version,priority:1"`
+	Version             int       `gorm:"column:version;not null;uniqueIndex:idx_forge_prompt_version,priority:2"`
+	Revision            int       `gorm:"column:revision;not null;default:1"`
+	Type                string    `gorm:"column:type;size:24;not null"`
+	SystemTemplate      string    `gorm:"column:system_template;type:longtext"`
+	UserTemplate        string    `gorm:"column:user_template;type:longtext"`
+	VariablesSchemaJSON string    `gorm:"column:variables_schema_json;type:longtext"`
+	OutputSchemaJSON    string    `gorm:"column:output_schema_json;type:longtext"`
+	ModelConfigJSON     string    `gorm:"column:model_config_json;type:text"`
+	Status              string    `gorm:"column:status;size:24;not null;index"`
+	CreatedBy           string    `gorm:"column:created_by;size:64;index"`
+	UpdatedBy           string    `gorm:"column:updated_by;size:64"`
+	ApprovedByJSON      string    `gorm:"column:approved_by_json;type:text"`
+	ReleaseID           string    `gorm:"column:release_id;size:100;index"`
+	ReleaseChecksum     string    `gorm:"column:release_checksum;size:64"`
+	CreatedAt           time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt           time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (PromptTemplateDraft) TableName() string { return "prompt_template_drafts" }
+
+type PromptTemplateApproval struct {
+	ID         string    `gorm:"column:id;primaryKey;size:100"`
+	DraftID    string    `gorm:"column:draft_id;size:100;not null;index"`
+	ReviewerID string    `gorm:"column:reviewer_id;size:64;not null;index"`
+	Decision   string    `gorm:"column:decision;size:24;not null;index"`
+	Comment    string    `gorm:"column:comment;type:text"`
+	CreatedAt  time.Time `gorm:"column:created_at;autoCreateTime"`
+}
+
+func (PromptTemplateApproval) TableName() string { return "prompt_template_approvals" }

@@ -711,3 +711,105 @@ export interface ShareOverview {
   byKindOpens: ShareKindCount[]
   daily: ShareTrendPoint[]
 }
+
+export interface WorkflowNode {
+  id: string
+  type: string
+  activity?: string
+  dependsOn?: string[]
+  config?: Record<string, unknown>
+}
+
+export interface WorkflowDraft {
+  id: string
+  key: string
+  version: number
+  revision: number
+  name: string
+  description?: string
+  status: "draft" | "reviewing" | "approved" | "rejected" | "released"
+  manifest?: Record<string, unknown>
+  definition: {
+    inputSchema?: Record<string, unknown>
+    outputSchema?: Record<string, unknown>
+    nodes: WorkflowNode[]
+  }
+  promptBundle?: Record<string, string>
+  policies?: {
+    maxDurationSeconds?: number
+    maxParallelism?: number
+    maxAttempts?: number
+  }
+  createdBy: string
+  updatedBy: string
+  approvedBy?: string[]
+  releaseId?: string
+  releaseChecksum?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateWorkflowDraftRequest {
+  key: string
+  name: string
+  description?: string
+  manifest?: Record<string, unknown>
+  definition: WorkflowDraft["definition"]
+  promptBundle?: Record<string, string>
+  policies?: WorkflowDraft["policies"]
+}
+
+export interface WorkflowBinding {
+  id?: string
+  surface: string
+  action: string
+  tenantId?: string
+  workflowKey?: string
+  releaseId: string
+  priority?: number
+  enabled: boolean
+  conditions?: Record<string, unknown>
+}
+
+export interface WorkflowRelease {
+  id: string
+  key: string
+  version: number
+  checksum: string
+}
+
+export interface WorkflowCatalogEntry {
+  binding: WorkflowBinding
+  release: WorkflowRelease
+}
+
+export interface PromptTemplateDraft {
+  id: string
+  key: string
+  version: number
+  revision: number
+  type: "text" | "chat" | "image"
+  systemTemplate?: string
+  userTemplate?: string
+  variablesSchema?: Record<string, unknown>
+  outputSchema?: Record<string, unknown>
+  modelConfig?: Record<string, unknown>
+  status: "draft" | "reviewing" | "approved" | "rejected" | "released"
+  createdBy: string
+  updatedBy: string
+  approvedBy?: string[]
+  releaseId?: string
+  releaseChecksum?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PromptTemplateDraftRequest {
+  key: string
+  type: PromptTemplateDraft["type"]
+  systemTemplate?: string
+  userTemplate?: string
+  variablesSchema?: Record<string, unknown>
+  outputSchema?: Record<string, unknown>
+  modelConfig?: Record<string, unknown>
+}

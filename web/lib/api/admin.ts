@@ -19,6 +19,7 @@ import type {
   UserDeviceItem, DevicePlatformCount, NotificationItem,
   SearchHistoryItem, SearchTrend,
   ShareEventItem, ShareOverview,
+  WorkflowDraft, CreateWorkflowDraftRequest, WorkflowBinding, WorkflowRelease, WorkflowCatalogEntry, PromptTemplateDraft, PromptTemplateDraftRequest,
 } from "../types"
 
 export const authApi = {
@@ -160,6 +161,41 @@ export const promptApi = {
     forgeClient.get<any, PromptAuditRecord>(`/api/admin/prompts/audit/${id}`),
   summary: () =>
     forgeClient.get<any, PromptAuditSummary>("/api/admin/prompts/audit/summary"),
+}
+
+export const promptTemplateApi = {
+  list: (params: { page?: number; pageSize?: number; status?: string }) =>
+    forgeClient.get<any, PaginatedData<PromptTemplateDraft>>("/api/admin/prompt-templates", { params }),
+  create: (data: PromptTemplateDraftRequest) =>
+    forgeClient.post<any, PromptTemplateDraft>("/api/admin/prompt-templates", data),
+  update: (id: string, data: Omit<PromptTemplateDraftRequest, "key"> & { revision: number }) =>
+    forgeClient.put<any, PromptTemplateDraft>(`/api/admin/prompt-templates/${id}`, data),
+  cloneNextVersion: (id: string) =>
+    forgeClient.post<any, PromptTemplateDraft>(`/api/admin/prompt-templates/${id}/clone`),
+  submit: (id: string) => forgeClient.post(`/api/admin/prompt-templates/${id}/submit`),
+  review: (id: string, decision: "approved" | "rejected", comment?: string) =>
+    forgeClient.post(`/api/admin/prompt-templates/${id}/review`, { decision, comment }),
+  publish: (id: string) => forgeClient.post(`/api/admin/prompt-templates/${id}/publish`),
+}
+
+export const workflowApi = {
+  list: (params: { page?: number; pageSize?: number; status?: string }) =>
+    forgeClient.get<any, PaginatedData<WorkflowDraft>>("/api/admin/workflows", { params }),
+  get: (id: string) =>
+    forgeClient.get<any, { draft: WorkflowDraft; approvals: Array<Record<string, unknown>> }>(`/api/admin/workflows/${id}`),
+  create: (data: CreateWorkflowDraftRequest) =>
+    forgeClient.post<any, WorkflowDraft>("/api/admin/workflows", data),
+  update: (id: string, data: Partial<CreateWorkflowDraftRequest> & { revision: number }) =>
+    forgeClient.put<any, WorkflowDraft>(`/api/admin/workflows/${id}`, data),
+  cloneNextVersion: (id: string) =>
+    forgeClient.post<any, WorkflowDraft>(`/api/admin/workflows/${id}/clone`),
+  submit: (id: string) => forgeClient.post(`/api/admin/workflows/${id}/submit`),
+  review: (id: string, decision: "approved" | "rejected", comment?: string) =>
+    forgeClient.post(`/api/admin/workflows/${id}/review`, { decision, comment }),
+  publish: (id: string) => forgeClient.post<any, WorkflowRelease>(`/api/admin/workflows/${id}/publish`),
+  bind: (data: WorkflowBinding) => forgeClient.post<any, WorkflowBinding>("/api/admin/workflows/bindings", data),
+  listBindings: (params: { surface: string; action: string; tenantId?: string }) =>
+    forgeClient.get<any, { items: WorkflowCatalogEntry[] }>("/api/admin/workflows/bindings", { params }),
 }
 
 export const characterApi = {

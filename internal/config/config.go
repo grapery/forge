@@ -10,16 +10,17 @@ import (
 )
 
 type Config struct {
-	Env          string
-	HTTPPort     string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-	IdleTimeout  time.Duration
-	LogLevel     string
-	AllowOrigins []string
-	Database     DatabaseConfig
-	ForgeDB      DatabaseConfig
-	JWT          JWTConfig
+	Env             string
+	HTTPPort        string
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
+	LogLevel        string
+	AllowOrigins    []string
+	Database        DatabaseConfig
+	ForgeDB         DatabaseConfig
+	JWT             JWTConfig
+	WorkflowRuntime WorkflowRuntimeConfig
 }
 
 type DatabaseConfig struct {
@@ -42,6 +43,11 @@ type JWTConfig struct {
 	RefreshTokenExp time.Duration
 }
 
+type WorkflowRuntimeConfig struct {
+	BaseURL        string
+	InternalAPIKey string
+}
+
 func Load() *Config {
 	_ = godotenv.Load()
 
@@ -49,8 +55,8 @@ func Load() *Config {
 		Env:          getEnv("FORGE_ENV", "development"),
 		HTTPPort:     getEnv("FORGE_HTTP_PORT", "9010"),
 		ReadTimeout:  30 * time.Second,
-		WriteTimeout:  mustParseDuration(getEnv("FORGE_HTTP_WRITE_TIMEOUT", "180s")),
-		IdleTimeout:   60 * time.Second,
+		WriteTimeout: mustParseDuration(getEnv("FORGE_HTTP_WRITE_TIMEOUT", "180s")),
+		IdleTimeout:  60 * time.Second,
 		LogLevel:     getEnv("FORGE_LOG_LEVEL", "info"),
 		AllowOrigins: parseOrigins(getEnv("FORGE_ALLOW_ORIGINS", "http://localhost:3000")),
 		Database: DatabaseConfig{
@@ -73,6 +79,10 @@ func Load() *Config {
 			Secret:          getEnv("FORGE_JWT_SECRET", "forge-admin-secret-change-me"),
 			AccessTokenExp:  mustParseDuration(getEnv("FORGE_JWT_ACCESS_EXPIRY", "24h")),
 			RefreshTokenExp: mustParseDuration(getEnv("FORGE_JWT_REFRESH_EXPIRY", "168h")),
+		},
+		WorkflowRuntime: WorkflowRuntimeConfig{
+			BaseURL:        strings.TrimRight(getEnv("GRAPERY_BASE_URL", "http://localhost:9000"), "/"),
+			InternalAPIKey: getEnv("GRAPERY_INTERNAL_API_KEY", ""),
 		},
 	}
 

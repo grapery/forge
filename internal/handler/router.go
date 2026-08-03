@@ -41,6 +41,8 @@ func SetupRouter(
 	searchH *SearchAnalyticsHandler,
 	shareH *ShareAnalyticsHandler,
 	opsH *OpsAssistantHandler,
+	workflowH *WorkflowHandler,
+	promptTemplateH *PromptTemplateHandler,
 	auditSvc *service.AuditLogService,
 	logger *zap.Logger,
 	allowOrigins []string,
@@ -132,7 +134,9 @@ func SetupRouter(
 
 		auditLogs := protected.Group("/operations")
 		auditLogs.Use(middleware.RequirePermission(domain.PermAuditLog))
-		{ auditLogs.GET("/log", auditLogH.List) }
+		{
+			auditLogs.GET("/log", auditLogH.List)
+		}
 
 		content := protected.Group("/content")
 		content.Use(middleware.RequirePermission(domain.PermContent))
@@ -157,6 +161,32 @@ func SetupRouter(
 			prompts.GET("/audit", promptH.List)
 			prompts.GET("/audit/summary", promptH.Summary)
 			prompts.GET("/audit/:id", promptH.Get)
+		}
+
+		workflows := protected.Group("/workflows")
+		{
+			workflows.GET("", middleware.RequirePermission(domain.PermWorkflowView), workflowH.List)
+			workflows.GET("/bindings", middleware.RequirePermission(domain.PermWorkflowView), workflowH.ListBindings)
+			workflows.GET("/:id", middleware.RequirePermission(domain.PermWorkflowView), workflowH.Get)
+			workflows.POST("", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.Create)
+			workflows.PUT("/:id", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.Update)
+			workflows.POST("/:id/clone", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.CloneNextVersion)
+			workflows.POST("/:id/submit", middleware.RequirePermission(domain.PermWorkflowEdit), workflowH.Submit)
+			workflows.POST("/:id/review", middleware.RequirePermission(domain.PermWorkflowReview), workflowH.Review)
+			workflows.POST("/:id/publish", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.Publish)
+			workflows.POST("/bindings", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.SaveBinding)
+		}
+
+		promptTemplates := protected.Group("/prompt-templates")
+		{
+			promptTemplates.GET("", middleware.RequirePermission(domain.PermPrompts), promptTemplateH.List)
+			promptTemplates.GET("/:id", middleware.RequirePermission(domain.PermPrompts), promptTemplateH.Get)
+			promptTemplates.POST("", middleware.RequirePermission(domain.PermPromptEdit), promptTemplateH.Create)
+			promptTemplates.PUT("/:id", middleware.RequirePermission(domain.PermPromptEdit), promptTemplateH.Update)
+			promptTemplates.POST("/:id/clone", middleware.RequirePermission(domain.PermPromptEdit), promptTemplateH.CloneNextVersion)
+			promptTemplates.POST("/:id/submit", middleware.RequirePermission(domain.PermPromptEdit), promptTemplateH.Submit)
+			promptTemplates.POST("/:id/review", middleware.RequirePermission(domain.PermPromptReview), promptTemplateH.Review)
+			promptTemplates.POST("/:id/publish", middleware.RequirePermission(domain.PermPromptPublish), promptTemplateH.Publish)
 		}
 
 		characters := protected.Group("/characters")
@@ -284,7 +314,9 @@ func SetupRouter(
 
 		referrals := protected.Group("/referrals")
 		referrals.Use(middleware.RequirePermission(domain.PermInvitationCodes))
-		{ referrals.GET("", invitationH.ListReferrals) }
+		{
+			referrals.GET("", invitationH.ListReferrals)
+		}
 
 		devices := protected.Group("/devices")
 		devices.Use(middleware.RequirePermission(domain.PermUsers))
@@ -295,7 +327,10 @@ func SetupRouter(
 
 		notifications := protected.Group("/notifications")
 		notifications.Use(middleware.RequirePermission(domain.PermNotifications))
-		{ notifications.GET("", notificationH.List); notifications.POST("/broadcast", notificationH.Broadcast) }
+		{
+			notifications.GET("", notificationH.List)
+			notifications.POST("/broadcast", notificationH.Broadcast)
+		}
 
 		search := protected.Group("/search")
 		search.Use(middleware.RequirePermission(domain.PermSearch))

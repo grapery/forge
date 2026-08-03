@@ -57,6 +57,9 @@ const (
 	PermAIGenerations   = "ai-generations"
 	PermAgents          = "agents"
 	PermPrompts         = "prompts"
+	PermPromptEdit      = "prompt-edit"
+	PermPromptReview    = "prompt-review"
+	PermPromptPublish   = "prompt-publish"
 	PermStyles          = "styles"
 	PermUsers           = "users"
 	PermMemberships     = "memberships"
@@ -69,14 +72,19 @@ const (
 	PermNotifications   = "notifications"
 	PermSearch          = "search"
 	PermAuditLog        = "audit-log"
+	PermWorkflowView    = "workflow-view"
+	PermWorkflowEdit    = "workflow-edit"
+	PermWorkflowReview  = "workflow-review"
+	PermWorkflowPublish = "workflow-publish"
 )
 
 var AllPermissions = []string{
 	PermContent, PermCharacters, PermComments, PermTags, PermGenres,
-	PermAITasks, PermAIGenerations, PermAgents, PermPrompts, PermStyles,
+	PermAITasks, PermAIGenerations, PermAgents, PermPrompts, PermPromptEdit, PermPromptReview, PermPromptPublish, PermStyles,
 	PermUsers, PermMemberships, PermOrders, PermTokens, PermInvitationCodes,
 	PermFeedback, PermReports, PermTopics, PermNotifications, PermSearch,
 	PermAuditLog,
+	PermWorkflowView, PermWorkflowEdit, PermWorkflowReview, PermWorkflowPublish,
 }
 
 func IsValidPermission(p string) bool {

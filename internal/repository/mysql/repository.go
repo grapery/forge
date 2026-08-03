@@ -25,12 +25,16 @@ func (r *Repository) AutoMigrate() error {
 		&OpsAssistantSession{},
 		&OpsAssistantMessage{},
 		&OpsAssistantToolCall{},
+		&WorkflowDraft{},
+		&WorkflowApproval{},
+		&PromptTemplateDraft{},
+		&PromptTemplateApproval{},
 	)
 }
 
 func (r *Repository) UpsertDailyStat(stat *DailyStat) error {
 	return r.db.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "date"}},
+		Columns: []clause.Column{{Name: "date"}},
 		DoUpdates: clause.AssignmentColumns([]string{
 			"total_users", "new_users", "total_stories", "new_stories",
 			"total_characters", "new_characters", "total_fragments", "new_fragments",
