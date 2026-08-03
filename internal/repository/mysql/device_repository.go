@@ -2,9 +2,28 @@ package mysql
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/grapestree/fgrapery/forge/internal/domain"
 )
+
+type notificationListRow struct {
+	ID        string    `gorm:"column:id"`
+	UserID    string    `gorm:"column:user_id"`
+	Type      string    `gorm:"column:type"`
+	Title     string    `gorm:"column:title"`
+	Content   string    `gorm:"column:content"`
+	Link      string    `gorm:"column:link"`
+	Read      bool      `gorm:"column:read"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+}
+
+func notificationItemFromRow(row notificationListRow) *domain.NotificationItem {
+	return &domain.NotificationItem{
+		ID: row.ID, UserID: row.UserID, Type: row.Type, Title: row.Title,
+		Content: row.Content, Link: row.Link, Read: row.Read, CreatedAt: row.CreatedAt.Unix(),
+	}
+}
 
 func (rr *ReadRepository) ListDevices(query *domain.DeviceListQuery) ([]*domain.UserDeviceItem, int64, error) {
 	var items []*domain.UserDeviceItem
@@ -41,9 +60,9 @@ func (rr *ReadRepository) ListDevices(query *domain.DeviceListQuery) ([]*domain.
 
 	offset := (query.Page - 1) * query.PageSize
 	var rows []row
-	if err := q.Select("id, user_id, COALESCE(device_token, '') as device_token, "+
-		"COALESCE(platform, '') as platform, COALESCE(push_provider, '') as push_provider, "+
-		"COALESCE(device_model, '') as device_model, COALESCE(os_version, '') as os_version, "+
+	if err := q.Select("id, user_id, COALESCE(device_token, '') as device_token, " +
+		"COALESCE(platform, '') as platform, COALESCE(push_provider, '') as push_provider, " +
+		"COALESCE(device_model, '') as device_model, COALESCE(os_version, '') as os_version, " +
 		"COALESCE(app_version, '') as app_version, is_active, COALESCE(last_active_at, 0) as last_active_at, created_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
@@ -99,7 +118,6 @@ func (rr *ReadRepository) CountDevicesByPlatform() (*domain.DevicePlatformCount,
 }
 
 func (rr *ReadRepository) ListNotifications(query *domain.NotificationListQuery) ([]*domain.NotificationItem, int64, error) {
-	var items []*domain.NotificationItem
 	var total int64
 
 	q := rr.db.Table("notifications")
@@ -115,12 +133,17 @@ func (rr *ReadRepository) ListNotifications(query *domain.NotificationListQuery)
 	}
 
 	offset := (query.Page - 1) * query.PageSize
-	if err := q.Select("id, user_id, COALESCE(type, '') as type, COALESCE(title, '') as title, "+
+	var rows []notificationListRow
+	if err := q.Select("id, user_id, COALESCE(type, '') as type, COALESCE(title, '') as title, " +
 		"COALESCE(content, '') as content, COALESCE(link, '') as link, COALESCE(`read`, 0) as `read`, created_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
-		Find(&items).Error; err != nil {
+		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list notifications: %w", err)
 	}
 
+	items := make([]*domain.NotificationItem, len(rows))
+	for i, row := range rows {
+		items[i] = notificationItemFromRow(row)
+	}
 	return items, total, nil
 }
