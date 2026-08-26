@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
-import { ArrowLeft, Eye, Trash2 } from "lucide-react"
+import { ArrowLeft, Eye, Trash2, RotateCcw, Upload } from "lucide-react"
 
 import { useRouter } from "next/navigation"
 
@@ -46,7 +46,7 @@ export default function ContentDetailPage() {
     if (!id || !action) return
     try {
       await contentApi.action(contentType, id, { action })
-      toast.success(action === "unpublish" ? t("toastUnpublished") : t("toastDeleted"))
+      toast.success(t(action === "unpublish" ? "toastUnpublished" : action === "publish" ? "toastPublished" : action === "restore" ? "toastRestored" : "toastDeleted"))
       setAction(null)
       router.back()
     } catch (err: any) {
@@ -73,6 +73,8 @@ export default function ContentDetailPage() {
 
   const authorId = detail.author_id || detail.creator_id || detail.user_id
   const statusField = detail.status || detail.workflow_status || detail.visibility || ""
+  const isRemoved = Boolean(detail.deleted_at && detail.deleted_at !== "0")
+  const isPublished = statusField === "published" || statusField === "public"
 
   const displayFields = [
     { label: t("fieldId"), value: detail.id },
@@ -144,20 +146,24 @@ export default function ContentDetailPage() {
       )}
 
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => setAction("unpublish")}>
-          <Eye className="mr-2 h-4 w-4" />{t("buttonUnpublish")}
-        </Button>
-        <Button variant="destructive" onClick={() => setAction("force_delete")}>
-          <Trash2 className="mr-2 h-4 w-4" />{t("buttonDelete")}
-        </Button>
+        {isRemoved ? (
+          <Button variant="outline" onClick={() => setAction("restore")}><RotateCcw className="mr-2 h-4 w-4" />{t("buttonRestore")}</Button>
+        ) : <>
+          {isPublished ? (
+            <Button variant="outline" onClick={() => setAction("unpublish")}><Eye className="mr-2 h-4 w-4" />{t("buttonUnpublish")}</Button>
+          ) : (
+            <Button variant="outline" onClick={() => setAction("publish")}><Upload className="mr-2 h-4 w-4" />{t("buttonPublish")}</Button>
+          )}
+          <Button variant="destructive" onClick={() => setAction("force_delete")}><Trash2 className="mr-2 h-4 w-4" />{t("buttonDelete")}</Button>
+        </>}
       </div>
 
       <ConfirmDialog
         open={!!action}
         onOpenChange={(o) => { if (!o) setAction(null) }}
-        title={action === "unpublish" ? t("dialogUnpublishTitle") : t("dialogDeleteTitle")}
-        description={action === "unpublish" ? t("dialogUnpublishDescription", { type: typeLabel.toLowerCase() }) : t("dialogDeleteDescription", { type: typeLabel.toLowerCase() })}
-        confirmLabel={action === "unpublish" ? t("dialogConfirmUnpublish") : t("buttonDelete")}
+        title={action === "unpublish" ? t("dialogUnpublishTitle") : action === "publish" ? t("dialogPublishTitle") : action === "restore" ? t("dialogRestoreTitle") : t("dialogDeleteTitle")}
+        description={action === "unpublish" ? t("dialogUnpublishDescription", { type: typeLabel.toLowerCase() }) : action === "publish" ? t("dialogPublishDescription", { type: typeLabel.toLowerCase() }) : action === "restore" ? t("dialogRestoreDescription", { type: typeLabel.toLowerCase() }) : t("dialogDeleteDescription", { type: typeLabel.toLowerCase() })}
+        confirmLabel={action === "unpublish" ? t("dialogConfirmUnpublish") : action === "publish" ? t("buttonPublish") : action === "restore" ? t("buttonRestore") : t("buttonDelete")}
         variant={action === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
       />

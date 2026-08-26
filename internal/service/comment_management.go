@@ -37,3 +37,7 @@ func (s *CommentService) StatusCounts() (*domain.CommentStatusCount, error) {
 func (s *CommentService) Delete(id string) error {
 	return s.writeRepo.DeleteComment(id)
 }
+
+func (s *CommentService) Restore(id string) error {
+	return s.writeRepo.RestoreComment(id)
+}

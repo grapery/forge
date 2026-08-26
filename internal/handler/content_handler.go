@@ -30,6 +30,9 @@ func (h *ContentHandler) List(c *gin.Context) {
 		Search:      c.Query("search"),
 		Status:      c.Query("status"),
 		AuthorID:    c.Query("authorId"),
+		Lineage:     c.Query("lineage"),
+		Lifecycle:   c.Query("lifecycle"),
+		ReportState: c.Query("reportState"),
 	}
 
 	items, total, err := h.contentSvc.ListContent(query)

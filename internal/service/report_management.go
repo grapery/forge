@@ -185,6 +185,16 @@ func (s *ReportService) ResolveContentReport(id string, req *domain.ResolveConte
 	if err != nil {
 		return nil, err
 	}
+	// Validate the complete requested action set before executing any mutation.
+	// Without this guard, a valid action followed by an invalid one could take
+	// content down and then return an error without resolving the report.
+	for _, action := range req.Actions {
+		switch strings.ToLower(strings.TrimSpace(action)) {
+		case "takedown", "suspend_creator":
+		default:
+			return nil, fmt.Errorf("unsupported action: %s", action)
+		}
+	}
 
 	for _, action := range req.Actions {
 		switch strings.ToLower(strings.TrimSpace(action)) {
@@ -199,8 +209,6 @@ func (s *ReportService) ResolveContentReport(id string, req *domain.ResolveConte
 			if err := s.writeRepo.SuspendUser(report.CreatorID); err != nil {
 				return nil, fmt.Errorf("suspend creator failed: %w", err)
 			}
-		default:
-			return nil, fmt.Errorf("unsupported action: %s", action)
 		}
 	}
 

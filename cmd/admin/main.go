@@ -94,6 +94,7 @@ func main() {
 	notificationSvc := service.NewNotificationService(readRepo, writeRepo)
 	searchSvc := service.NewSearchAnalyticsService(readRepo)
 	shareSvc := service.NewShareAnalyticsService(readRepo)
+	safetyReviewSvc := service.NewSafetyReviewService(readRepo)
 	collector := service.NewStatsCollector(readRepo, repo, logger)
 
 	authSvc.SeedDefaultAdmin()
@@ -130,6 +131,7 @@ func main() {
 	notificationH := handler.NewNotificationHandler(notificationSvc, logger)
 	searchH := handler.NewSearchAnalyticsHandler(searchSvc, logger)
 	shareH := handler.NewShareAnalyticsHandler(shareSvc, logger)
+	safetyReviewH := handler.NewSafetyReviewHandler(safetyReviewSvc, logger)
 
 	opsReg := opsagent.NewRegistry(opsagent.Deps{
 		Dashboard: dashSvc,
@@ -152,7 +154,7 @@ func main() {
 	opsSvc := service.NewOpsAssistantService(repo, logger)
 	opsH := handler.NewOpsAssistantHandler(opsReg, opsLLM, opsSvc, logger)
 
-	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, shareH, opsH, workflowH, promptTemplateH, auditSvc, logger, cfg.AllowOrigins)
+	router := handler.SetupRouter(authH, dashH, adminUserH, auditLogH, feedbackH, reportH, userH, contentH, topicH, promptH, characterH, commentH, deletionH, membershipH, planH, orderH, tokenH, aiTaskH, aiGenH, agentH, tagH, styleH, genreH, invitationH, deviceH, notificationH, searchH, shareH, opsH, workflowH, promptTemplateH, safetyReviewH, auditSvc, logger, cfg.AllowOrigins)
 
 	// Daily stats collection (runs at 1:00 AM)
 	go startDailyCollector(collector, logger)

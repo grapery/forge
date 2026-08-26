@@ -39,7 +39,7 @@ func RequirePermission(permission string) gin.HandlerFunc {
 			return
 		}
 		for _, p := range ctx.Permissions {
-			if p == permission {
+			if domain.PermissionGrants(p, permission) {
 				c.Next()
 				return
 			}

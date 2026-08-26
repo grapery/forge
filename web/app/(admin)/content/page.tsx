@@ -26,12 +26,13 @@ import { Input } from "@/components/ui/input"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
-import { Eye, Trash2, FileText, Sparkles, ArrowRight } from "lucide-react"
+import { Eye, Trash2, FileText, Sparkles, ArrowRight, RotateCcw, Upload, Flag } from "lucide-react"
 
 import { useRouter } from "next/navigation"
 
 import { toast } from "sonner"
 import { AdminPage } from "@/components/layout/admin-page"
+import { Textarea } from "@/components/ui/textarea"
 
 
 const publishedStatuses: Record<string, string> = {
@@ -76,6 +77,9 @@ export default function ContentPage() {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState("")
   const [authorId, setAuthorId] = useState("")
+  const [lifecycle, setLifecycle] = useState<"active" | "removed" | "all">("active")
+  const [reportState, setReportState] = useState<"" | "reported" | "pending_reports" | "unreported">("")
+  const [reason, setReason] = useState("")
   const pageSize = 20
 
   const [actionItem, setActionItem] = useState<ContentItem | null>(null)
@@ -91,6 +95,8 @@ export default function ContentPage() {
         search: search || undefined,
         status: status || undefined,
         authorId: authorId || undefined,
+        lifecycle,
+        reportState: reportState || undefined,
       })
       .then((data) => {
         setItems(data.items || [])
@@ -98,7 +104,7 @@ export default function ContentPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page, tab, search, status, authorId])
+  }, [page, tab, search, status, authorId, lifecycle, reportState])
 
   useEffect(() => {
     fetchData()
@@ -111,16 +117,19 @@ export default function ContentPage() {
   const handleTabChange = (v: string) => {
     setTab(v)
     setStatus("")
+    setLifecycle("active")
+    setReportState("")
     setPage(1)
   }
 
   const handleAction = async () => {
     if (!actionItem || !actionType) return
     try {
-      await contentApi.action(actionItem.contentType || tab, actionItem.id, { action: actionType })
-      toast.success(actionType === "unpublish" ? t("toastUnpublished") : t("toastDeleted"))
+      await contentApi.action(actionItem.contentType || tab, actionItem.id, { action: actionType, reason: reason.trim() || undefined })
+      toast.success(t(actionType === "unpublish" ? "toastUnpublished" : actionType === "publish" ? "toastPublished" : actionType === "restore" ? "toastRestored" : "toastDeleted"))
       setActionItem(null)
       setActionType(null)
+      setReason("")
       fetchData()
     } catch (err: any) {
       toast.error(err.message || "Action failed")
@@ -130,6 +139,13 @@ export default function ContentPage() {
   const formatTime = (ts: number) => new Date(ts * 1000).toLocaleDateString()
 
   const isPublished = (item: ContentItem) => item.status === publishedStatuses[tab] || item.status === "published" || item.status === "public"
+
+  const actionLabel = (action: string | null) => {
+    if (action === "unpublish") return t("buttonUnpublish")
+    if (action === "publish") return t("buttonPublish")
+    if (action === "restore") return t("buttonRestore")
+    return t("buttonDelete")
+  }
 
   const columns = [
     {
@@ -148,6 +164,18 @@ export default function ContentPage() {
       render: (item: ContentItem) => <Badge variant={statusBadgeMap[item.status] || "secondary"}>{item.status}</Badge>,
     },
     {
+      key: "reports",
+      header: t("columnReports"),
+      render: (item: ContentItem) => item.reportCount ? (
+        <Button variant="ghost" size="sm" className={item.pendingReportCount ? "text-destructive" : "text-muted-foreground"} onClick={(e) => {
+          e.stopPropagation()
+          router.push(`/reports?tab=content&contentType=${item.contentType}&keyword=${encodeURIComponent(item.id)}${item.pendingReportCount ? "&status=pending" : ""}`)
+        }}>
+          <Flag className="mr-1 h-3 w-3" />{item.pendingReportCount ? t("pendingReports", { count: item.pendingReportCount }) : t("reportCount", { count: item.reportCount })}
+        </Button>
+      ) : <span className="text-xs text-muted-foreground">—</span>,
+    },
+    {
       key: "stats",
       header: t("columnEngagement"),
       render: (item: ContentItem) => <span className="text-xs text-muted-foreground">{t("likesComments", { likes: item.likes, comments: item.comments })}</span>,
@@ -162,14 +190,22 @@ export default function ContentPage() {
       header: "",
       render: (item: ContentItem) => (
         <div className="flex gap-1">
-          {isPublished(item) && (
+          {item.isRemoved ? (
+            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("restore") }}>
+              <RotateCcw className="mr-1 h-3 w-3" />{t("buttonRestore")}
+            </Button>
+          ) : isPublished(item) ? (
             <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("unpublish") }}>
               <Eye className="mr-1 h-3 w-3" />{t("buttonUnpublish")}
             </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("publish") }}>
+              <Upload className="mr-1 h-3 w-3" />{t("buttonPublish")}
+            </Button>
           )}
-          <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("force_delete") }}>
-            <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
-          </Button>
+          {!item.isRemoved && <Button variant="ghost" size="sm" className="text-destructive" onClick={(e) => { e.stopPropagation(); setActionItem(item); setActionType("force_delete") }}>
+              <Trash2 className="mr-1 h-3 w-3" />{t("buttonDelete")}
+            </Button>}
         </div>
       ),
     },
@@ -184,6 +220,8 @@ export default function ContentPage() {
           <span>{t("filterTotal")}: <strong>{counts.total}</strong></span>
           <span>{t("filterPublished")}: <strong>{counts.published}</strong></span>
           <span>{t("filterDraft")}: <strong>{counts.draft}</strong></span>
+          <span>{t("statRemoved")}: <strong>{counts.removed || 0}</strong></span>
+          <span className={counts.pendingReports ? "text-destructive" : ""}>{t("statPendingReports")}: <strong>{counts.pendingReports || 0}</strong></span>
         </div>
       )}
 
@@ -201,6 +239,25 @@ export default function ContentPage() {
             {(statusOptionsByTab[tab] || []).map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={lifecycle} onValueChange={(v: "active" | "removed" | "all") => { setLifecycle(v); setPage(1) }}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">{t("filterActive")}</SelectItem>
+            <SelectItem value="removed">{t("filterRemoved")}</SelectItem>
+            <SelectItem value="all">{t("filterAllLifecycle")}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={reportState || "all"} onValueChange={(v) => { setReportState(v === "all" ? "" : v as typeof reportState); setPage(1) }}>
+          <SelectTrigger className="w-36"><SelectValue placeholder={t("filterAllReports")} /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filterAllReports")}</SelectItem>
+            <SelectItem value="pending_reports">{t("filterPendingReports")}</SelectItem>
+            <SelectItem value="reported">{t("filterReported")}</SelectItem>
+            <SelectItem value="unreported">{t("filterUnreported")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -254,12 +311,14 @@ export default function ContentPage() {
       <ConfirmDialog
         open={!!actionItem && !!actionType}
         onOpenChange={(o) => { if (!o) { setActionItem(null); setActionType(null) } }}
-        title={actionType === "unpublish" ? t("dialogUnpublishTitle") : t("dialogDeleteTitle")}
-        description={actionType === "unpublish" ? t("dialogUnpublishDescription", { title: actionItem?.title || "this content" }) : t("dialogDeleteDescription", { title: actionItem?.title || "this content" })}
-        confirmLabel={actionType === "unpublish" ? t("dialogConfirmUnpublish") : t("buttonDelete")}
+        title={actionType === "unpublish" ? t("dialogUnpublishTitle") : actionType === "publish" ? t("dialogPublishTitle") : actionType === "restore" ? t("dialogRestoreTitle") : t("dialogDeleteTitle")}
+        description={actionType === "unpublish" ? t("dialogUnpublishDescription", { title: actionItem?.title || "this content" }) : actionType === "publish" ? t("dialogPublishDescription", { title: actionItem?.title || "this content" }) : actionType === "restore" ? t("dialogRestoreDescription", { title: actionItem?.title || "this content" }) : t("dialogDeleteDescription", { title: actionItem?.title || "this content" })}
+        confirmLabel={actionLabel(actionType)}
         variant={actionType === "force_delete" ? "destructive" : "default"}
         onConfirm={handleAction}
-      />
+      >
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("reasonPlaceholder")} />
+      </ConfirmDialog>
     </AdminPage>
   )
 }

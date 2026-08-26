@@ -15,6 +15,7 @@ import { StatCard } from "@/components/shared/stat-card"
 import { getReportSlaInfo } from "@/lib/report-sla"
 import { LoadErrorBanner } from "@/components/shared/load-error-banner"
 import { EmptyState } from "@/components/shared/empty-state"
+import { AdminPage, AdminToolbar } from "@/components/layout/admin-page"
 
 type Tab = "users" | "content" | "blocks"
 
@@ -255,14 +256,14 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader title={t("title")} description={t("description")} icon={Flag} />
 
       {summary && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3" aria-label={t("title")}>
           <button
             type="button"
-            className="text-left"
+            className="rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => {
               setPage(1)
               setStatusFilter("pending")
@@ -276,7 +277,7 @@ export default function ReportsPage() {
           </button>
           <button
             type="button"
-            className="text-left"
+            className="rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => {
               setPage(1)
               setStatusFilter("pending")
@@ -290,7 +291,7 @@ export default function ReportsPage() {
           </button>
           <button
             type="button"
-            className="text-left"
+            className="rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={() => {
               const nextTab = summary.pendingUserReports > 0 || tab === "users" ? "users" : "content"
               setPage(1)
@@ -307,13 +308,15 @@ export default function ReportsPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 border-b pb-2">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-card p-2 shadow-sm" role="tablist" aria-label={t("title")}>
         {(["users", "content", "blocks"] as Tab[]).map((key) => (
           <Button
             key={key}
             variant={tab === key ? "default" : "outline"}
             size="sm"
             onClick={() => setTab(key)}
+            role="tab"
+            aria-selected={tab === key}
           >
             {t(`tab_${key}`)}
           </Button>
@@ -379,7 +382,7 @@ export default function ReportsPage() {
       )}
 
       {tab !== "blocks" && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminToolbar className="flex-col items-stretch sm:flex-row sm:justify-between">
           <div className="flex flex-wrap gap-2">
             <Button
               variant={!overdueOnly && statusFilter === "" ? "default" : "outline"}
@@ -402,7 +405,7 @@ export default function ReportsPage() {
               {t("filterOverdue")}
             </Button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 sm:ml-auto">
             <Input
               value={keywordDraft}
               onChange={(e) => setKeywordDraft(e.target.value)}
@@ -410,11 +413,11 @@ export default function ReportsPage() {
               placeholder={t("searchPlaceholder")}
               className="h-9 w-56"
             />
-            <Button variant="outline" size="sm" onClick={applyKeyword}>
+            <Button variant="outline" size="sm" onClick={applyKeyword} aria-label={t("searchPlaceholder")}>
               <Search className="h-4 w-4" />
             </Button>
           </div>
-        </div>
+        </AdminToolbar>
       )}
 
       {tab === "content" && (
@@ -610,6 +613,6 @@ export default function ReportsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminPage>
   )
 }

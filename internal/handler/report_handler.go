@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/auth"
 	"github.com/grapestree/fgrapery/forge/internal/domain"
@@ -169,7 +172,8 @@ func (h *ReportHandler) ReviewContentReport(c *gin.Context) {
 }
 
 func (h *ReportHandler) ResolveContentReport(c *gin.Context) {
-	if auth.GetAdminContext(c) == nil {
+	adminCtx := auth.GetAdminContext(c)
+	if adminCtx == nil {
 		Error(c, CodeUnauthorized, "unauthorized")
 		return
 	}
@@ -179,12 +183,65 @@ func (h *ReportHandler) ResolveContentReport(c *gin.Context) {
 		Error(c, CodeInvalidParams, err.Error())
 		return
 	}
+	reportForPermission, err := h.reportSvc.GetContentReport(id)
+	if err != nil {
+		Error(c, CodeNotFound, "content report not found")
+		return
+	}
+	if err := requireResolvePermissions(adminCtx, reportForPermission.ContentType, req.Actions); err != nil {
+		Error(c, CodeForbidden, err.Error())
+		return
+	}
 	report, err := h.reportSvc.ResolveContentReport(id, &req, reviewerFromContext(c))
 	if err != nil {
 		Error(c, CodeError, err.Error())
 		return
 	}
 	Success(c, report)
+}
+
+func requireResolvePermissions(ctx *auth.AdminContext, contentType string, actions []string) error {
+	if domain.IsAdminRole(domain.AdminRole(ctx.Role)) {
+		return nil
+	}
+	has := func(required string) bool {
+		for _, granted := range ctx.Permissions {
+			if domain.PermissionGrants(granted, required) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, action := range actions {
+		switch strings.ToLower(strings.TrimSpace(action)) {
+		case "takedown":
+			required, description := takedownPermission(contentType)
+			if required == "" {
+				return fmt.Errorf("unsupported content type for takedown: %s", contentType)
+			}
+			if !has(required) {
+				return fmt.Errorf("%s permission is required for takedown", description)
+			}
+		case "suspend_creator":
+			if !has(domain.PermUsers) {
+				return fmt.Errorf("user management permission is required to suspend a creator")
+			}
+		}
+	}
+	return nil
+}
+
+func takedownPermission(contentType string) (permission, description string) {
+	switch contentType {
+	case "story", "storyboard", "fragment":
+		return domain.PermContentModerate, "content moderation"
+	case "comment":
+		return domain.PermComments, "comment moderation"
+	case "character":
+		return domain.PermCharacters, "character management"
+	default:
+		return "", ""
+	}
 }
 
 func (h *ReportHandler) ContentReportStatusCounts(c *gin.Context) {

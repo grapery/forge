@@ -27,8 +27,8 @@ export function SectionSubnav({ group }: { group: NavGroup }) {
   const clusters = group === "operations" ? groupOpsItems(items) : [{ key: "other" as const, items }]
 
   return (
-    <div className="mb-6 -mx-1 overflow-x-auto">
-      <div className="flex items-center gap-2 min-w-max px-1 pb-1 border-b border-border">
+    <div className="sticky top-12 z-30 -mx-4 mb-5 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+      <div className="flex min-w-max items-center gap-2">
         {clusters.map((cluster, idx) => (
           <div key={cluster.key} className="flex items-center gap-1">
             {idx > 0 && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
@@ -45,7 +45,7 @@ export function SectionSubnav({ group }: { group: NavGroup }) {
                   type="button"
                   onClick={() => router.push(item.href)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     active
                       ? "bg-secondary text-foreground font-medium"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
@@ -87,16 +87,16 @@ export function HubGrid({
               {t(`opsGroup_${cluster.key}`)}
             </h2>
           )}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {cluster.items.map((item) => {
               const badge = badges?.[item.href]
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group flex items-start gap-3 rounded-lg border border-border bg-card p-4 hover:bg-secondary/50 transition-colors"
+                  className="group flex min-h-[104px] items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-secondary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary transition-colors group-hover:bg-background">
                     <item.icon className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">

@@ -11,7 +11,13 @@ import (
 
 func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domain.CommentItem, int64, error) {
 	applyFilters := func(db *gorm.DB) *gorm.DB {
-		db = db.Where("deleted_at IS NULL")
+		switch query.Lifecycle {
+		case "removed":
+			db = db.Where("deleted_at IS NOT NULL")
+		case "all":
+		default:
+			db = db.Where("deleted_at IS NULL")
+		}
 		if query.TargetType != "" {
 			db = db.Where("target_type = ?", query.TargetType)
 		}
@@ -46,14 +52,15 @@ func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domai
 		Dislikes   int       `gorm:"column:dislikes"`
 		ReplyCount int       `gorm:"column:reply_count"`
 		CreatedAt  time.Time `gorm:"column:created_at"`
+		IsRemoved  bool      `gorm:"column:is_removed"`
 	}
 
 	offset := (query.Page - 1) * query.PageSize
 	var rows []row
-	if err := applyFilters(rr.db.Table("comments")).Select("id, author_id, content, target_type, target_id, "+
-		"COALESCE(parent_id, '') as parent_id, COALESCE(root_id, '') as root_id, "+
-		"COALESCE(likes, 0) as likes, COALESCE(dislikes, 0) as dislikes, "+
-		"COALESCE(reply_count, 0) as reply_count, created_at").
+	if err := applyFilters(rr.db.Table("comments")).Select("id, author_id, content, target_type, target_id, " +
+		"COALESCE(parent_id, '') as parent_id, COALESCE(root_id, '') as root_id, " +
+		"COALESCE(likes, 0) as likes, COALESCE(dislikes, 0) as dislikes, " +
+		"COALESCE(reply_count, 0) as reply_count, CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END as is_removed, created_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list comments: %w", err)
@@ -80,6 +87,7 @@ func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domai
 			Dislikes:   r.Dislikes,
 			ReplyCount: r.ReplyCount,
 			CreatedAt:  r.CreatedAt.Unix(),
+			IsRemoved:  r.IsRemoved,
 		}
 	}
 
@@ -89,7 +97,7 @@ func (rr *ReadRepository) ListComments(query *domain.CommentListQuery) ([]*domai
 func (rr *ReadRepository) GetCommentDetail(id string) (map[string]any, error) {
 	var result map[string]any
 	if err := rr.db.Table("comments").
-		Where("id = ? AND deleted_at IS NULL", id).
+		Where("id = ?", id).
 		Take(&result).Error; err != nil {
 		return nil, fmt.Errorf("get comment detail: %w", err)
 	}
@@ -106,11 +114,16 @@ func (rr *ReadRepository) CountCommentsByTargetType() (*domain.CommentStatusCoun
 	newSession().Where("target_type = ?", "story").Count(&counts.StoryComments)
 	newSession().Where("target_type = ?", "fragment").Count(&counts.FragmentComments)
 	newSession().Where("target_type = ?", "character").Count(&counts.CharacterComments)
+	rr.db.Table("comments").Where("deleted_at IS NOT NULL").Count(&counts.Removed)
 
 	return &counts, nil
 }
 
 func (wr *WriteRepository) DeleteComment(id string) error {
 	return wr.db.Table("comments").Where("id = ?", id).
-		Updates(map[string]any{"deleted_at": time.Now(), "content": "[removed by admin]"}).Error
+		Update("deleted_at", time.Now()).Error
+}
+
+func (wr *WriteRepository) RestoreComment(id string) error {
+	return wr.db.Table("comments").Where("id = ?", id).Update("deleted_at", nil).Error
 }

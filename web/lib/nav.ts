@@ -34,9 +34,9 @@ export const navItems: NavItem[] = [
   { href: "/reports", label: "reports", icon: Flag, roles: ["super_admin", "admin", "operator"], group: "support", permission: "reports", description: "hubDescReports" },
   { href: "/comments", label: "comments", icon: MessageCircle, roles: ["super_admin", "admin", "operator"], group: "support", permission: "comments", description: "hubDescComments" },
   { href: "/notifications", label: "notificationsInbox", icon: Bell, roles: ["super_admin", "admin"], group: "support", permission: "notifications", description: "hubDescNotifications" },
-  { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "content", description: "hubDescContent" },
-  { href: "/fragments", label: "fragments", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "content", description: "hubDescFragments" },
-  { href: "/storyboards", label: "storyboards", icon: Layers, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "content", description: "hubDescStoryboards" },
+  { href: "/content", label: "content", icon: FileText, roles: ["super_admin", "admin", "operator"], group: "operations", subgroup: "content", permission: "content", description: "hubDescContent" },
+  { href: "/fragments", label: "fragments", icon: BookOpen, roles: ["super_admin", "admin", "operator"], group: "operations", subgroup: "content", permission: "content", description: "hubDescFragments" },
+  { href: "/storyboards", label: "storyboards", icon: Layers, roles: ["super_admin", "admin", "operator"], group: "operations", subgroup: "content", permission: "content", description: "hubDescStoryboards" },
   { href: "/characters", label: "characters", icon: Ghost, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "characters", description: "hubDescCharacters" },
   { href: "/tags", label: "tags", icon: Tags, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "tags", description: "hubDescTags" },
   { href: "/genres", label: "genres", icon: BookOpen, roles: ["super_admin", "admin"], group: "operations", subgroup: "content", permission: "genres", description: "hubDescGenres" },
@@ -58,6 +58,7 @@ export const navItems: NavItem[] = [
   { href: "/referrals", label: "referrals", icon: UserCheck, roles: ["super_admin", "admin"], group: "operations", subgroup: "monetization", permission: "invitation-codes", description: "hubDescReferrals" },
   { href: "/admin-users", label: "adminUsers", icon: Shield, roles: ["super_admin"], group: "settings", description: "hubDescAdminUsers" },
   { href: "/audit-log", label: "auditLog", icon: ScrollText, roles: ["super_admin", "admin"], group: "settings", permission: "audit-log", description: "hubDescAuditLog" },
+  { href: "/safety-review", label: "safetyReview", icon: Shield, roles: ["super_admin", "admin"], group: "settings", permission: "privacy-review", description: "hubDescSafetyReview" },
   { href: "/styles", label: "styles", icon: Palette, roles: ["super_admin", "admin"], group: "settings", permission: "styles", description: "hubDescStyles" },
   { href: "/change-password", label: "changePassword", icon: KeyRound, roles: ["super_admin", "admin", "operator", "viewer"], group: "settings", description: "hubDescChangePassword" },
 ]
@@ -86,7 +87,12 @@ export function filterNavItems(
     if (!item.roles.includes(user.role)) return false
     if ((user.role === "operator" || user.role === "viewer") && item.permission) {
       const userPermissions = user.permissions || []
-      if (!userPermissions.includes(item.permission)) return false
+      const hasPermission = userPermissions.some((granted) =>
+        granted === item.permission ||
+        ((granted === "content" || granted === "content-moderate") &&
+          (item.permission === "content" || item.permission === "content-moderate")),
+      )
+      if (!hasPermission) return false
     }
     return true
   })

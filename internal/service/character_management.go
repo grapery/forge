@@ -40,6 +40,8 @@ func (s *CharacterService) Action(id string, req *domain.CharacterActionRequest)
 		return s.writeRepo.UnpublishCharacter(id)
 	case "force_delete":
 		return s.writeRepo.SoftDeleteCharacter(id)
+	case "restore":
+		return s.writeRepo.RestoreCharacter(id)
 	default:
 		return fmt.Errorf("unsupported action: %s", req.Action)
 	}

@@ -48,7 +48,10 @@ func IsAdminRole(role AdminRole) bool {
 
 // Permission keys
 const (
-	PermContent         = "content"
+	PermContent = "content"
+	// PermContentModerate is a write capability. PermContent remains the legacy
+	// read permission and is accepted for existing operators during rollout.
+	PermContentModerate = "content-moderate"
 	PermCharacters      = "characters"
 	PermComments        = "comments"
 	PermTags            = "tags"
@@ -72,6 +75,7 @@ const (
 	PermNotifications   = "notifications"
 	PermSearch          = "search"
 	PermAuditLog        = "audit-log"
+	PermPrivacyReview   = "privacy-review"
 	PermWorkflowView    = "workflow-view"
 	PermWorkflowEdit    = "workflow-edit"
 	PermWorkflowReview  = "workflow-review"
@@ -79,12 +83,23 @@ const (
 )
 
 var AllPermissions = []string{
-	PermContent, PermCharacters, PermComments, PermTags, PermGenres,
+	PermContent, PermContentModerate, PermCharacters, PermComments, PermTags, PermGenres,
 	PermAITasks, PermAIGenerations, PermAgents, PermPrompts, PermPromptEdit, PermPromptReview, PermPromptPublish, PermStyles,
 	PermUsers, PermMemberships, PermOrders, PermTokens, PermInvitationCodes,
 	PermFeedback, PermReports, PermTopics, PermNotifications, PermSearch,
-	PermAuditLog,
+	PermAuditLog, PermPrivacyReview,
 	PermWorkflowView, PermWorkflowEdit, PermWorkflowReview, PermWorkflowPublish,
+}
+
+// PermissionGrants centralizes permission implication during the gradual
+// content-moderation rollout. Existing `content` grants retain their former
+// write capability; newly assigned `content-moderate` also includes read access.
+func PermissionGrants(granted, required string) bool {
+	if granted == required {
+		return true
+	}
+	return (granted == PermContent && required == PermContentModerate) ||
+		(granted == PermContentModerate && required == PermContent)
 }
 
 func IsValidPermission(p string) bool {

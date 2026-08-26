@@ -23,6 +23,7 @@ func (h *CharacterHandler) List(c *gin.Context) {
 	query.PageSize = pageSize
 	query.Search = c.Query("search")
 	query.AuthorID = c.Query("authorId")
+	query.Lifecycle = c.Query("lifecycle")
 	if v := c.Query("isPublic"); v == "true" {
 		b := true
 		query.IsPublic = &b

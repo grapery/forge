@@ -13,6 +13,7 @@ type CommentItem struct {
 	Dislikes   int    `json:"dislikes"`
 	ReplyCount int    `json:"replyCount"`
 	CreatedAt  int64  `json:"createdAt"`
+	IsRemoved  bool   `json:"isRemoved"`
 }
 
 type CommentListQuery struct {
@@ -22,11 +23,13 @@ type CommentListQuery struct {
 	TargetID   string `form:"targetId,omitempty"`
 	AuthorID   string `form:"authorId,omitempty"`
 	Search     string `form:"search,omitempty"`
+	Lifecycle  string `form:"lifecycle,omitempty"` // active / removed / all
 }
 
 type CommentStatusCount struct {
-	Total            int64 `json:"total"`
-	StoryComments    int64 `json:"storyComments"`
-	FragmentComments int64 `json:"fragmentComments"`
+	Total             int64 `json:"total"`
+	StoryComments     int64 `json:"storyComments"`
+	FragmentComments  int64 `json:"fragmentComments"`
 	CharacterComments int64 `json:"characterComments"`
+	Removed           int64 `json:"removed"`
 }

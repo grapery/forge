@@ -20,6 +20,7 @@ import type {
   SearchHistoryItem, SearchTrend,
   ShareEventItem, ShareOverview,
   WorkflowDraft, CreateWorkflowDraftRequest, WorkflowBinding, WorkflowRelease, WorkflowCatalogEntry, PromptTemplateDraft, PromptTemplateDraftRequest,
+  SafetyAssetItem, SafetyConversationItem,
 } from "../types"
 
 export const authApi = {
@@ -121,6 +122,11 @@ export const blockApi = {
     forgeClient.get<any, BlockCounts>("/api/admin/blocks/counts"),
 }
 
+export const safetyReviewApi = {
+  assets: (params: { page?: number; pageSize?: number; userId?: string; type?: string }) => forgeClient.get<any, PaginatedData<SafetyAssetItem>>("/api/admin/safety-review/assets", { params }),
+  conversations: (params: { page?: number; pageSize?: number; userId?: string; sessionType?: string }) => forgeClient.get<any, PaginatedData<SafetyConversationItem>>("/api/admin/safety-review/conversations", { params }),
+}
+
 export const userApi = {
   list: (params: { page?: number; pageSize?: number; search?: string; status?: string }) =>
     forgeClient.get<any, PaginatedData<PlatformUser>>("/api/admin/users", { params }),
@@ -135,7 +141,7 @@ export const userApi = {
 }
 
 export const contentApi = {
-  list: (params: { page?: number; pageSize?: number; contentType?: string; search?: string; status?: string; authorId?: string }) =>
+  list: (params: { page?: number; pageSize?: number; contentType?: string; search?: string; status?: string; authorId?: string; lineage?: "root" | "continuation"; lifecycle?: "active" | "removed" | "all"; reportState?: "reported" | "pending_reports" | "unreported" }) =>
     forgeClient.get<any, PaginatedData<ContentItem>>("/api/admin/content", { params }),
   get: (contentType: string, id: string) =>
     forgeClient.get<any, Record<string, any>>(`/api/admin/content/${contentType}/${id}`),
@@ -201,7 +207,7 @@ export const workflowApi = {
 }
 
 export const characterApi = {
-  list: (params: { page?: number; pageSize?: number; search?: string; isPublic?: boolean; authorId?: string }) =>
+  list: (params: { page?: number; pageSize?: number; search?: string; isPublic?: boolean; authorId?: string; lifecycle?: "active" | "removed" | "all" }) =>
     forgeClient.get<any, PaginatedData<CharacterItem>>("/api/admin/characters", { params }),
   get: (id: string) =>
     forgeClient.get<any, Record<string, any>>(`/api/admin/characters/${id}`),
@@ -212,7 +218,7 @@ export const characterApi = {
 }
 
 export const commentApi = {
-  list: (params: { page?: number; pageSize?: number; targetType?: string; targetId?: string; authorId?: string; search?: string }) =>
+  list: (params: { page?: number; pageSize?: number; targetType?: string; targetId?: string; authorId?: string; search?: string; lifecycle?: "active" | "removed" | "all" }) =>
     forgeClient.get<any, PaginatedData<CommentItem>>("/api/admin/comments", { params }),
   get: (id: string) =>
     forgeClient.get<any, Record<string, any>>(`/api/admin/comments/${id}`),
@@ -220,6 +226,7 @@ export const commentApi = {
     forgeClient.get<any, CommentStatusCount>("/api/admin/comments/counts"),
   delete: (id: string) =>
     forgeClient.delete(`/api/admin/comments/${id}`),
+  restore: (id: string) => forgeClient.put(`/api/admin/comments/${id}/restore`),
 }
 
 export const accountDeletionApi = {

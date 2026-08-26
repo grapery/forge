@@ -1,39 +1,42 @@
 package domain
 
 type CharacterItem struct {
-	ID                      string `json:"id"`
-	Name                    string `json:"name"`
-	StoryID                 string `json:"storyId"`
-	AuthorID                string `json:"authorId"`
-	AuthorName              string `json:"authorName"`
-	Description             string `json:"description"`
-	Avatar                  string `json:"avatar"`
-	Poster                  string `json:"poster"`
-	Portrait                string `json:"portrait"`
+	ID                       string `json:"id"`
+	Name                     string `json:"name"`
+	StoryID                  string `json:"storyId"`
+	AuthorID                 string `json:"authorId"`
+	AuthorName               string `json:"authorName"`
+	Description              string `json:"description"`
+	Avatar                   string `json:"avatar"`
+	Poster                   string `json:"poster"`
+	Portrait                 string `json:"portrait"`
 	PortraitGenerationStatus string `json:"portraitGenerationStatus"`
-	IsPublic                bool   `json:"isPublic"`
-	SourceType              string `json:"sourceType"`
-	Likes                   int    `json:"likes"`
-	Comments                int    `json:"comments"`
-	Shares                  int    `json:"shares"`
-	Followers               int    `json:"followers"`
-	Stories                 int    `json:"stories"`
-	CreatedAt               int64  `json:"createdAt"`
-	UpdatedAt               int64  `json:"updatedAt"`
+	IsPublic                 bool   `json:"isPublic"`
+	SourceType               string `json:"sourceType"`
+	Likes                    int    `json:"likes"`
+	Comments                 int    `json:"comments"`
+	Shares                   int    `json:"shares"`
+	Followers                int    `json:"followers"`
+	Stories                  int    `json:"stories"`
+	CreatedAt                int64  `json:"createdAt"`
+	UpdatedAt                int64  `json:"updatedAt"`
+	IsRemoved                bool   `json:"isRemoved"`
 }
 
 type CharacterListQuery struct {
-	Page     int    `form:"page"`
-	PageSize int    `form:"pageSize"`
-	Search   string `form:"search,omitempty"`
-	IsPublic *bool  `form:"isPublic,omitempty"`
-	AuthorID string `form:"authorId,omitempty"`
+	Page      int    `form:"page"`
+	PageSize  int    `form:"pageSize"`
+	Search    string `form:"search,omitempty"`
+	IsPublic  *bool  `form:"isPublic,omitempty"`
+	AuthorID  string `form:"authorId,omitempty"`
+	Lifecycle string `form:"lifecycle,omitempty"` // active / removed / all
 }
 
 type CharacterStatusCount struct {
 	Total   int64 `json:"total"`
 	Public  int64 `json:"public"`
 	Private int64 `json:"private"`
+	Removed int64 `json:"removed"`
 }
 
 type CharacterActionRequest struct {

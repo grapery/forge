@@ -44,20 +44,49 @@ func AuditMiddleware(auditSvc *service.AuditLogService) gin.HandlerFunc {
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		}
 
-		// Determine action from method
+		// Determine action from method, then preserve a domain action when the
+		// request is an explicit moderation command.
 		action := methodToAction(method)
+		resource := extractResource(c)
+		parts := splitPath(path)
+		if resource == "content" {
+			for i, part := range parts {
+				if part == "content" && i+1 < len(parts) {
+					resource = parts[i+1]
+					break
+				}
+			}
+			var payload struct {
+				Action string `json:"action"`
+			}
+			if json.Unmarshal(bodyBytes, &payload) == nil && payload.Action != "" {
+				action = "moderate_" + payload.Action
+			}
+		} else if resource == "reports" && containsPathSequence(parts, "reports", "content") && strings.HasSuffix(path, "/resolve") {
+			resource = "content_report"
+			action = "resolve"
+		}
 
 		c.Next()
+		statusCode := c.Writer.Status()
+		outcome := "succeeded"
+		if statusCode == http.StatusForbidden || statusCode == http.StatusUnauthorized {
+			outcome = "rejected"
+		} else if statusCode >= http.StatusBadRequest {
+			outcome = "failed"
+		}
 
 		// After handler completes, log the operation
 		entry := &domain.AdminOperationLog{
-			AdminID:   ctx.AdminID,
-			AdminName: ctx.Username,
-			Action:    action,
-			Resource:  extractResource(c),
+			AdminID:    ctx.AdminID,
+			AdminName:  ctx.Username,
+			Action:     action,
+			Resource:   resource,
 			ResourceID: c.Param("id"),
-			IP:        clientIP(c),
-			UserAgent: c.Request.UserAgent(),
+			IP:         clientIP(c),
+			UserAgent:  c.Request.UserAgent(),
+			Outcome:    outcome,
+			StatusCode: statusCode,
 		}
 
 		// Store request body as after value (the mutation payload)
@@ -72,6 +101,15 @@ func AuditMiddleware(auditSvc *service.AuditLogService) gin.HandlerFunc {
 
 		auditSvc.Log(entry)
 	}
+}
+
+func containsPathSequence(parts []string, first, second string) bool {
+	for i := 0; i+1 < len(parts); i++ {
+		if parts[i] == first && parts[i+1] == second {
+			return true
+		}
+	}
+	return false
 }
 
 func methodToAction(method string) string {

@@ -11,8 +11,14 @@ import (
 func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*domain.CharacterItem, int64, error) {
 	var total int64
 
-	q := rr.db.Table("characters").
-		Where("deleted_at IS NULL")
+	q := rr.db.Table("characters")
+	switch query.Lifecycle {
+	case "removed":
+		q = q.Where("deleted_at IS NOT NULL")
+	case "all":
+	default:
+		q = q.Where("deleted_at IS NULL")
+	}
 
 	if query.Search != "" {
 		search := "%" + query.Search + "%"
@@ -49,14 +55,15 @@ func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*d
 		Stories                  int       `gorm:"column:stories"`
 		CreatedAt                time.Time `gorm:"column:created_at"`
 		UpdatedAt                time.Time `gorm:"column:updated_at"`
+		IsRemoved                bool      `gorm:"column:is_removed"`
 	}
 
 	var rows []row
-	if err := q.Select("id, name, story_id, author_id, description, avatar, poster, portrait, "+
-		"portrait_generation_status, is_public, source_type, "+
-		"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, "+
-		"COALESCE(shares, 0) as shares, COALESCE(followers, 0) as followers, COALESCE(stories, 0) as stories, "+
-		"created_at, updated_at").
+	if err := q.Select("id, name, story_id, author_id, description, avatar, poster, portrait, " +
+		"portrait_generation_status, is_public, source_type, " +
+		"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, " +
+		"COALESCE(shares, 0) as shares, COALESCE(followers, 0) as followers, COALESCE(stories, 0) as stories, " +
+		"CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END as is_removed, created_at, updated_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list characters: %w", err)
@@ -90,6 +97,7 @@ func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*d
 			Stories:                  r.Stories,
 			CreatedAt:                r.CreatedAt.Unix(),
 			UpdatedAt:                r.UpdatedAt.Unix(),
+			IsRemoved:                r.IsRemoved,
 		}
 	}
 
@@ -99,7 +107,7 @@ func (rr *ReadRepository) ListCharacters(query *domain.CharacterListQuery) ([]*d
 func (rr *ReadRepository) GetCharacterDetail(id string) (map[string]any, error) {
 	var result map[string]any
 	if err := rr.db.Table("characters").
-		Where("id = ? AND deleted_at IS NULL", id).
+		Where("id = ?", id).
 		Take(&result).Error; err != nil {
 		return nil, fmt.Errorf("get character detail: %w", err)
 	}
@@ -115,6 +123,7 @@ func (rr *ReadRepository) CountCharactersByStatus() (*domain.CharacterStatusCoun
 	newSession().Count(&counts.Total)
 	newSession().Where("is_public = ?", true).Count(&counts.Public)
 	newSession().Where("is_public = ?", false).Count(&counts.Private)
+	rr.db.Table("characters").Where("deleted_at IS NOT NULL").Count(&counts.Removed)
 	return &counts, nil
 }
 
@@ -126,4 +135,8 @@ func (wr *WriteRepository) UnpublishCharacter(id string) error {
 func (wr *WriteRepository) SoftDeleteCharacter(id string) error {
 	return wr.db.Table("characters").Where("id = ?", id).
 		Updates(map[string]any{"deleted_at": time.Now()}).Error
+}
+
+func (wr *WriteRepository) RestoreCharacter(id string) error {
+	return wr.db.Table("characters").Where("id = ?", id).Update("deleted_at", nil).Error
 }

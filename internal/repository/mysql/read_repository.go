@@ -97,14 +97,13 @@ func (rr *ReadRepository) CountNewStoryboards(since int64) (int64, error) {
 
 func (rr *ReadRepository) CountForkEvents(since int64) (int64, error) {
 	var count int64
-	if !rr.db.Migrator().HasTable("story_forks") {
-		return 0, nil
-	}
-	err := rr.db.Table("story_forks").Where("created_at >= ?", since).Count(&count).Error
-	if err != nil {
-		return 0, nil
-	}
-	return count, nil
+	// The product no longer creates a derivative Story for a Fork. A continuation
+	// is the child Storyboard itself, so parent_id is the authoritative metric.
+	err := rr.db.Table("storyboards").
+		Where("(deleted_at IS NULL OR deleted_at = 0) AND created_at >= ?", since).
+		Where("parent_id IS NOT NULL AND parent_id <> '' AND parent_id <> ?", "__root__").
+		Count(&count).Error
+	return count, err
 }
 
 func (rr *ReadRepository) SumTokenConsumed(since int64) (int64, error) {

@@ -29,6 +29,9 @@ type AdminOperationLog struct {
 	ResourceID  string `gorm:"column:resource_id;index;size:36"`
 	BeforeValue string `gorm:"column:before_value;type:text"`
 	AfterValue  string `gorm:"column:after_value;type:text"`
+	Outcome     string `gorm:"column:outcome;size:20;index"`
+	StatusCode  int    `gorm:"column:status_code"`
+	Error       string `gorm:"column:error;type:text"`
 	IP          string `gorm:"column:ip;size:45"`
 	UserAgent   string `gorm:"column:user_agent;type:text"`
 	CreatedAt   int64  `gorm:"column:created_at;index;autoCreateTime"`

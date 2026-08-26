@@ -44,12 +44,12 @@ export function DataTable<T>({
 
   return (
     <div className="animate-fade-in">
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+        <table className="min-w-[680px] w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-secondary/40">
+            <tr className="border-b border-border bg-secondary/55">
               {columns.map((col) => (
-                <th key={col.key} className="px-4 py-3 text-left font-medium text-muted-foreground">
+                <th key={col.key} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {col.header}
                 </th>
               ))}
@@ -72,14 +72,22 @@ export function DataTable<T>({
                 <tr
                   key={(item as any).id || idx}
                   className={cn(
-                    "border-b border-border transition-colors hover:bg-secondary/30 animate-fade-in-up",
+                    "border-b border-border transition-colors hover:bg-secondary/40 focus-within:bg-secondary/40 animate-fade-in-up",
                     onRowClick && "cursor-pointer"
                   )}
                   style={{ animationDelay: `${idx * 30}ms` }}
                   onClick={() => onRowClick?.(item)}
+                  onKeyDown={(event) => {
+                    if (onRowClick && (event.key === "Enter" || event.key === " ")) {
+                      event.preventDefault()
+                      onRowClick(item)
+                    }
+                  }}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? "button" : undefined}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
+                    <td key={col.key} className="px-4 py-3 align-middle">
                       {col.render(item)}
                     </td>
                   ))}

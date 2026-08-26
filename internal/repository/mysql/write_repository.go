@@ -37,3 +37,27 @@ func (wr *WriteRepository) SoftDeleteFragment(id string) error {
 func (wr *WriteRepository) UnpublishFragment(id string) error {
 	return wr.db.Table("fragments").Where("id = ?", id).Update("visibility", "private").Error
 }
+
+func (wr *WriteRepository) PublishStory(id string) error {
+	return wr.db.Table("stories").Where("id = ?", id).Updates(map[string]any{"status": "published", "deleted_at": nil}).Error
+}
+
+func (wr *WriteRepository) PublishStoryboard(id string) error {
+	return wr.db.Table("storyboards").Where("id = ?", id).Updates(map[string]any{"workflow_status": "published", "deleted_at": nil}).Error
+}
+
+func (wr *WriteRepository) PublishFragment(id string) error {
+	return wr.db.Table("fragments").Where("id = ?", id).Updates(map[string]any{"visibility": "public", "deleted_at": nil}).Error
+}
+
+func (wr *WriteRepository) RestoreStory(id string) error {
+	return wr.db.Table("stories").Where("id = ?", id).Update("deleted_at", nil).Error
+}
+
+func (wr *WriteRepository) RestoreStoryboard(id string) error {
+	return wr.db.Table("storyboards").Where("id = ?", id).Update("deleted_at", nil).Error
+}
+
+func (wr *WriteRepository) RestoreFragment(id string) error {
+	return wr.db.Table("fragments").Where("id = ?", id).Update("deleted_at", nil).Error
+}

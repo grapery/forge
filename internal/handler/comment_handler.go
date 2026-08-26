@@ -25,6 +25,7 @@ func (h *CommentHandler) List(c *gin.Context) {
 	query.TargetID = c.Query("targetId")
 	query.AuthorID = c.Query("authorId")
 	query.Search = c.Query("search")
+	query.Lifecycle = c.Query("lifecycle")
 
 	items, total, err := h.svc.List(&query)
 	if err != nil {
@@ -56,6 +57,14 @@ func (h *CommentHandler) StatusCounts(c *gin.Context) {
 func (h *CommentHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.svc.Delete(id); err != nil {
+		Error(c, CodeInternalError, err.Error())
+		return
+	}
+	Success(c, nil)
+}
+
+func (h *CommentHandler) Restore(c *gin.Context) {
+	if err := h.svc.Restore(c.Param("id")); err != nil {
 		Error(c, CodeInternalError, err.Error())
 		return
 	}

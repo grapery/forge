@@ -16,11 +16,13 @@ import { ClientOnly } from "@/components/charts/client-only"
 import { dailyTrendToSeries } from "@/lib/chart-data"
 import { SERIES_COLORS } from "@/components/charts/chart-theme"
 import type { OverviewStats, BlockCounts } from "@/lib/types"
-import { RefreshCw, Flag, ShieldAlert, Sparkles, ArrowRight } from "lucide-react"
+import { RefreshCw, Flag, ShieldAlert, Sparkles, ArrowRight, LayoutDashboard } from "lucide-react"
 import { userApi, characterApi, membershipApi, aiTaskApi } from "@/lib/api/admin"
 import type { UserStatusCount, CharacterStatusCount, MembershipSummary, AITaskSummary } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { LoadErrorBanner } from "@/components/shared/load-error-banner"
+import { PageHeader } from "@/components/shared/page-header"
+import { AdminPage } from "@/components/layout/admin-page"
 
 type Range = "7d" | "30d" | "90d"
 
@@ -128,7 +130,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <h1 className="text-[28px] font-medium tracking-tight">{t("title")}</h1>
+        <PageHeader title={t("title")} icon={LayoutDashboard} />
         <LoadErrorBanner message={error} onRetry={() => fetchData(range)} />
       </div>
     )
@@ -161,20 +163,16 @@ export default function DashboardPage() {
   const pendingTotal = (stats?.pendingUserReports ?? 0) + (stats?.pendingContentReports ?? 0)
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-medium tracking-tight text-foreground">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-        </div>
+    <AdminPage className="space-y-7">
+      <PageHeader title={t("title")} description={t("description")} icon={LayoutDashboard} actions={
         <Button variant="outline" size="sm" onClick={handleCollect} disabled={collecting}>
           <RefreshCw className={cn("mr-2 h-3.5 w-3.5", collecting && "animate-spin")} />
           {collecting ? t("buttonCollecting") : t("buttonCollect")}
         </Button>
-      </div>
+      } />
 
       <section className={cn(
-        "rounded-lg border border-border px-4 py-3",
+        "rounded-xl border border-border bg-card px-4 py-4 shadow-sm",
         overdue > 0 ? "border-l-2 border-l-[var(--status-danger)]" : "border-l-2 border-l-[var(--status-warning)]",
       )}>
         <div className="flex items-center gap-2 mb-3">
@@ -182,7 +180,7 @@ export default function DashboardPage() {
           <h2 className="text-sm font-medium">{t("moderationCardTitle")}</h2>
         </div>
         {moderationCountsError && (
-          <div className="mb-2 rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger)]">
+          <div role="alert" className="mb-2 rounded-md bg-[var(--status-danger-bg)] px-3 py-2 text-sm text-[var(--status-danger)]">
             {moderationCountsError}
           </div>
         )}
@@ -371,6 +369,6 @@ export default function DashboardPage() {
         </div>
         <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
       </Link>
-    </div>
+    </AdminPage>
   )
 }

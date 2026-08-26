@@ -28,6 +28,7 @@ const permissionGroups: { label: string; permissions: { key: string; label: stri
     label: "content",
     permissions: [
       { key: "content", label: "contentMgmt" },
+      { key: "content-moderate", label: "contentModerate" },
       { key: "characters", label: "characterMgmt" },
       { key: "comments", label: "commentMgmt" },
       { key: "tags", label: "tagMgmt" },
@@ -56,6 +57,7 @@ const permissionGroups: { label: string; permissions: { key: string; label: stri
     permissions: [
       { key: "users", label: "userMgmt" },
       { key: "audit-log", label: "auditLog" },
+      { key: "privacy-review", label: "privacyReview" },
     ],
   },
   {

@@ -43,6 +43,7 @@ func SetupRouter(
 	opsH *OpsAssistantHandler,
 	workflowH *WorkflowHandler,
 	promptTemplateH *PromptTemplateHandler,
+	safetyReviewH *SafetyReviewHandler,
 	auditSvc *service.AuditLogService,
 	logger *zap.Logger,
 	allowOrigins []string,
@@ -144,7 +145,7 @@ func SetupRouter(
 			content.GET("", contentH.List)
 			content.GET("/:type/counts", contentH.StatusCounts)
 			content.GET("/:type/:id", contentH.Get)
-			content.PUT("/:type/:id/action", contentH.Action)
+			content.PUT("/:type/:id/action", middleware.RequirePermission(domain.PermContentModerate), contentH.Action)
 		}
 
 		topics := protected.Group("/topics")
@@ -206,6 +207,7 @@ func SetupRouter(
 			comments.GET("/counts", commentH.StatusCounts)
 			comments.GET("/:id", commentH.Get)
 			comments.DELETE("/:id", commentH.Delete)
+			comments.PUT("/:id/restore", commentH.Restore)
 		}
 
 		accountDeletions := protected.Group("/account-deletions")
@@ -345,6 +347,13 @@ func SetupRouter(
 		{
 			shares.GET("/overview", shareH.Overview)
 			shares.GET("/events", shareH.Events)
+		}
+
+		safetyReview := protected.Group("/safety-review")
+		safetyReview.Use(middleware.RequirePermission(domain.PermPrivacyReview))
+		{
+			safetyReview.GET("/assets", safetyReviewH.Assets)
+			safetyReview.GET("/conversations", safetyReviewH.Conversations)
 		}
 
 		ops := protected.Group("/ops-assistant")

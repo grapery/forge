@@ -88,12 +88,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-topbar-bg">
+      <header className="sticky top-0 z-40 border-b border-border bg-topbar-bg/95 backdrop-blur supports-[backdrop-filter]:bg-topbar-bg/85">
         <div className="flex h-12 items-center gap-3 px-4 lg:px-6">
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-2 shrink-0 mr-1"
+            className="flex shrink-0 items-center gap-2 rounded-md py-1 pr-1 transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary">
               <Anvil className="h-3.5 w-3.5 text-foreground" />
@@ -170,7 +170,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="flex-1 overflow-auto">
-        <div key={pathname} className={cn("mx-auto w-full px-6 py-8 lg:px-10", wide ? "max-w-5xl" : "max-w-7xl")}>
+        <div key={pathname} className={cn("mx-auto w-full px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-8", wide ? "max-w-5xl" : "max-w-7xl")}>
           {showSubnav && !isHub && <SectionSubnav group={active as "analytics" | "support" | "operations" | "settings"} />}
           {children}
         </div>

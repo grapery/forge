@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-/** Consistent Notion-like page shell for list/detail admin pages. */
+/** Shared task-focused page shell for Forge operational pages. */
 export function AdminPage({
   children,
   className,
@@ -9,7 +9,7 @@ export function AdminPage({
   children: ReactNode
   className?: string
 }) {
-  return <div className={cn("space-y-6", className)}>{children}</div>
+  return <div className={cn("min-w-0 space-y-5 lg:space-y-6", className)}>{children}</div>
 }
 
 /** Quiet filter toolbar row. */
@@ -21,7 +21,7 @@ export function AdminToolbar({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
+    <div className={cn("flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/70 p-3 shadow-sm", className)}>
       {children}
     </div>
   )

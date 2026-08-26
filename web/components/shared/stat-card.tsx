@@ -18,9 +18,9 @@ export function StatCard({ title, value, icon: Icon, trend, trendLabel }: StatCa
   const animatedValue = useCountUp({ end: numericValue, duration: 600 })
 
   return (
-    <Card className="hover:bg-secondary/40 transition-colors">
+    <Card className="border-border bg-card shadow-sm transition-colors hover:bg-secondary/40 hover:shadow-md">
       <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary">
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
         <div className="min-w-0">

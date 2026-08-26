@@ -4,11 +4,14 @@ type AdminOperationLog struct {
 	ID          string `json:"id"`
 	AdminID     string `json:"adminId"`
 	AdminName   string `json:"adminName"`
-	Action      string `json:"action"`      // create/update/delete/status_change/login
-	Resource    string `json:"resource"`     // user/story/storyboard/fragment/...
+	Action      string `json:"action"`   // create/update/delete/status_change/login
+	Resource    string `json:"resource"` // user/story/storyboard/fragment/...
 	ResourceID  string `json:"resourceId"`
 	BeforeValue string `json:"beforeValue,omitempty"`
 	AfterValue  string `json:"afterValue,omitempty"`
+	Outcome     string `json:"outcome"` // succeeded / rejected / failed
+	StatusCode  int    `json:"statusCode"`
+	Error       string `json:"error,omitempty"`
 	IP          string `json:"ip"`
 	UserAgent   string `json:"userAgent"`
 	CreatedAt   int64  `json:"createdAt"`

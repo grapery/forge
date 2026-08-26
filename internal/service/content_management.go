@@ -40,8 +40,38 @@ func (s *ContentService) Action(contentType, id string, req *domain.ContentActio
 		return s.unpublish(contentType, id)
 	case "force_delete":
 		return s.forceDelete(contentType, id)
+	case "restore":
+		return s.restore(contentType, id)
+	case "publish":
+		return s.publish(contentType, id)
 	default:
 		return fmt.Errorf("unsupported action: %s", req.Action)
+	}
+}
+
+func (s *ContentService) restore(contentType, id string) error {
+	switch contentType {
+	case "story":
+		return s.writeRepo.RestoreStory(id)
+	case "storyboard":
+		return s.writeRepo.RestoreStoryboard(id)
+	case "fragment":
+		return s.writeRepo.RestoreFragment(id)
+	default:
+		return fmt.Errorf("unsupported content type: %s", contentType)
+	}
+}
+
+func (s *ContentService) publish(contentType, id string) error {
+	switch contentType {
+	case "story":
+		return s.writeRepo.PublishStory(id)
+	case "storyboard":
+		return s.writeRepo.PublishStoryboard(id)
+	case "fragment":
+		return s.writeRepo.PublishFragment(id)
+	default:
+		return fmt.Errorf("unsupported content type: %s", contentType)
 	}
 }
 

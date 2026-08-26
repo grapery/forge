@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
-import { Layers, Eye, CheckCircle2, FileEdit, Trash2 } from "lucide-react"
+import { Layers, Eye, CheckCircle2, FileEdit, Trash2, GitBranch, CircleDot } from "lucide-react"
 
 import { toast } from "sonner"
 import { AdminPage } from "@/components/layout/admin-page"
@@ -50,6 +50,7 @@ export default function StoryboardsPage() {
   const [search, setSearch] = useState("")
   const [status, setStatus] = useState("")
   const [authorId, setAuthorId] = useState("")
+  const [lineage, setLineage] = useState<"" | "root" | "continuation">("")
   const pageSize = 20
 
   const [actionItem, setActionItem] = useState<ContentItem | null>(null)
@@ -65,6 +66,7 @@ export default function StoryboardsPage() {
         search: search || undefined,
         status: status || undefined,
         authorId: authorId || undefined,
+        lineage: lineage || undefined,
       })
       .then((data) => {
         setItems(data.items || [])
@@ -72,7 +74,7 @@ export default function StoryboardsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page, search, status, authorId])
+  }, [page, search, status, authorId, lineage])
 
   useEffect(() => {
     fetchData()
@@ -107,10 +109,11 @@ export default function StoryboardsPage() {
       <PageHeader title={t("title")} description={t("description")} icon={Layers} />
 
       {counts && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <StatCard title={t("statTotal")} value={counts.total} icon={Layers} />
           <StatCard title={t("statPublished")} value={counts.published} icon={CheckCircle2} />
           <StatCard title={t("statDraft")} value={counts.draft + counts.other} icon={FileEdit} />
+          <StatCard title={t("statContinuations")} value={counts.continuation ?? 0} icon={GitBranch} />
         </div>
       )}
 
@@ -127,6 +130,17 @@ export default function StoryboardsPage() {
             <SelectItem value="all">{t("filterAllStatus")}</SelectItem>
             <SelectItem value="published">{t("filterPublished")}</SelectItem>
             <SelectItem value="draft">{t("filterDraft")}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={lineage || "all"} onValueChange={(v) => { setLineage(v === "all" ? "" : v as "root" | "continuation"); setPage(1) }}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder={t("filterAllLineage")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("filterAllLineage")}</SelectItem>
+            <SelectItem value="root">{t("filterRoot")}</SelectItem>
+            <SelectItem value="continuation">{t("filterContinuation")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -167,6 +181,20 @@ export default function StoryboardsPage() {
               header: t("columnStatus"),
               render: (item: ContentItem) => (
                 <Badge variant={statusVariant[item.status] || "secondary"}>{item.status}</Badge>
+              ),
+            },
+            {
+              key: "lineage",
+              header: t("columnLineage"),
+              render: (item: ContentItem) => item.isContinuation ? (
+                <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <GitBranch className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate" title={item.parentTitle || item.parentId}>{t("continuationFrom", { title: item.parentTitle || item.parentId || "-" })}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CircleDot className="h-3.5 w-3.5" />{t("rootNode")}
+                </div>
               ),
             },
             {

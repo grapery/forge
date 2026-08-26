@@ -158,10 +158,10 @@ export default function ContentReportDetailPage() {
   const contentAdminLink = () => {
     if (!report) return null
     const ct = report.contentType
-    if (ct === "comment") return `/comments?targetId=${encodeURIComponent(report.contentId)}`
+    if (ct === "comment") return `/comments?search=${encodeURIComponent(report.contentId)}`
     if (ct === "character") return `/characters`
     if (["story", "storyboard", "fragment"].includes(ct)) {
-      return `/content?contentType=${ct}`
+      return `/content/detail?id=${encodeURIComponent(report.contentId)}&type=${ct}`
     }
     return null
   }

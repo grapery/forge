@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { PageSkeleton } from "@/components/shared/skeleton"
 
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button"
 
 import { ConfirmDialog } from "@/components/shared/confirm-dialog"
 
-import { ArrowLeft, Eye, Trash2, Sparkles, Layers } from "lucide-react"
+import { ArrowLeft, Eye, Trash2, Sparkles, Layers, GitBranch, CircleDot } from "lucide-react"
 
 import { toast } from "sonner"
 
@@ -92,6 +93,8 @@ export default function StoryboardDetailPage() {
   const statusField = detail.status || detail.workflow_status || ""
   const authorId = detail.author_id || detail.creator_id || detail.user_id
   const canUnpublish = statusField === "published"
+  const parentId = String(detail.parent_id || "").trim()
+  const isContinuation = parentId !== "" && parentId !== "__root__"
 
   const displayFields = [
     { label: t("fieldId"), value: detail.id },
@@ -120,6 +123,23 @@ export default function StoryboardDetailPage() {
         <CardHeader><CardTitle>{t("cardTitle")}</CardTitle></CardHeader>
         <CardContent>
           <p className="text-sm whitespace-pre-wrap font-medium">{title}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>{t("cardLineage")}</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="flex items-center gap-2">
+            {isContinuation ? <GitBranch className="h-4 w-4 text-muted-foreground" /> : <CircleDot className="h-4 w-4 text-muted-foreground" />}
+            <span className="font-medium">{isContinuation ? t("continuationNode") : t("rootNode")}</span>
+          </div>
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            <div><p className="text-xs text-muted-foreground">{t("fieldStoryId")}</p><p className="mt-1 break-all font-mono text-xs">{detail.story_id || "-"}</p></div>
+            {isContinuation && (
+              <div><p className="text-xs text-muted-foreground">{t("fieldParent")}</p><Link className="mt-1 block break-all font-mono text-xs text-primary hover:underline" href={`/storyboards/detail?id=${encodeURIComponent(parentId)}`}>{parentId}</Link></div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{t("lineageHelp")}</p>
         </CardContent>
       </Card>
 

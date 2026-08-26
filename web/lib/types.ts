@@ -88,6 +88,9 @@ export interface AdminOperationLog {
   createdAt: number
 }
 
+export interface SafetyAssetItem { id: string; userId: string; userName: string; type: string; name: string; url: string; thumbnail: string; mimeType: string; size: number; createdAt: number }
+export interface SafetyConversationItem { id: string; ownerUserId: string; ownerUserName: string; sessionType: string; peerUserId: string; characterId: string; title: string; lastMessage: string; lastMessageAt: number }
+
 export interface Feedback {
   id: string
   userId: string
@@ -221,6 +224,13 @@ export interface ContentItem {
   comments: number
   createdAt: number
   updatedAt: number
+  storyId?: string
+  parentId?: string
+  parentTitle?: string
+  isContinuation?: boolean
+  isRemoved?: boolean
+  reportCount?: number
+  pendingReportCount?: number
 }
 
 export interface ContentStatusCount {
@@ -228,6 +238,11 @@ export interface ContentStatusCount {
   published: number
   draft: number
   other: number
+  root?: number
+  continuation?: number
+  removed?: number
+  reported?: number
+  pendingReports?: number
 }
 
 export interface TopicStats {
@@ -292,12 +307,14 @@ export interface CharacterItem {
   stories: number
   createdAt: number
   updatedAt: number
+  isRemoved?: boolean
 }
 
 export interface CharacterStatusCount {
   total: number
   public: number
   private: number
+  removed?: number
   aiGenerated: number
 }
 
@@ -315,6 +332,7 @@ export interface CommentItem {
   dislikes: number
   replyCount: number
   createdAt: number
+  isRemoved?: boolean
 }
 
 export interface CommentStatusCount {
@@ -322,6 +340,7 @@ export interface CommentStatusCount {
   storyComments: number
   fragmentComments: number
   characterComments: number
+  removed?: number
 }
 
 // Account deletion types
