@@ -20,6 +20,7 @@ type WorkflowPublisher interface {
 	PublishRelease(ctx context.Context, release *domain.WorkflowRelease) (*domain.WorkflowRelease, error)
 	SaveBinding(ctx context.Context, binding *domain.WorkflowBinding) (*domain.WorkflowBinding, error)
 	ListCatalog(ctx context.Context, surface, action, tenantID string) ([]domain.WorkflowCatalogEntry, error)
+	ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error)
 }
 
 func (p *GraperyWorkflowPublisher) PublishPromptVersion(ctx context.Context, prompt *domain.PromptTemplateVersion) (*domain.PromptTemplateVersion, error) {
@@ -73,6 +74,20 @@ func (p *GraperyWorkflowPublisher) ListCatalog(ctx context.Context, surface, act
 		Items []domain.WorkflowCatalogEntry `json:"items"`
 	}
 	if err := p.get(ctx, "/api/v1/agent-policy/workflow-catalog?"+query.Encode(), &result); err != nil {
+		return nil, err
+	}
+	return result.Items, nil
+}
+
+func (p *GraperyWorkflowPublisher) ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error) {
+	if days <= 0 {
+		days = 30
+	}
+	var result struct {
+		Items []domain.WorkflowReleaseStats `json:"items"`
+	}
+	path := fmt.Sprintf("/api/v1/agent-policy/workflow-stats?days=%d", days)
+	if err := p.get(ctx, path, &result); err != nil {
 		return nil, err
 	}
 	return result.Items, nil

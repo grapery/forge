@@ -122,3 +122,20 @@ type WorkflowCatalogEntry struct {
 	Binding WorkflowBinding `json:"binding"`
 	Release WorkflowRelease `json:"release"`
 }
+
+type WorkflowReleaseStats struct {
+	WorkflowReleaseID string    `json:"workflowReleaseId"`
+	WorkflowKey       string    `json:"workflowKey,omitempty"`
+	WorkflowVersion   int       `json:"workflowVersion,omitempty"`
+	TotalRuns         int64     `json:"totalRuns"`
+	SucceededRuns     int64     `json:"succeededRuns"`
+	FailedRuns        int64     `json:"failedRuns"`
+	CancelledRuns     int64     `json:"cancelledRuns"`
+	ActiveRuns        int64     `json:"activeRuns"`
+	FallbackRuns      int64     `json:"fallbackRuns"`
+	SuccessRate       float64   `json:"successRate"`
+	AverageDurationMs int64     `json:"averageDurationMs"`
+	AverageTokens     float64   `json:"averageTokens"`
+	TotalTokens       int64     `json:"totalTokens"`
+	LastRunAt         time.Time `json:"lastRunAt,omitempty"`
+}

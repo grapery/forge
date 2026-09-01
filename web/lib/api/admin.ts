@@ -19,7 +19,7 @@ import type {
   UserDeviceItem, DevicePlatformCount, NotificationItem,
   SearchHistoryItem, SearchTrend,
   ShareEventItem, ShareOverview,
-  WorkflowDraft, CreateWorkflowDraftRequest, WorkflowBinding, WorkflowRelease, WorkflowCatalogEntry, PromptTemplateDraft, PromptTemplateDraftRequest,
+  WorkflowDraft, CreateWorkflowDraftRequest, WorkflowBinding, WorkflowRelease, WorkflowCatalogEntry, WorkflowReleaseStats, PromptTemplateDraft, PromptTemplateDraftRequest,
   SafetyAssetItem, SafetyConversationItem,
 } from "../types"
 
@@ -204,6 +204,8 @@ export const workflowApi = {
   bind: (data: WorkflowBinding) => forgeClient.post<any, WorkflowBinding>("/api/admin/workflows/bindings", data),
   listBindings: (params: { surface: string; action: string; tenantId?: string }) =>
     forgeClient.get<any, { items: WorkflowCatalogEntry[] }>("/api/admin/workflows/bindings", { params }),
+  stats: (days = 30) =>
+    forgeClient.get<any, { items: WorkflowReleaseStats[]; days: number }>("/api/admin/workflows/stats", { params: { days } }),
 }
 
 export const characterApi = {

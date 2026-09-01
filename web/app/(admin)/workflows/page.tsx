@@ -1,12 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react"
-import { Workflow, Plus, Send, Check, X, Rocket, Pencil, Link, CopyPlus, GripVertical, Sparkles, ImageIcon, Save, Trash2, ArrowLeft, ArrowDown, ArrowUp, CircleCheck, CircleDashed, Clock3, Layers3, Settings2 } from "lucide-react"
+import { Workflow, Plus, Send, Check, X, Rocket, Pencil, Link, CopyPlus, GripVertical, Sparkles, ImageIcon, Save, Trash2, ArrowLeft, ArrowDown, ArrowUp, CircleCheck, CircleDashed, Clock3, Layers3, Settings2, PauseCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 
 import { workflowApi } from "@/lib/api/admin"
-import type { CreateWorkflowDraftRequest, WorkflowDraft, WorkflowNode } from "@/lib/types"
+import type { CreateWorkflowDraftRequest, WorkflowCatalogEntry, WorkflowDraft, WorkflowNode, WorkflowReleaseStats } from "@/lib/types"
 import { AdminPage } from "@/components/layout/admin-page"
 import { PageHeader } from "@/components/shared/page-header"
 import { PageSkeleton } from "@/components/shared/skeleton"
@@ -36,7 +36,9 @@ type WorkflowSettings = {
   maxAttempts: string
 }
 
-const nodeTemplates: NodeTemplate[] = [
+type WorkflowKind = "storyboard" | "fragment" | "storyboardBranch"
+
+const storyboardNodeTemplates: NodeTemplate[] = [
   { id: "generate_storyboard", activity: "storyboard.ensure_draft", type: "activity", titleKey: "nodePrepareTitle", descriptionKey: "nodePrepareDescription", required: true, icon: "sparkles" },
   { id: "generate_bible_plan", activity: "storyboard.generate_bible_plan", type: "activity", titleKey: "nodeBibleTitle", descriptionKey: "nodeBibleDescription", required: true, icon: "sparkles" },
   { id: "generate_scene_plan", activity: "storyboard.generate_scene_plan", type: "activity", titleKey: "nodeSceneTitle", descriptionKey: "nodeSceneDescription", required: true, icon: "sparkles" },
@@ -44,8 +46,16 @@ const nodeTemplates: NodeTemplate[] = [
   { id: "generate_storyboard_images", activity: "storyboard.ensure_images", type: "activity", titleKey: "nodeImagesTitle", descriptionKey: "nodeImagesDescription", icon: "image" },
 ]
 
-const requiredActivities = nodeTemplates.filter((node) => node.required).map((node) => node.activity)
-const defaultCanvas = (): CanvasNode[] => nodeTemplates.map((node) => ({ ...node, note: "" }))
+const fragmentNodeTemplates: NodeTemplate[] = [
+  { id: "generate_fragment", activity: "legacy.fragment.generate", type: "activity", titleKey: "nodeFragmentTitle", descriptionKey: "nodeFragmentDescription", required: true, icon: "image" },
+]
+
+const storyboardBranchNodeTemplates: NodeTemplate[] = [
+  { id: "generate_storyboard_branch", activity: "legacy.storyboard.branch", type: "activity", titleKey: "nodeBranchTitle", descriptionKey: "nodeBranchDescription", required: true, icon: "sparkles" },
+]
+
+const templatesForKind = (kind: WorkflowKind) => kind === "fragment" ? fragmentNodeTemplates : kind === "storyboardBranch" ? storyboardBranchNodeTemplates : storyboardNodeTemplates
+const defaultCanvas = (kind: WorkflowKind): CanvasNode[] => templatesForKind(kind).map((node) => ({ ...node, note: "" }))
 const defaultSettings = (): WorkflowSettings => ({ maxDurationHours: "12", maxParallelism: "4", maxAttempts: "3" })
 
 function nodeIcon(icon: NodeTemplate["icon"]) {
@@ -54,9 +64,9 @@ function nodeIcon(icon: NodeTemplate["icon"]) {
   return Sparkles
 }
 
-function canvasFromDefinition(definition: WorkflowDraft["definition"]): CanvasNode[] {
+function canvasFromDefinition(definition: WorkflowDraft["definition"], kind: WorkflowKind): CanvasNode[] {
   return definition.nodes.flatMap((node) => {
-    const template = nodeTemplates.find((item) => item.activity === node.activity)
+    const template = templatesForKind(kind).find((item) => item.activity === node.activity)
     if (!template) return []
     return [{ ...template, id: node.id, note: typeof node.config?.operatorNote === "string" ? node.config.operatorNote : "" }]
   })
@@ -76,20 +86,29 @@ function definitionFromCanvas(nodes: CanvasNode[]): WorkflowDraft["definition"] 
   }
 }
 
-function workflowManifest(source: Record<string, unknown> | undefined, name: string, description: string) {
+function workflowManifest(source: Record<string, unknown> | undefined, name: string, description: string, kind: WorkflowKind) {
   const existing = source || {}
   const catalog = typeof existing.catalog === "object" && existing.catalog !== null && !Array.isArray(existing.catalog)
     ? existing.catalog as Record<string, unknown>
     : {}
   return {
     ...existing,
-    catalog: { ...catalog, title: name, summary: description, category: catalog.category || "creation" },
+    catalog: { ...catalog, title: name, summary: description, category: catalog.category || "creation", artifact: kind },
     supportedClients: Array.isArray(existing.supportedClients) && existing.supportedClients.length > 0 ? existing.supportedClients : ["voyager"],
   }
 }
 
-function hasExecutableStoryboardPath(nodes: CanvasNode[]) {
+function hasExecutablePath(nodes: CanvasNode[], kind: WorkflowKind) {
+  const requiredActivities = templatesForKind(kind).filter((node) => node.required).map((node) => node.activity)
   return requiredActivities.every((activity, index) => nodes[index]?.activity === activity)
+}
+
+function workflowKindFromDraft(item: WorkflowDraft): WorkflowKind {
+  if (item.definition.nodes.some((node) => node.activity === "legacy.fragment.generate")) return "fragment"
+	if (item.definition.nodes.some((node) => node.activity === "legacy.storyboard.branch")) return "storyboardBranch"
+  const catalog = item.manifest?.catalog
+  if (catalog && typeof catalog === "object" && !Array.isArray(catalog) && (catalog as Record<string, unknown>).artifact === "fragment") return "fragment"
+  return "storyboard"
 }
 
 function settingsFromPolicies(policies?: WorkflowDraft["policies"]): WorkflowSettings {
@@ -128,11 +147,13 @@ export default function WorkflowsPage() {
 	const [aiOpen, setAiOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState("")
 	const [aiGenerating, setAiGenerating] = useState(false)
-  const [form, setForm] = useState({ key: "", name: "", description: "", manifest: {} as Record<string, unknown>, nodes: defaultCanvas(), promptBundle: {} as Record<string, string>, settings: defaultSettings() })
-  const [binding, setBinding] = useState({ surface: "voyager.storyboard", action: "generate", tenantId: "", priority: "100" })
+  const [form, setForm] = useState({ kind: "storyboard" as WorkflowKind, key: "", name: "", description: "", manifest: {} as Record<string, unknown>, nodes: defaultCanvas("storyboard"), promptBundle: {} as Record<string, string>, settings: defaultSettings() })
+  const [binding, setBinding] = useState({ surface: "voyager.storyboard", action: "generate", tenantId: "", priority: "100", conditionsText: "" })
   const [draggedNodeID, setDraggedNodeID] = useState<string | null>(null)
   const [selectedNodeID, setSelectedNodeID] = useState<string | null>(null)
   const [activeReleaseIds, setActiveReleaseIds] = useState<Set<string>>(new Set())
+  const [activeBindings, setActiveBindings] = useState<WorkflowCatalogEntry[]>([])
+  const [releaseStats, setReleaseStats] = useState<Record<string, WorkflowReleaseStats>>({})
 
   const load = useCallback(() => {
     workflowApi.list({ page: 1, pageSize: 100 })
@@ -141,37 +162,64 @@ export default function WorkflowsPage() {
       .finally(() => setLoading(false))
   }, [t])
   const loadBindings = useCallback(() => {
-    workflowApi.listBindings({ surface: "voyager.storyboard", action: "generate" })
-      .then((data) => setActiveReleaseIds(new Set(data.items?.[0] ? [data.items[0].release.id] : [])))
-      .catch(() => setActiveReleaseIds(new Set()))
+    Promise.all([
+      workflowApi.listBindings({ surface: "voyager.storyboard", action: "generate" }),
+      workflowApi.listBindings({ surface: "voyager.fragment", action: "generate" }),
+			workflowApi.listBindings({ surface: "voyager.storyboard", action: "branch" }),
+    ])
+      .then((pages) => {
+        const entries = pages.flatMap((data) => data.items || [])
+        setActiveBindings(entries)
+        setActiveReleaseIds(new Set(entries.map((entry) => entry.release.id)))
+      })
+      .catch(() => { setActiveBindings([]); setActiveReleaseIds(new Set()) })
+  }, [])
+  const loadStats = useCallback(() => {
+    workflowApi.stats(30)
+      .then((data) => setReleaseStats(Object.fromEntries((data.items || []).map((item) => [item.workflowReleaseId, item]))))
+      .catch(() => setReleaseStats({}))
   }, [])
 
   useEffect(() => { load() }, [load])
   useEffect(() => { loadBindings() }, [loadBindings])
+  useEffect(() => { loadStats() }, [loadStats])
 
   const counts = useMemo(() => items.reduce<Record<string, number>>((acc, item) => {
     acc[item.status] = (acc[item.status] || 0) + 1
     return acc
   }, {}), [items])
   const selectedNode = form.nodes.find((node) => node.id === selectedNodeID) || null
-  const availableNodes = nodeTemplates.filter((template) => !form.nodes.some((node) => node.activity === template.activity))
-  const workflowReady = hasExecutableStoryboardPath(form.nodes) && hasValidSettings(form.settings)
+  const availableNodes = templatesForKind(form.kind).filter((template) => !form.nodes.some((node) => node.activity === template.activity))
+  const workflowReady = hasExecutablePath(form.nodes, form.kind) && hasValidSettings(form.settings)
   const detailsReady = Boolean(form.key.trim() && form.name.trim())
   const builderReady = detailsReady && workflowReady
   const configuredNodeCount = form.nodes.filter((node) => node.note.trim()).length
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ key: "", name: "", description: "", manifest: {}, nodes: defaultCanvas(), promptBundle: {}, settings: defaultSettings() })
+    setForm({ kind: "storyboard", key: "", name: "", description: "", manifest: {}, nodes: defaultCanvas("storyboard"), promptBundle: {}, settings: defaultSettings() })
     setSelectedNodeID("generate_storyboard")
     setOpen(true)
   }
   const openEdit = (item: WorkflowDraft) => {
     setEditing(item)
-    const nodes = canvasFromDefinition(item.definition)
-    setForm({ key: item.key, name: item.name, description: item.description || "", manifest: item.manifest || {}, nodes, promptBundle: item.promptBundle || {}, settings: settingsFromPolicies(item.policies) })
+    const kind = workflowKindFromDraft(item)
+    const nodes = canvasFromDefinition(item.definition, kind)
+    setForm({ kind, key: item.key, name: item.name, description: item.description || "", manifest: item.manifest || {}, nodes, promptBundle: item.promptBundle || {}, settings: settingsFromPolicies(item.policies) })
     setSelectedNodeID(nodes[0]?.id || null)
     setOpen(true)
+  }
+  const selectKind = (kind: WorkflowKind) => {
+    if (editing || kind === form.kind) return
+    const nodes = defaultCanvas(kind)
+    setForm((current) => ({ ...current, kind, nodes, promptBundle: {} }))
+    setSelectedNodeID(nodes[0]?.id || null)
+  }
+  const openBinding = (item: WorkflowDraft) => {
+    const kind = workflowKindFromDraft(item)
+		const isBranch = kind === "storyboardBranch"
+		setBinding((current) => ({ ...current, surface: isBranch ? "voyager.storyboard" : `voyager.${kind}`, action: isBranch ? "branch" : "generate", conditionsText: "" }))
+    setBindingTarget(item)
   }
 
   const updateNode = (nodeID: string, updates: Partial<CanvasNode>) => {
@@ -209,7 +257,7 @@ export default function WorkflowsPage() {
     const activity = event.dataTransfer.getData("application/x-workflow-activity")
     const sourceID = event.dataTransfer.getData("application/x-workflow-node")
     if (activity) {
-      const template = nodeTemplates.find((node) => node.activity === activity)
+      const template = templatesForKind(form.kind).find((node) => node.activity === activity)
       if (template && !form.nodes.some((node) => node.activity === activity)) appendNode(template)
     } else if (sourceID && targetID) {
       moveNode(sourceID, targetID)
@@ -219,14 +267,14 @@ export default function WorkflowsPage() {
 
   const save = async () => {
     if (!workflowReady) {
-      toast.error(t("invalidStoryboardPath"))
+      toast.error(t("invalidWorkflowPath"))
       return
     }
     try {
       setSaving(true)
       const payload: CreateWorkflowDraftRequest = {
         key: form.key.trim(), name: form.name.trim(), description: form.description.trim(),
-        manifest: workflowManifest(form.manifest, form.name.trim(), form.description.trim()),
+        manifest: workflowManifest(form.manifest, form.name.trim(), form.description.trim(), form.kind),
         definition: definitionFromCanvas(form.nodes),
         policies: policiesFromSettings(form.settings),
         promptBundle: form.promptBundle,
@@ -248,8 +296,10 @@ export default function WorkflowsPage() {
 		try {
 			setAiGenerating(true)
 			const generated = await workflowApi.generate(aiPrompt.trim())
-			const nodes = canvasFromDefinition(generated.definition)
-			setForm((current) => ({
+				const kind: WorkflowKind = generated.definition.nodes.some((node) => node.activity === "legacy.fragment.generate") ? "fragment" : generated.definition.nodes.some((node) => node.activity === "legacy.storyboard.branch") ? "storyboardBranch" : "storyboard"
+				const nodes = canvasFromDefinition(generated.definition, kind)
+				setForm((current) => ({
+					kind,
 				key: editing ? current.key : generated.key,
 				name: generated.name,
 				description: generated.description || "",
@@ -272,16 +322,35 @@ export default function WorkflowsPage() {
     try {
       setSaving(true)
       const releaseId = bindingTarget.releaseId || (await workflowApi.publish(bindingTarget.id)).id
-      await workflowApi.bind({ surface: binding.surface.trim(), action: binding.action.trim(), tenantId: binding.tenantId.trim() || undefined, workflowKey: bindingTarget.key, releaseId, priority: Number(binding.priority) || 0, enabled: true })
+      let conditions: Record<string, unknown> | undefined
+      if (binding.conditionsText.trim()) {
+        const parsed = JSON.parse(binding.conditionsText)
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(t("invalidConditions"))
+        conditions = parsed as Record<string, unknown>
+      }
+      await workflowApi.bind({ surface: binding.surface.trim(), action: binding.action.trim(), tenantId: binding.tenantId.trim() || undefined, workflowKey: bindingTarget.key, releaseId, priority: Number(binding.priority) || 0, enabled: true, conditions })
       toast.success(t("publishedAndBound"))
       setBindingTarget(null)
       load()
       loadBindings()
+      loadStats()
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : t("actionFailed"))
     } finally {
       setSaving(false)
     }
+  }
+  const pauseRelease = async (item: WorkflowDraft) => {
+    if (!item.releaseId) return
+    const active = activeBindings.find((entry) => entry.release.id === item.releaseId)
+    if (!active) return
+    try {
+      setSaving(true)
+      await workflowApi.bind({ ...active.binding, workflowKey: item.key, enabled: false })
+      toast.success(t("paused"))
+      loadBindings()
+    } catch (error: unknown) { toast.error(error instanceof Error ? error.message : t("actionFailed")) }
+    finally { setSaving(false) }
   }
   const act = async (item: WorkflowDraft, action: "submit" | "approve" | "reject" | "publish") => {
     try {
@@ -304,7 +373,7 @@ export default function WorkflowsPage() {
     finally { setSaving(false) }
   }
 
-  const bindingDialog = <Dialog open={!!bindingTarget} onOpenChange={(value) => { if (!value) setBindingTarget(null) }}><DialogContent><DialogHeader><DialogTitle>{t("bindingTitle")}</DialogTitle><DialogDescription>{t("bindingDescription")}</DialogDescription></DialogHeader><div className="grid gap-4"><div><Label>{t("surface")}</Label><Input value={binding.surface} onChange={(event) => setBinding({ ...binding, surface: event.target.value })} /></div><div><Label>{t("action")}</Label><Input value={binding.action} onChange={(event) => setBinding({ ...binding, action: event.target.value })} /></div><div className="grid grid-cols-2 gap-3"><div><Label>{t("tenantId")}</Label><Input value={binding.tenantId} onChange={(event) => setBinding({ ...binding, tenantId: event.target.value })} placeholder={t("globalBinding")} /></div><div><Label>{t("priority")}</Label><Input type="number" value={binding.priority} onChange={(event) => setBinding({ ...binding, priority: event.target.value })} /></div></div></div><DialogFooter><Button variant="outline" onClick={() => setBindingTarget(null)}>{t("cancel")}</Button><Button disabled={saving || !binding.surface.trim() || !binding.action.trim()} onClick={publishAndBind}>{saving ? t("saving") : t("confirmBinding")}</Button></DialogFooter></DialogContent></Dialog>
+  const bindingDialog = <Dialog open={!!bindingTarget} onOpenChange={(value) => { if (!value) setBindingTarget(null) }}><DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>{t("bindingTitle")}</DialogTitle><DialogDescription>{t("bindingDescription")}</DialogDescription></DialogHeader><div className="grid gap-4"><div><Label>{t("surface")}</Label><Input value={binding.surface} onChange={(event) => setBinding({ ...binding, surface: event.target.value })} /></div><div><Label>{t("action")}</Label><Input value={binding.action} onChange={(event) => setBinding({ ...binding, action: event.target.value })} /></div><div className="grid grid-cols-2 gap-3"><div><Label>{t("tenantId")}</Label><Input value={binding.tenantId} onChange={(event) => setBinding({ ...binding, tenantId: event.target.value })} placeholder={t("globalBinding")} /></div><div><Label>{t("priority")}</Label><Input type="number" value={binding.priority} onChange={(event) => setBinding({ ...binding, priority: event.target.value })} /></div></div><div><Label htmlFor="workflow-routing-conditions">{t("routingConditions")}</Label><Textarea id="workflow-routing-conditions" className="mt-1.5 min-h-36 font-mono text-xs" value={binding.conditionsText} onChange={(event) => setBinding({ ...binding, conditionsText: event.target.value })} placeholder={'{"all":[{"field":"narrativeMode","op":"eq","value":"action"}]}'}/><p className="mt-1 text-xs text-muted-foreground">{t("routingConditionsHelp")}</p></div></div><DialogFooter><Button variant="outline" onClick={() => setBindingTarget(null)}>{t("cancel")}</Button><Button disabled={saving || !binding.surface.trim() || !binding.action.trim()} onClick={publishAndBind}>{saving ? t("saving") : t("confirmBinding")}</Button></DialogFooter></DialogContent></Dialog>
 	const aiDialog = <Dialog open={aiOpen} onOpenChange={setAiOpen}><DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />{t("aiGenerateTitle")}</DialogTitle><DialogDescription>{t("aiGenerateDescription")}</DialogDescription></DialogHeader><div className="space-y-2"><Label htmlFor="workflow-ai-prompt">{t("aiRequirements")}</Label><Textarea id="workflow-ai-prompt" className="min-h-48 resize-y" value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder={t("aiPromptPlaceholder")} /><p className="text-xs leading-5 text-muted-foreground">{t("aiGenerateHelp")}</p></div><DialogFooter><Button variant="outline" onClick={() => setAiOpen(false)}>{t("cancel")}</Button><Button disabled={aiGenerating || !aiPrompt.trim()} onClick={generateWithAI}><Sparkles className="mr-2 h-4 w-4" />{aiGenerating ? t("aiGenerating") : t("aiGenerateAndApply")}</Button></DialogFooter></DialogContent></Dialog>
 
   if (open) {
@@ -320,7 +389,7 @@ export default function WorkflowsPage() {
 
         <div className="grid xl:grid-cols-[290px_minmax(430px,1fr)_350px]">
           <aside className="border-b border-border bg-[#fbfbfa] p-5 xl:border-b-0 xl:border-r">
-            <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">1</span><div><h2 className="text-sm font-semibold">{t("workflowDetails")}</h2><p className="text-xs text-muted-foreground">{t("workflowDetailsHelp")}</p></div></div><div className="space-y-4"><div><Label htmlFor="workflow-key">{t("key")}</Label><Input id="workflow-key" className="mt-1.5 bg-background" disabled={!!editing} value={form.key} onChange={(event) => setForm({ ...form, key: event.target.value })} placeholder="storyboard_generation" /></div><div><Label htmlFor="workflow-name">{t("name")}</Label><Input id="workflow-name" className="mt-1.5 bg-background" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("namePlaceholder")} /></div><div><Label htmlFor="workflow-description">{t("workflowDescription")}</Label><Textarea id="workflow-description" className="mt-1.5 min-h-24 bg-background" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t("descriptionPlaceholder")} /></div></div></section>
+            <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">1</span><div><h2 className="text-sm font-semibold">{t("workflowDetails")}</h2><p className="text-xs text-muted-foreground">{t("workflowDetailsHelp")}</p></div></div><div className="space-y-4"><div><Label>{t("workflowKind")}</Label><div className="mt-1.5 grid grid-cols-3 gap-2">{(["storyboard", "fragment", "storyboardBranch"] as WorkflowKind[]).map((kind) => <button key={kind} type="button" disabled={!!editing} onClick={() => selectKind(kind)} className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${form.kind === kind ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50"}`}>{t(`kind.${kind}`)}</button>)}</div></div><div><Label htmlFor="workflow-key">{t("key")}</Label><Input id="workflow-key" className="mt-1.5 bg-background" disabled={!!editing} value={form.key} onChange={(event) => setForm({ ...form, key: event.target.value })} placeholder={form.kind === "fragment" ? "fragment_generation" : form.kind === "storyboardBranch" ? "storyboard_branch" : "storyboard_generation"} /></div><div><Label htmlFor="workflow-name">{t("name")}</Label><Input id="workflow-name" className="mt-1.5 bg-background" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("namePlaceholder")} /></div><div><Label htmlFor="workflow-description">{t("workflowDescription")}</Label><Textarea id="workflow-description" className="mt-1.5 min-h-24 bg-background" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t("descriptionPlaceholder")} /></div></div></section>
             <div className="my-6 border-t border-border" />
             <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-[11px] font-semibold">2</span><div><h2 className="text-sm font-semibold">{t("settingsTableTitle")}</h2><p className="text-xs text-muted-foreground">{t("executionPolicyHelp")}</p></div></div><div className="space-y-3"><div className="rounded-lg border border-border bg-background p-3"><div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-muted-foreground" /><Label htmlFor="workflow-duration" className="text-xs">{t("maxDuration")}</Label></div><Input id="workflow-duration" className="mt-2" type="number" min="0.0834" max="12" step="0.0834" value={form.settings.maxDurationHours} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxDurationHours: event.target.value } }))} /><p className="mt-1 text-[11px] text-muted-foreground">{t("maxDurationHelp")}</p></div><div className="grid grid-cols-2 gap-2"><div className="rounded-lg border border-border bg-background p-3"><Label htmlFor="workflow-parallelism" className="text-xs">{t("maxParallelism")}</Label><Input id="workflow-parallelism" className="mt-2" type="number" min="1" max="32" step="1" value={form.settings.maxParallelism} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxParallelism: event.target.value } }))} /></div><div className="rounded-lg border border-border bg-background p-3"><Label htmlFor="workflow-attempts" className="text-xs">{t("maxAttempts")}</Label><Input id="workflow-attempts" className="mt-2" type="number" min="1" max="10" step="1" value={form.settings.maxAttempts} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxAttempts: event.target.value } }))} /></div></div></div></section>
           </aside>
@@ -336,7 +405,7 @@ export default function WorkflowsPage() {
           </main>
 
           <aside className="bg-background p-5 xl:border-l xl:border-border"><div className="mb-5 flex items-center gap-2"><Settings2 className="h-4 w-4 text-muted-foreground" /><div><h2 className="text-sm font-semibold">{t("inspectorTitle")}</h2><p className="text-xs text-muted-foreground">{t("inspectorHelp")}</p></div></div>{selectedNode ? <section className="rounded-xl border border-border p-4"><div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary">{(() => { const Icon = nodeIcon(selectedNode.icon); return <Icon className="h-4 w-4" /> })()}</div><div><h3 className="text-sm font-semibold">{t(selectedNode.titleKey)}</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">{t(selectedNode.descriptionKey)}</p></div></div><div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-lg bg-muted/55 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{t("stepOrder")}</p><p className="mt-1 text-sm font-medium">{form.nodes.findIndex((node) => node.id === selectedNode.id) + 1}</p></div><div className="rounded-lg bg-muted/55 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{t("stepDependency")}</p><p className="mt-1 truncate text-sm font-medium">{form.nodes.findIndex((node) => node.id === selectedNode.id) === 0 ? t("noDependency") : t(form.nodes[form.nodes.findIndex((node) => node.id === selectedNode.id) - 1].titleKey)}</p></div></div><Label htmlFor="node-operating-note" className="mt-5 block">{t("nodeNote")}</Label><Textarea id="node-operating-note" className="mt-2 min-h-44 resize-y" value={selectedNode.note} onChange={(event) => updateNode(selectedNode.id, { note: event.target.value })} placeholder={t("nodeNotePlaceholder")} /><p className="mt-2 text-xs leading-5 text-muted-foreground">{t("guidancePrompts")}</p><div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900"><Layers3 className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>{t("savedAsConfig")}</span></div></section> : <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{t("selectNode")}</div>}
-            <section className="mt-5 rounded-xl border border-border p-4"><h3 className="text-sm font-semibold">{t("reviewTitle")}</h3><p className="mt-1 text-xs text-muted-foreground">{t("reviewHelp")}</p><div className="mt-4 space-y-3">{[[detailsReady, t("checkDetails")], [hasExecutableStoryboardPath(form.nodes), t("checkSequence")], [hasValidSettings(form.settings), t("checkPolicy")]].map(([ready, label]) => <div key={String(label)} className="flex items-center gap-2 text-xs">{ready ? <CircleCheck className="h-4 w-4 text-emerald-600" /> : <CircleDashed className="h-4 w-4 text-amber-600" />}<span className={ready ? "text-foreground" : "text-muted-foreground"}>{label}</span></div>)}</div><div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">{t("configuredSteps", { configured: configuredNodeCount, total: form.nodes.length })}</div></section>
+            <section className="mt-5 rounded-xl border border-border p-4"><h3 className="text-sm font-semibold">{t("reviewTitle")}</h3><p className="mt-1 text-xs text-muted-foreground">{t("reviewHelp")}</p><div className="mt-4 space-y-3">{[[detailsReady, t("checkDetails")], [hasExecutablePath(form.nodes, form.kind), t("checkSequence")], [hasValidSettings(form.settings), t("checkPolicy")]].map(([ready, label]) => <div key={String(label)} className="flex items-center gap-2 text-xs">{ready ? <CircleCheck className="h-4 w-4 text-emerald-600" /> : <CircleDashed className="h-4 w-4 text-amber-600" />}<span className={ready ? "text-foreground" : "text-muted-foreground"}>{label}</span></div>)}</div><div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">{t("configuredSteps", { configured: configuredNodeCount, total: form.nodes.length })}</div></section>
             <section className="mt-5 rounded-xl bg-foreground p-4 text-background"><p className="text-xs font-semibold">{t("autoGeneratedTitle")}</p><p className="mt-1 text-xs leading-5 text-background/70">{t("autoGeneratedHelp")}</p></section>
           </aside>
         </div>
@@ -349,7 +418,27 @@ export default function WorkflowsPage() {
   return <AdminPage>
     <PageHeader title={t("title")} description={t("description")} icon={Workflow} actions={<Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />{t("newWorkflow")}</Button>} />
     <div className="grid gap-3 md:grid-cols-4">{(["draft", "reviewing", "approved", "released"] as const).map((status) => <Card key={status}><CardContent className="p-4"><p className="text-xs text-muted-foreground">{t(`status.${status}`)}</p><p className="mt-1 text-2xl font-medium">{counts[status] || 0}</p></CardContent></Card>)}</div>
-    {loading ? <PageSkeleton /> : <div className="grid gap-4 xl:grid-cols-2">{items.map((item) => <Card key={item.id}><CardHeader className="flex-row items-start justify-between space-y-0"><div><CardTitle>{item.name}</CardTitle><p className="mt-1 text-xs text-muted-foreground">{item.key}:v{item.version} · rev {item.revision}</p></div><div className="flex gap-2"><Badge variant="secondary">{t(`status.${item.status}`)}</Badge>{item.releaseId && activeReleaseIds.has(item.releaseId) && <Badge>{t("active")}</Badge>}</div></CardHeader><CardContent><p className="min-h-10 text-sm text-muted-foreground">{item.description || t("noDescription")}</p><div className="mt-4 flex flex-wrap gap-2">{(item.status === "draft" || item.status === "rejected") && <Button size="sm" variant="outline" onClick={() => act(item, "submit")}><Send className="mr-1 h-3.5 w-3.5" />{t("submit")}</Button>}{(item.status === "draft" || item.status === "rejected") && <Button size="sm" variant="outline" onClick={() => openEdit(item)}><Pencil className="mr-1 h-3.5 w-3.5" />{t("edit")}</Button>}{item.status === "reviewing" && <><Button size="sm" variant="outline" onClick={() => act(item, "approve")}><Check className="mr-1 h-3.5 w-3.5" />{t("approve")}</Button><Button size="sm" variant="outline" onClick={() => act(item, "reject")}><X className="mr-1 h-3.5 w-3.5" />{t("reject")}</Button></>}{(item.status === "approved" || item.status === "released") && <Button size="sm" onClick={() => setBindingTarget(item)}>{item.status === "approved" ? <Rocket className="mr-1 h-3.5 w-3.5" /> : <Link className="mr-1 h-3.5 w-3.5" />}{t(item.status === "approved" ? "publishAndBind" : "bind")}</Button>}{item.status === "released" && <Button size="sm" variant="outline" disabled={saving} onClick={() => cloneNextVersion(item)}><CopyPlus className="mr-1 h-3.5 w-3.5" />{t("newVersion")}</Button>}</div></CardContent></Card>)}{items.length === 0 && <p className="text-sm text-muted-foreground">{t("empty")}</p>}</div>}
+    {loading ? <PageSkeleton /> : <div className="grid gap-4 xl:grid-cols-2">{items.map((item) => {
+      const active = Boolean(item.releaseId && activeReleaseIds.has(item.releaseId))
+      const stats = item.releaseId ? releaseStats[item.releaseId] : undefined
+      const itemSurface = `voyager.${workflowKindFromDraft(item)}`
+      const anotherReleaseActive = activeBindings.some((entry) => entry.binding.surface === itemSurface && entry.binding.action === "generate" && entry.release.id !== item.releaseId)
+      return <Card key={item.id}>
+        <CardHeader className="flex-row items-start justify-between space-y-0"><div><CardTitle>{item.name}</CardTitle><p className="mt-1 text-xs text-muted-foreground">{item.key}:v{item.version} · rev {item.revision}</p></div><div className="flex gap-2"><Badge variant="secondary">{t(`status.${item.status}`)}</Badge>{active && <Badge>{t("active")}</Badge>}</div></CardHeader>
+        <CardContent>
+          <p className="min-h-10 text-sm text-muted-foreground">{item.description || t("noDescription")}</p>
+          {stats && <div className="mt-3 grid grid-cols-4 gap-2 rounded-lg bg-muted/45 p-3 text-center"><div><p className="text-lg font-semibold">{stats.totalRuns}</p><p className="text-[10px] text-muted-foreground">{t("runs30d")}</p></div><div><p className="text-lg font-semibold">{Math.round(stats.successRate * 100)}%</p><p className="text-[10px] text-muted-foreground">{t("successRate")}</p></div><div><p className="text-lg font-semibold">{Math.round(stats.averageDurationMs / 1000)}s</p><p className="text-[10px] text-muted-foreground">{t("averageDuration")}</p></div><div><p className="text-lg font-semibold">{stats.fallbackRuns}</p><p className="text-[10px] text-muted-foreground">{t("fallbackRuns")}</p></div></div>}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(item.status === "draft" || item.status === "rejected") && <Button size="sm" variant="outline" onClick={() => act(item, "submit")}><Send className="mr-1 h-3.5 w-3.5" />{t("submit")}</Button>}
+            {(item.status === "draft" || item.status === "rejected") && <Button size="sm" variant="outline" onClick={() => openEdit(item)}><Pencil className="mr-1 h-3.5 w-3.5" />{t("edit")}</Button>}
+            {item.status === "reviewing" && <><Button size="sm" variant="outline" onClick={() => act(item, "approve")}><Check className="mr-1 h-3.5 w-3.5" />{t("approve")}</Button><Button size="sm" variant="outline" onClick={() => act(item, "reject")}><X className="mr-1 h-3.5 w-3.5" />{t("reject")}</Button></>}
+            {(item.status === "approved" || item.status === "released") && !active && <Button size="sm" onClick={() => openBinding(item)}>{item.status === "approved" ? <Rocket className="mr-1 h-3.5 w-3.5" /> : anotherReleaseActive ? <RotateCcw className="mr-1 h-3.5 w-3.5" /> : <Link className="mr-1 h-3.5 w-3.5" />}{t(item.status === "approved" ? "publishAndBind" : anotherReleaseActive ? "rollbackToVersion" : "bind")}</Button>}
+            {active && <Button size="sm" variant="destructive" disabled={saving} onClick={() => pauseRelease(item)}><PauseCircle className="mr-1 h-3.5 w-3.5" />{t("pauseRouting")}</Button>}
+            {item.status === "released" && <Button size="sm" variant="outline" disabled={saving} onClick={() => cloneNextVersion(item)}><CopyPlus className="mr-1 h-3.5 w-3.5" />{t("newVersion")}</Button>}
+          </div>
+        </CardContent>
+      </Card>
+    })}{items.length === 0 && <p className="text-sm text-muted-foreground">{t("empty")}</p>}</div>}
     {bindingDialog}
   </AdminPage>
 }

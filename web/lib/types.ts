@@ -802,6 +802,23 @@ export interface WorkflowCatalogEntry {
   release: WorkflowRelease
 }
 
+export interface WorkflowReleaseStats {
+  workflowReleaseId: string
+  workflowKey?: string
+  workflowVersion?: number
+  totalRuns: number
+  succeededRuns: number
+  failedRuns: number
+  cancelledRuns: number
+  activeRuns: number
+  fallbackRuns: number
+  successRate: number
+  averageDurationMs: number
+  averageTokens: number
+  totalTokens: number
+  lastRunAt?: string
+}
+
 export interface PromptTemplateDraft {
   id: string
   key: string

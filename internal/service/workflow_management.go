@@ -213,6 +213,19 @@ func (s *WorkflowService) ListBindings(ctx context.Context, surface, action, ten
 	return s.publisher.ListCatalog(ctx, surface, action, tenantID)
 }
 
+func (s *WorkflowService) ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error) {
+	if s.publisher == nil {
+		return nil, errors.New("workflow publisher unavailable")
+	}
+	if days <= 0 {
+		days = 30
+	}
+	if days > 365 {
+		return nil, errors.New("workflow stats range cannot exceed 365 days")
+	}
+	return s.publisher.ReleaseStats(ctx, days)
+}
+
 func stableWorkflowBindingID(binding *domain.WorkflowBinding) string {
 	identity := strings.Join([]string{
 		strings.TrimSpace(binding.Surface), strings.TrimSpace(binding.Action),

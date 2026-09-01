@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/grapestree/fgrapery/forge/internal/auth"
@@ -184,6 +185,16 @@ func (h *WorkflowHandler) ListBindings(c *gin.Context) {
 		return
 	}
 	Success(c, gin.H{"items": items})
+}
+
+func (h *WorkflowHandler) Stats(c *gin.Context) {
+	days, _ := strconv.Atoi(c.DefaultQuery("days", "30"))
+	items, err := h.service.ReleaseStats(c.Request.Context(), days)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, gin.H{"items": items, "days": days})
 }
 
 func (h *WorkflowHandler) fail(c *gin.Context, err error) {
