@@ -178,6 +178,33 @@ func (h *WorkflowHandler) SaveBinding(c *gin.Context) {
 	Success(c, saved)
 }
 
+func (h *WorkflowHandler) PauseReleaseBindings(c *gin.Context) {
+	count, err := h.service.PauseReleaseBindings(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, gin.H{"releaseId": c.Param("id"), "disabledBindings": count})
+}
+
+func (h *WorkflowHandler) RebindWorkflowBindings(c *gin.Context) {
+	var body struct {
+		Surface     string `json:"surface" binding:"required"`
+		Action      string `json:"action" binding:"required"`
+		WorkflowKey string `json:"workflowKey" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	count, err := h.service.RebindWorkflowBindings(c.Request.Context(), c.Param("id"), body.Surface, body.Action, body.WorkflowKey)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, gin.H{"releaseId": c.Param("id"), "updatedBindings": count})
+}
+
 func (h *WorkflowHandler) ListBindings(c *gin.Context) {
 	items, err := h.service.ListBindings(c.Request.Context(), c.Query("surface"), c.Query("action"), c.Query("tenantId"))
 	if err != nil {

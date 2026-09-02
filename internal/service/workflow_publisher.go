@@ -19,6 +19,8 @@ type WorkflowPublisher interface {
 	PublishPromptVersion(ctx context.Context, prompt *domain.PromptTemplateVersion) (*domain.PromptTemplateVersion, error)
 	PublishRelease(ctx context.Context, release *domain.WorkflowRelease) (*domain.WorkflowRelease, error)
 	SaveBinding(ctx context.Context, binding *domain.WorkflowBinding) (*domain.WorkflowBinding, error)
+	PauseReleaseBindings(ctx context.Context, releaseID string) (int64, error)
+	RebindWorkflowBindings(ctx context.Context, releaseID, surface, action, workflowKey string) (int64, error)
 	ListCatalog(ctx context.Context, surface, action, tenantID string) ([]domain.WorkflowCatalogEntry, error)
 	ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error)
 }
@@ -61,6 +63,29 @@ func (p *GraperyWorkflowPublisher) SaveBinding(ctx context.Context, binding *dom
 		return nil, err
 	}
 	return &saved, nil
+}
+
+func (p *GraperyWorkflowPublisher) PauseReleaseBindings(ctx context.Context, releaseID string) (int64, error) {
+	var result struct {
+		DisabledBindings int64 `json:"disabledBindings"`
+	}
+	path := "/api/v1/agent-policy/workflow-releases/" + url.PathEscape(strings.TrimSpace(releaseID)) + "/pause-bindings"
+	if err := p.request(ctx, http.MethodPost, path, nil, &result); err != nil {
+		return 0, err
+	}
+	return result.DisabledBindings, nil
+}
+
+func (p *GraperyWorkflowPublisher) RebindWorkflowBindings(ctx context.Context, releaseID, surface, action, workflowKey string) (int64, error) {
+	var result struct {
+		UpdatedBindings int64 `json:"updatedBindings"`
+	}
+	path := "/api/v1/agent-policy/workflow-releases/" + url.PathEscape(strings.TrimSpace(releaseID)) + "/rebind"
+	body := map[string]string{"surface": surface, "action": action, "workflowKey": workflowKey}
+	if err := p.request(ctx, http.MethodPost, path, body, &result); err != nil {
+		return 0, err
+	}
+	return result.UpdatedBindings, nil
 }
 
 func (p *GraperyWorkflowPublisher) ListCatalog(ctx context.Context, surface, action, tenantID string) ([]domain.WorkflowCatalogEntry, error) {

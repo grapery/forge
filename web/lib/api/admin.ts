@@ -202,6 +202,8 @@ export const workflowApi = {
     forgeClient.post(`/api/admin/workflows/${id}/review`, { decision, comment }),
   publish: (id: string) => forgeClient.post<any, WorkflowRelease>(`/api/admin/workflows/${id}/publish`),
   bind: (data: WorkflowBinding) => forgeClient.post<any, WorkflowBinding>("/api/admin/workflows/bindings", data),
+  pauseReleaseBindings: (releaseId: string) => forgeClient.post<any, { releaseId: string; disabledBindings: number }>(`/api/admin/workflows/releases/${releaseId}/pause-bindings`),
+  rebindRelease: (releaseId: string, data: { surface: string; action: string; workflowKey: string }) => forgeClient.post<any, { releaseId: string; updatedBindings: number }>(`/api/admin/workflows/releases/${releaseId}/rebind`, data),
   listBindings: (params: { surface: string; action: string; tenantId?: string }) =>
     forgeClient.get<any, { items: WorkflowCatalogEntry[] }>("/api/admin/workflows/bindings", { params }),
   stats: (days = 30) =>

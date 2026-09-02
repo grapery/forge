@@ -213,6 +213,20 @@ func (s *WorkflowService) ListBindings(ctx context.Context, surface, action, ten
 	return s.publisher.ListCatalog(ctx, surface, action, tenantID)
 }
 
+func (s *WorkflowService) PauseReleaseBindings(ctx context.Context, releaseID string) (int64, error) {
+	if s.publisher == nil {
+		return 0, errors.New("workflow publisher unavailable")
+	}
+	return s.publisher.PauseReleaseBindings(ctx, strings.TrimSpace(releaseID))
+}
+
+func (s *WorkflowService) RebindWorkflowBindings(ctx context.Context, releaseID, surface, action, workflowKey string) (int64, error) {
+	if s.publisher == nil {
+		return 0, errors.New("workflow publisher unavailable")
+	}
+	return s.publisher.RebindWorkflowBindings(ctx, releaseID, surface, action, workflowKey)
+}
+
 func (s *WorkflowService) ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error) {
 	if s.publisher == nil {
 		return nil, errors.New("workflow publisher unavailable")
@@ -261,6 +275,9 @@ func validateForgeWorkflow(definition domain.WorkflowDefinition, policies domain
 		if (node.Type == "activity" || node.Type == "persist") && strings.TrimSpace(node.Activity) == "" {
 			return fmt.Errorf("node %s requires an activity", node.ID)
 		}
+		if err := validateForgeNodeConfig(node); err != nil {
+			return err
+		}
 		byID[node.ID] = node
 	}
 	indegree, children := map[string]int{}, map[string][]string{}
@@ -300,6 +317,21 @@ func validateForgeWorkflow(definition domain.WorkflowDefinition, policies domain
 	}
 	if visited != len(byID) {
 		return errors.New("workflow graph contains a cycle")
+	}
+	return nil
+}
+
+// Runtime activities currently expose one operator-owned configuration
+// contract. Prompt/model configuration is versioned through PromptBundle and
+// must not be duplicated as inert arbitrary JSON on a node.
+func validateForgeNodeConfig(node domain.WorkflowNode) error {
+	for key, value := range node.Config {
+		if key != "inputDefaults" {
+			return fmt.Errorf("node %s has unsupported runtime config %s", node.ID, key)
+		}
+		if _, ok := value.(map[string]any); !ok {
+			return fmt.Errorf("node %s inputDefaults must be an object", node.ID)
+		}
 	}
 	return nil
 }

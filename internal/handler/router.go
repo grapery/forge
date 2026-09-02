@@ -178,6 +178,8 @@ func SetupRouter(
 			workflows.POST("/:id/review", middleware.RequirePermission(domain.PermWorkflowReview), workflowH.Review)
 			workflows.POST("/:id/publish", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.Publish)
 			workflows.POST("/bindings", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.SaveBinding)
+			workflows.POST("/releases/:id/pause-bindings", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.PauseReleaseBindings)
+			workflows.POST("/releases/:id/rebind", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.RebindWorkflowBindings)
 		}
 
 		promptTemplates := protected.Group("/prompt-templates")

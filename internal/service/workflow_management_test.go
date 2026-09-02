@@ -36,6 +36,20 @@ func TestValidateForgePromptBundleRejectsUnknownNode(t *testing.T) {
 	}
 }
 
+func TestValidateForgeWorkflowRejectsInertNodeConfig(t *testing.T) {
+	definition := domain.WorkflowDefinition{Nodes: []domain.WorkflowNode{{
+		ID: "generate", Type: "activity", Activity: "legacy.storyboard.generate",
+		Config: map[string]any{"temperature": 0.2},
+	}}}
+	if err := validateForgeWorkflow(definition, domain.WorkflowPolicies{}); err == nil {
+		t.Fatal("expected unsupported node config to be rejected")
+	}
+	definition.Nodes[0].Config = map[string]any{"inputDefaults": map[string]any{"sceneCount": 4}}
+	if err := validateForgeWorkflow(definition, domain.WorkflowPolicies{}); err != nil {
+		t.Fatalf("supported inputDefaults rejected: %v", err)
+	}
+}
+
 func TestWorkflowDraftCloneRequestCopiesExecutableConfigurationOnly(t *testing.T) {
 	source := &domain.WorkflowDraft{
 		ID: "wfd_v1", Key: "storyboard_generation", Version: 1, Revision: 7,
