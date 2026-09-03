@@ -27,7 +27,7 @@ export function SectionSubnav({ group }: { group: NavGroup }) {
   const clusters = group === "operations" ? groupOpsItems(items) : [{ key: "other" as const, items }]
 
   return (
-    <div className="sticky top-12 z-30 -mx-4 mb-5 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
+    <div className="sticky top-12 z-30 -mx-4 mb-5 overflow-x-auto border-b border-border bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:hidden">
       <div className="flex min-w-max items-center gap-2">
         {clusters.map((cluster, idx) => (
           <div key={cluster.key} className="flex items-center gap-1">
@@ -60,6 +60,59 @@ export function SectionSubnav({ group }: { group: NavGroup }) {
         ))}
       </div>
     </div>
+  )
+}
+
+/** Vertical section navigation for wide screens — keeps the top bar quiet. */
+export function SectionSidebar({ group }: { group: NavGroup }) {
+  const { user } = useAuth()
+  const pathname = usePathname()
+  const router = useRouter()
+  const t = useTranslations("nav")
+
+  if (!user || !group) return null
+
+  const items = itemsForGroup(group, user)
+  if (items.length === 0) return null
+
+  const clusters = group === "operations" ? groupOpsItems(items) : [{ key: "other" as const, items }]
+
+  return (
+    <aside className="hidden w-52 shrink-0 lg:block xl:w-60">
+      <nav className="sticky top-20 max-h-[calc(100vh-6rem)] space-y-5 overflow-y-auto pb-4" aria-label={t(`group${group.charAt(0).toUpperCase()}${group.slice(1)}`)}>
+        {clusters.map((cluster) => (
+          <div key={cluster.key}>
+            {cluster.key !== "other" && group === "operations" && (
+              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {t(`opsGroup_${cluster.key}`)}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {cluster.items.map((item) => {
+                const active = isNavItemActive(pathname, item.href)
+                return (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => router.push(item.href)}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex w-full items-center gap-2.5 rounded-full px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      active
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{t(item.label)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+    </aside>
   )
 }
 

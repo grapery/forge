@@ -1,34 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  /* Notion-inspired light paper */
-  --background: #ffffff;
+  /* Marketplace warm paper — cream cards on soft warm canvas, dark pill CTAs */
+  --background: #fcfbf5;
   --foreground: #37352f;
-  --card: #ffffff;
+  --card: #f6f5ea;
   --card-foreground: #37352f;
   --popover: #ffffff;
   --popover-foreground: #37352f;
 
-  /* Accent — Notion blue */
-  --primary: #2383e2;
+  /* Accent — near-black pill CTA */
+  --primary: #1c1c1a;
   --primary-foreground: #ffffff;
 
-  --secondary: #f7f7f5;
+  --secondary: #f1efe2;
   --secondary-foreground: #37352f;
 
-  --muted: #f7f7f5;
-  --muted-foreground: #787774;
+  --muted: #f1efe2;
+  --muted-foreground: #8a8878;
 
-  --accent: #f1f1ef;
+  --accent: #efeddd;
   --accent-foreground: #37352f;
 
   --destructive: #e03e3e;
   --destructive-foreground: #ffffff;
 
-  --border: #e9e9e7;
-  --input: #e9e9e7;
-  --ring: #2383e2;
-  --radius: 0.5rem;
+  --border: #e7e4d3;
+  --input: #e7e4d3;
+  --ring: #1c1c1a;
+  --radius: 0.75rem;
 
   /* Semantic status */
   --status-success: #0f7b6c;
@@ -41,13 +41,13 @@
   --status-info-bg: rgba(35, 131, 226, 0.1);
 
   /* Surfaces */
-  --topbar-bg: #f7f7f5;
-  --hub-bg: #f7f7f5;
+  --topbar-bg: #f6f4e9;
+  --hub-bg: #f6f4e9;
 
   /* Flat fills (no glow) */
-  --gradient-primary: #2383e2;
-  --gradient-subtle: #f7f7f5;
-  --gradient-card: #ffffff;
+  --gradient-primary: #1c1c1a;
+  --gradient-subtle: #f1efe2;
+  --gradient-card: #f6f5ea;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
   --shadow-md: 0 1px 3px 0 rgb(0 0 0 / 0.06);
   --shadow-lg: 0 2px 8px 0 rgb(0 0 0 / 0.06);
@@ -55,16 +55,16 @@
   --shadow-glow-lg: none;
 
   /* Legacy aliases → light surfaces */
-  --sidebar-bg: #f7f7f5;
-  --sidebar-active: #efefed;
-  --sidebar-border: #e9e9e7;
-  --sidebar-active-border: #2383e2;
+  --sidebar-bg: #f6f4e9;
+  --sidebar-active: #efeddd;
+  --sidebar-border: #e7e4d3;
+  --sidebar-active-border: #1c1c1a;
   --glass-bg: #ffffff;
-  --glass-border: #e9e9e7;
+  --glass-border: #e7e4d3;
   --glass-shadow: none;
 
   /* Icons */
-  --icon-default: #787774;
+  --icon-default: #8a8878;
   --icon-active: #37352f;
 }
 

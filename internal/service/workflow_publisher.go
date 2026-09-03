@@ -21,6 +21,8 @@ type WorkflowPublisher interface {
 	SaveBinding(ctx context.Context, binding *domain.WorkflowBinding) (*domain.WorkflowBinding, error)
 	PauseReleaseBindings(ctx context.Context, releaseID string) (int64, error)
 	RebindWorkflowBindings(ctx context.Context, releaseID, surface, action, workflowKey string) (int64, error)
+	StartWorkflowTestRun(ctx context.Context, surface, action, releaseID string, input map[string]any) (map[string]any, error)
+	GetWorkflowTestRun(ctx context.Context, runID string) (map[string]any, error)
 	ListCatalog(ctx context.Context, surface, action, tenantID string) ([]domain.WorkflowCatalogEntry, error)
 	ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error)
 }
@@ -86,6 +88,25 @@ func (p *GraperyWorkflowPublisher) RebindWorkflowBindings(ctx context.Context, r
 		return 0, err
 	}
 	return result.UpdatedBindings, nil
+}
+
+func (p *GraperyWorkflowPublisher) StartWorkflowTestRun(ctx context.Context, surface, action, releaseID string, input map[string]any) (map[string]any, error) {
+	path := "/api/v1/agent-policy/workflow-test-runs"
+	body := map[string]any{"surface": surface, "action": action, "releaseId": releaseID, "input": input}
+	var result map[string]any
+	if err := p.request(ctx, http.MethodPost, path, body, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (p *GraperyWorkflowPublisher) GetWorkflowTestRun(ctx context.Context, runID string) (map[string]any, error) {
+	path := "/api/v1/agent-policy/workflow-test-runs/" + url.PathEscape(strings.TrimSpace(runID))
+	var result map[string]any
+	if err := p.get(ctx, path, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (p *GraperyWorkflowPublisher) ListCatalog(ctx context.Context, surface, action, tenantID string) ([]domain.WorkflowCatalogEntry, error) {

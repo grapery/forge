@@ -131,6 +131,26 @@ type WorkflowDraft struct {
 
 func (WorkflowDraft) TableName() string { return "workflow_drafts" }
 
+type WorkflowTestRun struct {
+	ID          string    `gorm:"column:id;primaryKey;size:80"`
+	WorkflowKey string    `gorm:"column:workflow_key;size:120;not null;index"`
+	ReleaseID   string    `gorm:"column:release_id;size:80;not null;index"`
+	Version     int       `gorm:"column:version;not null"`
+	Surface     string    `gorm:"column:surface;size:120;not null"`
+	Action      string    `gorm:"column:action;size:60;not null"`
+	Input       string    `gorm:"column:input;type:text"`
+	RunID       string    `gorm:"column:run_id;size:80;not null;uniqueIndex"`
+	Status      string    `gorm:"column:status;size:24;not null;index"`
+	Error       string    `gorm:"column:error;type:text"`
+	Output      string    `gorm:"column:output;type:longtext"`
+	TokensUsed  int       `gorm:"column:tokens_used;not null;default:0"`
+	TriggeredBy string    `gorm:"column:triggered_by;size:64"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
+}
+
+func (WorkflowTestRun) TableName() string { return "workflow_test_runs" }
+
 type WorkflowApproval struct {
 	ID         string    `gorm:"column:id;primaryKey;size:80"`
 	DraftID    string    `gorm:"column:draft_id;size:80;not null;index"`

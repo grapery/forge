@@ -205,6 +205,76 @@ func (h *WorkflowHandler) RebindWorkflowBindings(c *gin.Context) {
 	Success(c, gin.H{"releaseId": c.Param("id"), "updatedBindings": count})
 }
 
+func (h *WorkflowHandler) StartTestRun(c *gin.Context) {
+	admin := auth.GetAdminContext(c)
+	if admin == nil {
+		Error(c, CodeUnauthorized, "unauthorized")
+		return
+	}
+	var body struct {
+		Surface string         `json:"surface" binding:"required"`
+		Action  string         `json:"action" binding:"required"`
+		Input   map[string]any `json:"input"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		Error(c, CodeInvalidParams, err.Error())
+		return
+	}
+	draft, _, err := h.service.GetDraft(c.Param("id"))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	result, err := h.service.StartTestRun(c.Request.Context(), admin.AdminID, draft, body.Surface, body.Action, body.Input)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, result)
+}
+
+func (h *WorkflowHandler) TestRunResult(c *gin.Context) {
+	admin := auth.GetAdminContext(c)
+	if admin == nil {
+		Error(c, CodeUnauthorized, "unauthorized")
+		return
+	}
+	result, err := h.service.TestRunResult(c.Param("runId"))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, result)
+}
+
+func (h *WorkflowHandler) ListTestRuns(c *gin.Context) {
+	admin := auth.GetAdminContext(c)
+	if admin == nil {
+		Error(c, CodeUnauthorized, "unauthorized")
+		return
+	}
+	items, err := h.service.ListTestRuns(c.Param("id"), 10)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, gin.H{"items": items})
+}
+
+func (h *WorkflowHandler) TestRunStatus(c *gin.Context) {
+	admin := auth.GetAdminContext(c)
+	if admin == nil {
+		Error(c, CodeUnauthorized, "unauthorized")
+		return
+	}
+	result, err := h.service.TestRunStatus(c.Request.Context(), c.Param("runId"))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	Success(c, result)
+}
+
 func (h *WorkflowHandler) ListBindings(c *gin.Context) {
 	items, err := h.service.ListBindings(c.Request.Context(), c.Query("surface"), c.Query("action"), c.Query("tenantId"))
 	if err != nil {

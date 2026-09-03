@@ -206,6 +206,14 @@ export const workflowApi = {
   rebindRelease: (releaseId: string, data: { surface: string; action: string; workflowKey: string }) => forgeClient.post<any, { releaseId: string; updatedBindings: number }>(`/api/admin/workflows/releases/${releaseId}/rebind`, data),
   listBindings: (params: { surface: string; action: string; tenantId?: string }) =>
     forgeClient.get<any, { items: WorkflowCatalogEntry[] }>("/api/admin/workflows/bindings", { params }),
+  startTestRun: (id: string, data: { surface: string; action: string; input: Record<string, unknown>; testRun?: boolean }) =>
+    forgeClient.post<any, Record<string, unknown>>(`/api/admin/workflows/${id}/test-runs`, data),
+  getTestRun: (runId: string) =>
+    forgeClient.get<any, Record<string, unknown>>(`/api/admin/workflows/test-runs/${encodeURIComponent(runId)}`),
+  getTestRunResult: (runId: string) =>
+    forgeClient.get<any, Record<string, unknown>>(`/api/admin/workflows/test-runs/${encodeURIComponent(runId)}/result`),
+  listTestRuns: (releaseId: string) =>
+    forgeClient.get<any, { items: Array<Record<string, unknown>> }>(`/api/admin/workflows/releases/${encodeURIComponent(releaseId)}/test-runs`),
   stats: (days = 30) =>
     forgeClient.get<any, { items: WorkflowReleaseStats[]; days: number }>("/api/admin/workflows/stats", { params: { days } }),
 }

@@ -44,7 +44,6 @@ export const navItems: NavItem[] = [
   { href: "/ai-tasks", label: "aiTasks", icon: Brain, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "ai-tasks", description: "hubDescAiTasks" },
   { href: "/ai-generations", label: "aiGenerations", icon: Sparkles, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "ai-generations", description: "hubDescAiGenerations" },
   { href: "/agents", label: "agents", icon: Bot, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "agents", description: "hubDescAgents" },
-  { href: "/prompts", label: "prompts", icon: Terminal, roles: ["super_admin", "admin"], group: "operations", subgroup: "ai", permission: "prompts", description: "hubDescPrompts" },
 	{ href: "/prompt-templates", label: "promptTemplates", icon: FileText, roles: ["super_admin", "admin", "operator"], group: "operations", subgroup: "ai", permission: "prompts", description: "hubDescPromptTemplates" },
   { href: "/workflows", label: "workflows", icon: Workflow, roles: ["super_admin", "admin", "operator", "viewer"], group: "operations", subgroup: "ai", permission: "workflow-view", description: "hubDescWorkflows" },
   { href: "/users", label: "users", icon: Users, roles: ["super_admin", "admin"], group: "operations", subgroup: "users", permission: "users", description: "hubDescUsers" },

@@ -27,6 +27,7 @@ func (r *Repository) AutoMigrate() error {
 		&OpsAssistantToolCall{},
 		&WorkflowDraft{},
 		&WorkflowApproval{},
+		&WorkflowTestRun{},
 		&PromptTemplateDraft{},
 		&PromptTemplateApproval{},
 	)

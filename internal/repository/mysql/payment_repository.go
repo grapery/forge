@@ -49,7 +49,7 @@ func (rr *ReadRepository) ListMemberships(query *domain.PaymentListQuery) ([]*do
 
 	var rows []row
 	if err := q.Select("memberships.id, memberships.user_id, memberships.tier, memberships.status, " +
-		"COALESCE(UNIX_TIMESTAMP(memberships.start_date), 0) as start_date, COALESCE(UNIX_TIMESTAMP(memberships.end_date), 0) as end_date, " +
+		"COALESCE(CAST(UNIX_TIMESTAMP(memberships.start_date) AS SIGNED), 0) as start_date, COALESCE(CAST(UNIX_TIMESTAMP(memberships.end_date) AS SIGNED), 0) as end_date, " +
 		"COALESCE(memberships.auto_renew, false) as auto_renew, " +
 		"COALESCE(memberships.token_quota, 0) as token_quota, COALESCE(memberships.token_used, 0) as token_used, " +
 		"memberships.created_at, memberships.updated_at").
@@ -215,8 +215,8 @@ func (rr *ReadRepository) ListOrders(query *domain.PaymentListQuery) ([]*domain.
 		"subscription_orders.status, "+
 		"COALESCE(subscription_orders.payment_method, '') as payment_method, "+
 		"COALESCE(subscription_orders.payment_id, '') as payment_id, "+
-		"COALESCE(UNIX_TIMESTAMP(subscription_orders.start_date), 0) as start_date, "+
-		"COALESCE(UNIX_TIMESTAMP(subscription_orders.end_date), 0) as end_date, "+
+		"COALESCE(CAST(UNIX_TIMESTAMP(subscription_orders.start_date) AS SIGNED), 0) as start_date, "+
+		"COALESCE(CAST(UNIX_TIMESTAMP(subscription_orders.end_date) AS SIGNED), 0) as end_date, "+
 		"subscription_orders.created_at, subscription_orders.updated_at").
 		Order("subscription_orders.created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
@@ -291,8 +291,8 @@ func (rr *ReadRepository) GetOrderDetail(id string) (*domain.SubscriptionOrderIt
 	if err := rr.db.Table("subscription_orders").
 		Select("id, user_id, COALESCE(plan_id, '') as plan_id, COALESCE(amount, 0) as amount, "+
 			"COALESCE(currency, 'USD') as currency, status, COALESCE(payment_method, '') as payment_method, "+
-			"COALESCE(payment_id, '') as payment_id, COALESCE(UNIX_TIMESTAMP(start_date), 0) as start_date, "+
-			"COALESCE(UNIX_TIMESTAMP(end_date), 0) as end_date, created_at, updated_at").
+			"COALESCE(payment_id, '') as payment_id, COALESCE(CAST(UNIX_TIMESTAMP(start_date) AS SIGNED), 0) as start_date, "+
+			"COALESCE(CAST(UNIX_TIMESTAMP(end_date) AS SIGNED), 0) as end_date, created_at, updated_at").
 		Where("id = ?", id).Take(&r).Error; err != nil {
 		return nil, fmt.Errorf("get order detail: %w", err)
 	}
@@ -424,8 +424,8 @@ func (rr *ReadRepository) GetActiveMembershipByUserIDTx(db *gorm.DB, userID stri
 	err := db.Table("memberships").
 		Clauses(clause.Locking{Strength: "UPDATE"}).
 		Select("id, user_id, tier, status, "+
-			"COALESCE(UNIX_TIMESTAMP(start_date), 0) as start_date, "+
-			"COALESCE(UNIX_TIMESTAMP(end_date), 0) as end_date, "+
+			"COALESCE(CAST(UNIX_TIMESTAMP(start_date) AS SIGNED), 0) as start_date, "+
+			"COALESCE(CAST(UNIX_TIMESTAMP(end_date) AS SIGNED), 0) as end_date, "+
 			"COALESCE(auto_renew, false) as auto_renew, "+
 			"COALESCE(token_quota, 0) as token_quota, "+
 			"COALESCE(token_used, 0) as token_used").
@@ -463,8 +463,8 @@ func (rr *ReadRepository) GetMembershipByIDTx(db *gorm.DB, id string) (*domain.M
 	err := db.Table("memberships").
 		Clauses(clause.Locking{Strength: "UPDATE"}).
 		Select("id, user_id, tier, status, "+
-			"COALESCE(UNIX_TIMESTAMP(start_date), 0) as start_date, "+
-			"COALESCE(UNIX_TIMESTAMP(end_date), 0) as end_date, "+
+			"COALESCE(CAST(UNIX_TIMESTAMP(start_date) AS SIGNED), 0) as start_date, "+
+			"COALESCE(CAST(UNIX_TIMESTAMP(end_date) AS SIGNED), 0) as end_date, "+
 			"COALESCE(auto_renew, false) as auto_renew, "+
 			"COALESCE(token_quota, 0) as token_quota, "+
 			"COALESCE(token_used, 0) as token_used").

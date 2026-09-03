@@ -21,7 +21,7 @@ func TestCompileWorkflowProposalBuildsCanonicalStoryboardPath(t *testing.T) {
 	if req.Key != "premium_trailer_flow" {
 		t.Fatalf("unexpected key %q", req.Key)
 	}
-	if len(req.Definition.Nodes) != 5 {
+	if len(req.Definition.Nodes) != 7 {
 		t.Fatalf("expected optional image node, got %d nodes", len(req.Definition.Nodes))
 	}
 	for i, node := range req.Definition.Nodes {
@@ -35,8 +35,11 @@ func TestCompileWorkflowProposalBuildsCanonicalStoryboardPath(t *testing.T) {
 	if req.Policies.MaxDurationSeconds != 21600 || req.Policies.MaxParallelism != 2 || req.Policies.MaxAttempts != 5 {
 		t.Fatalf("unexpected policies: %#v", req.Policies)
 	}
-	if got := req.Definition.Nodes[2].Config["operatorNote"]; got != "突出前三秒冲突。" {
+	if got := req.Definition.Nodes[3].Config["operatorNote"]; got != "突出前三秒冲突。" {
 		t.Fatalf("unexpected node instruction: %#v", got)
+	}
+	if allowlist, ok := req.Definition.Nodes[0].Config["inputPatchAllowlist"].([]string); !ok || len(allowlist) == 0 {
+		t.Fatalf("planner input patch allowlist is missing: %#v", req.Definition.Nodes[0].Config)
 	}
 }
 
@@ -54,7 +57,7 @@ func TestCompileWorkflowProposalNormalizesUnsafeValues(t *testing.T) {
 	if req.Key != "workflow_123_demo_flow" {
 		t.Fatalf("unexpected normalized key %q", req.Key)
 	}
-	if len(req.Definition.Nodes) != 4 {
+	if len(req.Definition.Nodes) != 6 {
 		t.Fatalf("images should be omitted, got %d nodes", len(req.Definition.Nodes))
 	}
 	if req.Policies.MaxDurationSeconds != 43200 || req.Policies.MaxParallelism != 4 || req.Policies.MaxAttempts != 3 {

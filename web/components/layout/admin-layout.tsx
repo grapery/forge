@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { resolveActiveGroup, visibleTopSections } from "@/lib/nav"
-import { SectionSubnav } from "@/components/layout/section-nav"
+import { SectionSubnav, SectionSidebar } from "@/components/layout/section-nav"
 import { CommandPalette } from "@/components/layout/command-palette"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -170,9 +170,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="flex-1 overflow-auto">
-        <div key={pathname} className={cn("mx-auto w-full px-4 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-8", wide ? "max-w-5xl" : "max-w-7xl")}>
-          {showSubnav && !isHub && <SectionSubnav group={active as "analytics" | "support" | "operations" | "settings"} />}
-          {children}
+        <div className="w-full px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+          <div key={pathname} className={cn("flex gap-7", wide && "mx-auto max-w-5xl")}>
+            {showSubnav && !isHub && <SectionSidebar group={active as "analytics" | "support" | "operations" | "settings"} />}
+            <div className="min-w-0 flex-1">
+              {showSubnav && !isHub && <SectionSubnav group={active as "analytics" | "support" | "operations" | "settings"} />}
+              {children}
+            </div>
+          </div>
         </div>
       </main>
 

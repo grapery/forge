@@ -110,7 +110,7 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 				"COALESCE(likes, 0) as likes, "+
 				"0 as comments, "+
 				"CASE WHEN deleted_at IS NULL OR deleted_at = 0 THEN 0 ELSE 1 END as is_removed, "+
-				"UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at",
+				"CAST(UNIX_TIMESTAMP(created_at) AS SIGNED) as created_at, CAST(UNIX_TIMESTAMP(updated_at) AS SIGNED) as updated_at",
 			userCol, titleCol, statusCol)
 	case "storyboard":
 		selectCols = fmt.Sprintf(
@@ -119,7 +119,7 @@ func (rr *ReadRepository) ListContent(query *domain.ContentListQuery) ([]*domain
 				"COALESCE(likes, 0) as likes, COALESCE(comments, 0) as comments, "+
 				"COALESCE(story_id, '') as story_id, COALESCE(parent_id, '') as parent_id, "+
 				"CASE WHEN deleted_at IS NULL OR deleted_at = 0 THEN 0 ELSE 1 END as is_removed, "+
-				"UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(updated_at) as updated_at",
+				"CAST(UNIX_TIMESTAMP(created_at) AS SIGNED) as created_at, CAST(UNIX_TIMESTAMP(updated_at) AS SIGNED) as updated_at",
 			userCol, titleCol, statusCol)
 	case "fragment":
 		selectCols = fmt.Sprintf(

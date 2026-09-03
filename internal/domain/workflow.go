@@ -51,6 +51,27 @@ type WorkflowDraft struct {
 	UpdatedAt       time.Time          `json:"updatedAt"`
 }
 
+// WorkflowTestRun 记录一次针对已发布版本的试运行：输入、运行 ID 与最终
+// 结果。运行本身的节点级执行状态由 grapery generation_executions 持久化，
+// 这里保存运营侧的验证档案。
+type WorkflowTestRun struct {
+	ID          string    `json:"id"`
+	WorkflowKey string    `json:"workflowKey"`
+	ReleaseID   string    `json:"releaseId"`
+	Version     int       `json:"version"`
+	Surface     string    `json:"surface"`
+	Action      string    `json:"action"`
+	Input       string    `json:"input"`
+	RunID       string    `json:"runId"`
+	Status      string    `json:"status"`
+	Error       string    `json:"error,omitempty"`
+	Output      string    `json:"output,omitempty"`
+	TokensUsed  int       `json:"tokensUsed"`
+	TriggeredBy string    `json:"triggeredBy"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
 type WorkflowApproval struct {
 	ID         string    `json:"id"`
 	DraftID    string    `json:"draftId"`

@@ -101,17 +101,26 @@ resolution, and recovery. Production should also keep
   runtime v1 until their durable semantics are implemented.
 - `legacy.storyboard.generate` and the earlier three-activity workflow remain
   available for already-published releases. Newly-authored storyboard workflows
-  use five durable activities: `storyboard.ensure_draft`,
+  use a bounded planning activity plus six durable activities:
+  `ai.runtime.plan`, `storyboard.ensure_draft`,
   `storyboard.generate_bible_plan`, `storyboard.generate_scene_plan`,
-  `storyboard.persist_content`, and `storyboard.ensure_images`.
+  `storyboard.review_content`, `storyboard.persist_content`, and
+  `storyboard.ensure_images`.
+- `ai.runtime.plan` returns a schema-validated `GenerationPlan`. It may patch
+  only keys named by the release's `inputPatchAllowlist`; invalid or unavailable
+  model output falls back to a deterministic standard plan. It cannot select a
+  workflow release, model provider, or arbitrary tool.
 - `ensure_draft` creates or reuses exactly one draft and persists the pinned
   workflow/prompt context. Its Grapery create request carries a deterministic
   `Idempotency-Key`, covering a crash between remote creation and local
-  checkpoint persistence. Grapery recognizes the complete five-stage release
+  checkpoint persistence. Grapery recognizes the complete staged release
   from its immutable definition and suppresses the legacy in-process text
   pipeline for that draft. Bible and Scene Plan outputs are persisted separately
   in `StoryboardGenerationRun`; retries return the completed stage without a
-  second model call. `persist_content` inserts scenes idempotently and advances
+  second model call. `review_content` runs deterministic consistency checks and,
+  for high-severity conflicts, may replace only the Scene Plan once while
+  preserving Bible and context checkpoints. Its issues, repair count, and token
+  usage are persisted for audit. `persist_content` inserts scenes idempotently and advances
   the storyboard to `content_ready`. `ensure_images` reuses an active image job,
   skips already completed images, or starts the selected scene/comic-page path.
 - Every downstream text node carries the upstream `generationRunId`; it never

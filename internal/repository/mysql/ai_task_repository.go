@@ -98,7 +98,7 @@ func (rr *ReadRepository) ListAITasks(query *domain.AITaskListQuery) ([]*domain.
 		"COALESCE(related_entity_id, '') as related_entity_id, "+
 		"COALESCE(related_entity_type, '') as related_entity_type, "+
 		"COALESCE(error_message, '') as error_message, "+
-		"UNIX_TIMESTAMP(created_at) as created_at, UNIX_TIMESTAMP(started_at) as started_at, UNIX_TIMESTAMP(completed_at) as completed_at").
+		"CAST(UNIX_TIMESTAMP(created_at) AS SIGNED) as created_at, CAST(UNIX_TIMESTAMP(started_at) AS SIGNED) as started_at, CAST(UNIX_TIMESTAMP(completed_at) AS SIGNED) as completed_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list ai tasks: %w", err)
@@ -210,7 +210,7 @@ func (rr *ReadRepository) ListAIGenerationRecords(query *domain.AIGenerationList
 		"COALESCE(related_entity_id, '') as related_entity_id, "+
 		"COALESCE(related_entity_type, '') as related_entity_type, "+
 		"COALESCE(error_message, '') as error_message, "+
-		"UNIX_TIMESTAMP(created_at) as created_at").
+		"CAST(UNIX_TIMESTAMP(created_at) AS SIGNED) as created_at").
 		Order("created_at DESC").Offset(offset).Limit(query.PageSize).
 		Find(&rows).Error; err != nil {
 		return nil, 0, fmt.Errorf("list ai generation records: %w", err)

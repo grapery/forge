@@ -179,6 +179,10 @@ func SetupRouter(
 			workflows.POST("/:id/publish", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.Publish)
 			workflows.POST("/bindings", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.SaveBinding)
 			workflows.POST("/releases/:id/pause-bindings", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.PauseReleaseBindings)
+			workflows.POST("/:id/test-runs", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.StartTestRun)
+			workflows.GET("/test-runs/:runId", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.TestRunStatus)
+			workflows.GET("/releases/:id/test-runs", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.ListTestRuns)
+			workflows.GET("/test-runs/:runId/result", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.TestRunResult)
 			workflows.POST("/releases/:id/rebind", middleware.RequirePermission(domain.PermWorkflowPublish), workflowH.RebindWorkflowBindings)
 		}
 

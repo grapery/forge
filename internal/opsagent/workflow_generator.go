@@ -31,9 +31,11 @@ var storyboardWorkflowNodes = []struct {
 	Activity string
 	Optional bool
 }{
+	{ID: "plan_generation", Type: "activity", Activity: "ai.runtime.plan"},
 	{ID: "generate_storyboard", Type: "activity", Activity: "storyboard.ensure_draft"},
 	{ID: "generate_bible_plan", Type: "activity", Activity: "storyboard.generate_bible_plan"},
 	{ID: "generate_scene_plan", Type: "activity", Activity: "storyboard.generate_scene_plan"},
+	{ID: "review_storyboard_content", Type: "activity", Activity: "storyboard.review_content"},
 	{ID: "persist_storyboard_content", Type: "persist", Activity: "storyboard.persist_content"},
 	{ID: "generate_storyboard_images", Type: "activity", Activity: "storyboard.ensure_images", Optional: true},
 }
@@ -49,14 +51,16 @@ Return exactly one JSON object and no prose. Use this schema:
   "maxParallelism": 4,
   "maxAttempts": 3,
   "nodeInstructions": {
+    "ai.runtime.plan": "specific planning instruction",
     "storyboard.ensure_draft": "specific operating instruction",
     "storyboard.generate_bible_plan": "specific operating instruction",
     "storyboard.generate_scene_plan": "specific operating instruction",
+    "storyboard.review_content": "specific quality-review instruction",
     "storyboard.persist_content": "specific operating instruction",
     "storyboard.ensure_images": "specific operating instruction"
   }
 }
-Only the five listed activities are supported. The first four are mandatory and ordered as shown. Images are optional.
+Only the seven listed activities are supported. Planning and the five content activities are mandatory and ordered as shown. Images are optional.
 Translate the operator's intent into practical, concise node instructions. Do not invent prompt version IDs, approvals, bindings, or unsupported activities.
 maxDurationHours must be between 0.0834 (about 5 minutes) and 12, maxParallelism between 1 and 32, and maxAttempts between 1 and 10.`
 
@@ -109,11 +113,19 @@ func compileWorkflowProposal(proposal generatedWorkflowProposal) (*domain.Create
 			continue
 		}
 		node := domain.WorkflowNode{ID: template.ID, Type: template.Type, Activity: template.Activity}
+		if template.Activity == "ai.runtime.plan" {
+			node.Config = map[string]any{"inputPatchAllowlist": []string{
+				"sceneCount", "generateImages", "continuityLevel", "visualBibleStrategy", "characterStrategy", "acceptanceChecks",
+			}}
+		}
 		if len(nodes) > 0 {
 			node.DependsOn = []string{nodes[len(nodes)-1].ID}
 		}
 		if note := strings.TrimSpace(proposal.NodeInstructions[template.Activity]); note != "" {
-			node.Config = map[string]any{"operatorNote": note}
+			if node.Config == nil {
+				node.Config = map[string]any{}
+			}
+			node.Config["operatorNote"] = note
 		}
 		nodes = append(nodes, node)
 	}

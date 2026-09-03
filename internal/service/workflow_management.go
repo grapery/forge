@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -15,13 +16,14 @@ import (
 )
 
 type WorkflowService struct {
-	repo      *mysql.Repository
-	publisher WorkflowPublisher
-	logger    *zap.Logger
+	repo       *mysql.Repository
+	publisher  WorkflowPublisher
+	logger     *zap.Logger
+	contentSvc *ContentService
 }
 
-func NewWorkflowService(repo *mysql.Repository, publisher WorkflowPublisher, logger *zap.Logger) *WorkflowService {
-	return &WorkflowService{repo: repo, publisher: publisher, logger: logger}
+func NewWorkflowService(repo *mysql.Repository, publisher WorkflowPublisher, logger *zap.Logger, contentSvc *ContentService) *WorkflowService {
+	return &WorkflowService{repo: repo, publisher: publisher, logger: logger, contentSvc: contentSvc}
 }
 
 func (s *WorkflowService) CreateDraft(req *domain.CreateWorkflowDraftRequest, actor string) (*domain.WorkflowDraft, error) {
@@ -225,6 +227,222 @@ func (s *WorkflowService) RebindWorkflowBindings(ctx context.Context, releaseID,
 		return 0, errors.New("workflow publisher unavailable")
 	}
 	return s.publisher.RebindWorkflowBindings(ctx, releaseID, surface, action, workflowKey)
+}
+
+// StartTestRun 对已发布版本发起一次真实运行，并把试运行档案持久化到 forge，
+// 供运营人员在网页端回溯验证历史。
+func (s *WorkflowService) StartTestRun(ctx context.Context, actor string, draft *domain.WorkflowDraft, surface, action string, input map[string]any) (*domain.WorkflowTestRun, error) {
+	if s.publisher == nil {
+		return nil, errors.New("workflow publisher unavailable")
+	}
+	if draft == nil || strings.TrimSpace(draft.ReleaseID) == "" {
+		return nil, errors.New("workflow release is required for a test run")
+	}
+	result, err := s.publisher.StartWorkflowTestRun(ctx, surface, action, draft.ReleaseID, input)
+	if err != nil {
+		return nil, err
+	}
+	runID, _ := result["id"].(string)
+	if runID == "" {
+		runID, _ = result["runId"].(string)
+	}
+	if strings.TrimSpace(runID) == "" {
+		return nil, errors.New("agent test run did not return a run id")
+	}
+	status, _ := result["status"].(string)
+	if strings.TrimSpace(status) == "" {
+		status = "pending"
+	}
+	inputJSON, err := json.Marshal(input)
+	if err != nil {
+		inputJSON = []byte("{}")
+	}
+	record := &domain.WorkflowTestRun{
+		WorkflowKey: draft.Key,
+		ReleaseID:   draft.ReleaseID,
+		Version:     draft.Version,
+		Surface:     surface,
+		Action:      action,
+		Input:       string(inputJSON),
+		RunID:       runID,
+		Status:      status,
+		TriggeredBy: actor,
+	}
+	if output, ok := result["output"]; ok {
+		if raw, marshalErr := json.Marshal(output); marshalErr == nil {
+			record.Output = string(raw)
+		}
+	}
+	if tokens, ok := result["tokensUsed"].(float64); ok {
+		record.TokensUsed = int(tokens)
+	}
+	if err := s.repo.CreateWorkflowTestRun(record); err != nil {
+		s.logger.Error("persist workflow test run", zap.Error(err))
+	}
+	return record, nil
+}
+
+// TestRunStatus 拉取运行状态并同步回试运行档案；节点级执行明细由 grapery
+// generation_executions 持久化，这里保留运营侧看到的最终结果。
+func (s *WorkflowService) TestRunStatus(ctx context.Context, runID string) (map[string]any, error) {
+	if s.publisher == nil {
+		return nil, errors.New("workflow publisher unavailable")
+	}
+	result, err := s.publisher.GetWorkflowTestRun(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	record, recordErr := s.repo.GetWorkflowTestRunByRunID(strings.TrimSpace(runID))
+	if recordErr != nil || record == nil {
+		return result, nil
+	}
+	if status, ok := result["status"].(string); ok && strings.TrimSpace(status) != "" {
+		record.Status = status
+	}
+	if errMsg, ok := result["error"].(string); ok {
+		record.Error = errMsg
+	} else {
+		record.Error = ""
+	}
+	if output, ok := result["output"]; ok {
+		if raw, marshalErr := json.Marshal(output); marshalErr == nil {
+			record.Output = string(raw)
+		}
+	}
+	if tokens, ok := result["tokensUsed"].(float64); ok {
+		record.TokensUsed = int(tokens)
+	}
+	if err := s.repo.SaveWorkflowTestRun(record); err != nil {
+		s.logger.Error("persist workflow test run status", zap.Error(err))
+	}
+	return result, nil
+}
+
+func (s *WorkflowService) ListTestRuns(releaseID string, limit int) ([]*domain.WorkflowTestRun, error) {
+	return s.repo.ListWorkflowTestRuns(strings.TrimSpace(releaseID), limit)
+}
+
+// TestRunResult 聚合一次试运行的档案与产物内容：运行输出里的
+// storyboardId/draftStoryboardId（分支流程取 branchBatch 的候选列表）会
+// 被解析为具体的故事板摘要，供 forge 网页端直接查看生成效果。
+func (s *WorkflowService) TestRunResult(runID string) (map[string]any, error) {
+	record, err := s.repo.GetWorkflowTestRunByRunID(strings.TrimSpace(runID))
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]any{"run": record}
+	var output map[string]any
+	if record.Output != "" {
+		_ = json.Unmarshal([]byte(record.Output), &output)
+	}
+	if output == nil {
+		return result, nil
+	}
+	sbIDs := make([]string, 0, 4)
+	if nodeOutputs, ok := output["nodeOutputs"].(map[string]any); ok {
+		for _, v := range nodeOutputs {
+			node, _ := v.(map[string]any)
+			if node == nil {
+				continue
+			}
+			for _, key := range []string{"storyboardId", "draftStoryboardId", "id"} {
+				if id, ok := node[key].(string); ok && strings.HasPrefix(id, "") && isUUIDLike(id) && !containsStr(sbIDs, id) {
+					sbIDs = append(sbIDs, id)
+				}
+			}
+		}
+	}
+	if batch, ok := output["branchBatch"].(map[string]any); ok {
+		if candidates, ok := batch["candidates"].([]any); ok {
+			summaries := make([]map[string]any, 0, len(candidates))
+			for _, raw := range candidates {
+				cand, _ := raw.(map[string]any)
+				if cand == nil {
+					continue
+				}
+				summary := map[string]any{
+					"strategy": cand["strategy"], "narrativeHook": cand["narrativeHook"],
+					"communityAppeal": cand["communityAppeal"], "diffFromParent": cand["diffFromParent"],
+					"rawInput": cand["rawInput"],
+				}
+				if id, ok := cand["storyboardId"].(string); ok && isUUIDLike(id) {
+					summary["storyboardId"] = id
+					if detail := s.storyboardSummary(id); detail != nil {
+						summary["storyboard"] = detail
+					}
+				}
+				if meta, ok := cand["metadata"].(map[string]any); ok {
+					if errMsg, ok := meta["error"].(string); ok {
+						summary["error"] = errMsg
+					}
+				}
+				summaries = append(summaries, summary)
+			}
+			result["branches"] = summaries
+		}
+	}
+	if len(sbIDs) > 0 {
+		storyboards := make([]map[string]any, 0, len(sbIDs))
+		for _, id := range sbIDs {
+			if summary := s.storyboardSummary(id); summary != nil {
+				storyboards = append(storyboards, summary)
+			}
+		}
+		result["storyboards"] = storyboards
+	}
+	return result, nil
+}
+
+func (s *WorkflowService) storyboardSummary(id string) map[string]any {
+	detail, err := s.contentSvc.GetContentDetail("storyboard", id)
+	if err != nil {
+		return nil
+	}
+	summary := map[string]any{"id": id}
+	if title, ok := detail["title"].(string); ok {
+		summary["title"] = title
+	}
+	if content, ok := detail["content"].(string); ok {
+		summary["content"] = content
+	}
+	if summaryStr, ok := detail["continuation_summary"].(string); ok && summaryStr != "" {
+		summary["summary"] = summaryStr
+	}
+	if raw, ok := detail["raw_input"].(string); ok {
+		summary["rawInput"] = raw
+	}
+	if status, ok := detail["workflow_status"].(string); ok {
+		summary["status"] = status
+	}
+	if step, ok := detail["current_step"].(string); ok {
+		summary["currentStep"] = step
+	}
+	if sceneCount, ok := detail["scene_count"]; ok {
+		summary["sceneCount"] = sceneCount
+	}
+	return summary
+}
+
+func isUUIDLike(id string) bool {
+	id = strings.TrimSpace(id)
+	if len(id) < 32 {
+		return false
+	}
+	for _, c := range id {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || c == '-') {
+			return false
+		}
+	}
+	return true
+}
+
+func containsStr(items []string, target string) bool {
+	for _, item := range items {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *WorkflowService) ReleaseStats(ctx context.Context, days int) ([]domain.WorkflowReleaseStats, error) {

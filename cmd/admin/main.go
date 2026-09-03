@@ -73,7 +73,7 @@ func main() {
 	topicSvc := service.NewTopicService(readRepo)
 	promptSvc := service.NewPromptService(readRepo)
 	workflowPublisher := service.NewGraperyWorkflowPublisher(cfg.WorkflowRuntime)
-	workflowSvc := service.NewWorkflowService(repo, workflowPublisher, logger)
+	workflowSvc := service.NewWorkflowService(repo, workflowPublisher, logger, contentSvc)
 	promptTemplateSvc := service.NewPromptTemplateService(repo, workflowPublisher)
 	characterSvc := service.NewCharacterService(readRepo, writeRepo)
 	commentSvc := service.NewCommentService(readRepo, writeRepo, logger)
