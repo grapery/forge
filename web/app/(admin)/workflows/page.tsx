@@ -18,6 +18,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
+import { defaultCreativeControls, hasValidCreativeControls, parseCreativeControls } from "@/lib/workflow-creative-controls"
+import { creationWorkflowIdentity, characterCreationDefaults, type WorkflowKind } from "@/lib/workflow-creation-defaults"
+import { CreativeControlsForm } from "@/components/workflows/creative-controls-form"
+
 type NodeFieldType = "text" | "number" | "boolean" | "select"
 
 type NodeField = {
@@ -60,7 +64,7 @@ type WorkflowSettings = {
   maxAttempts: string
 }
 
-type WorkflowKind = "storyboard" | "fragment" | "storyboardBranch"
+
 
 // Grapery resolves storyboard prompt slots under the fixed conceptual node ids
 // below, so these template ids double as prompt-bundle keys and must not drift.
@@ -128,9 +132,13 @@ const storyboardBranchCatalog: NodeTemplate[] = [
     promptSlots: ["content", "scene_plan"] },
 ]
 
-const catalogForKind = (kind: WorkflowKind) => kind === "fragment" ? fragmentCatalog : kind === "storyboardBranch" ? storyboardBranchCatalog : storyboardCatalog
+const characterCatalog: NodeTemplate[] = [
+  { id: "generate_character", activity: "legacy.character.generate", type: "activity", titleKey: "nodeCharacterTitle", descriptionKey: "nodeCharacterDescription", required: true, icon: "sparkles", tone: "violet" },
+]
+
+const catalogForKind = (kind: WorkflowKind) => kind === "character" ? characterCatalog : kind === "fragment" ? fragmentCatalog : kind === "storyboardBranch" ? storyboardBranchCatalog : storyboardCatalog
 const templatesForKind = catalogForKind
-const defaultCanvas = (kind: WorkflowKind): CanvasNode[] => catalogForKind(kind).filter((node) => node.required).map((node) => ({ ...node, configText: "" }))
+const defaultCanvas = (kind: WorkflowKind): CanvasNode[] => catalogForKind(kind).filter((node) => node.required || node.activity === "storyboard.ensure_images").map((node) => ({ ...node, configText: kind === "character" ? JSON.stringify({ inputDefaults: characterCreationDefaults() }, null, 2) : "" }))
 const defaultSettings = (): WorkflowSettings => ({ maxDurationHours: "12", maxParallelism: "4", maxAttempts: "3" })
 
 const toneGradient: Record<NodeTemplate["tone"], string> = {
@@ -177,7 +185,7 @@ function hasValidNodeConfig(node: CanvasNode) {
   try {
     const parsed = JSON.parse(node.configText) as Record<string, unknown>
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false
-		if (Object.keys(parsed).some((key) => key !== "inputDefaults" && key !== "inputPatchAllowlist" && key !== "operatorNote")) return false
+		if (Object.keys(parsed).some((key) => key !== "inputDefaults" && key !== "inputPatchAllowlist")) return false
 		const defaults = parsed.inputDefaults
 		const allowlist = parsed.inputPatchAllowlist
 		const validPatchKeys = new Set<string>(plannerInputPatchAllowlist)
@@ -208,6 +216,7 @@ function workflowManifest(source: Record<string, unknown> | undefined, name: str
     : {}
   return {
     ...existing,
+    ...creationWorkflowIdentity(kind),
     catalog: { ...catalog, title: name, summary: description, category: catalog.category || "creation", artifact: kind },
     supportedClients: Array.isArray(existing.supportedClients) && existing.supportedClients.length > 0 ? existing.supportedClients : ["voyager"],
   }
@@ -219,6 +228,7 @@ function hasExecutablePath(nodes: CanvasNode[], kind: WorkflowKind) {
 }
 
 function workflowKindFromDraft(item: WorkflowDraft): WorkflowKind {
+  if (item.manifest?.surface === "voyager.character" || item.definition.nodes.some((node) => node.activity === "legacy.character.generate")) return "character"
   if (item.definition.nodes.some((node) => node.activity === "legacy.fragment.generate")) return "fragment"
 	if (item.definition.nodes.some((node) => node.activity === "legacy.storyboard.branch")) return "storyboardBranch"
   const catalog = item.manifest?.catalog
@@ -251,6 +261,11 @@ function hasValidSettings(settings: WorkflowSettings) {
     && Number.isInteger(maxAttempts) && maxAttempts >= 1 && maxAttempts <= 10
 }
 
+function parseRunOutput(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw
+  try { return JSON.parse(raw) } catch { return raw }
+}
+
 export default function WorkflowsPage() {
   const t = useTranslations("workflows")
   const [items, setItems] = useState<WorkflowDraft[]>([])
@@ -271,8 +286,9 @@ export default function WorkflowsPage() {
 	const [aiOpen, setAiOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState("")
 	const [aiGenerating, setAiGenerating] = useState(false)
-  const [form, setForm] = useState({ kind: "storyboard" as WorkflowKind, key: "", name: "", description: "", manifest: {} as Record<string, unknown>, nodes: defaultCanvas("storyboard"), promptBundle: {} as Record<string, string>, settings: defaultSettings() })
+  const [form, setForm] = useState({ kind: "storyboard" as WorkflowKind, key: "", name: "", description: "", manifest: {} as Record<string, unknown>, creativeControls: defaultCreativeControls(), nodes: defaultCanvas("storyboard"), promptBundle: {} as Record<string, string>, settings: defaultSettings() })
   const [promptBundleText, setPromptBundleText] = useState("")
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [binding, setBinding] = useState<WorkflowBindingForm>({ surface: "voyager.storyboard", action: "generate", tenantId: "", priority: "100", conditionsText: "" })
   const [draggedNodeID, setDraggedNodeID] = useState<string | null>(null)
   const [selectedNodeID, setSelectedNodeID] = useState<string | null>(null)
@@ -291,6 +307,7 @@ export default function WorkflowsPage() {
     Promise.all([
       workflowApi.listBindings({ surface: "voyager.storyboard", action: "generate" }),
       workflowApi.listBindings({ surface: "voyager.fragment", action: "generate" }),
+      workflowApi.listBindings({ surface: "voyager.character", action: "generate" }),
 			workflowApi.listBindings({ surface: "voyager.storyboard", action: "branch" }),
     ])
       .then((pages) => {
@@ -304,6 +321,13 @@ export default function WorkflowsPage() {
     workflowApi.stats(30)
       .then((data) => setReleaseStats(Object.fromEntries((data.items || []).map((item) => [item.workflowReleaseId, item]))))
       .catch(() => setReleaseStats({}))
+  }, [])
+
+  const loadTestRunResult = useCallback((runId: string) => {
+    setTestRunResult(null)
+    workflowApi.getTestRunResult(runId)
+      .then((data) => setTestRunResult(data))
+      .catch(() => setTestRunResult(null))
   }, [])
 
   useEffect(() => {
@@ -323,18 +347,17 @@ export default function WorkflowsPage() {
       } catch { /* transient relay errors are tolerated while polling */ }
     }, 3000)
     return () => { if (testRunPollRef.current) clearInterval(testRunPollRef.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [testRun?.runId, testRun?.status])
+  }, [testRun?.runId, testRun?.status, loadTestRunResult])
 
   useEffect(() => { load() }, [load])
   useEffect(() => { loadBindings() }, [loadBindings])
   useEffect(() => { loadStats() }, [loadStats])
   useEffect(() => {
-    if (!open) return
+    if (!open || !advancedOpen) return
     promptTemplateApi.list({ page: 1, pageSize: 100, status: "released" })
       .then((data) => setReleasedPrompts(data.items || []))
       .catch(() => setReleasedPrompts([]))
-  }, [open])
+  }, [open, advancedOpen])
 
   const counts = useMemo(() => items.reduce<Record<string, number>>((acc, item) => {
     acc[item.status] = (acc[item.status] || 0) + 1
@@ -343,7 +366,7 @@ export default function WorkflowsPage() {
   const selectedNode = form.nodes.find((node) => node.id === selectedNodeID) || null
   const selectedTemplate = selectedNode ? catalogForKind(form.kind).find((item) => item.activity === selectedNode.activity) || null : null
   const availableNodes = templatesForKind(form.kind).filter((template) => !form.nodes.some((node) => node.activity === template.activity))
-  const workflowReady = hasExecutablePath(form.nodes, form.kind) && hasValidSettings(form.settings) && form.nodes.every(hasValidNodeConfig) && hasValidPromptBundle(promptBundleText)
+  const workflowReady = hasExecutablePath(form.nodes, form.kind) && hasValidSettings(form.settings) && form.nodes.every(hasValidNodeConfig) && hasValidPromptBundle(promptBundleText) && hasValidCreativeControls(form.creativeControls)
   const detailsReady = Boolean(form.key.trim() && form.name.trim())
   const builderReady = detailsReady && workflowReady
   const configuredNodeCount = form.nodes.filter((node) => node.configText.trim()).length
@@ -390,24 +413,15 @@ export default function WorkflowsPage() {
     return {}
   }
 
-  const setPromptBinding = (nodeID: string, slot: string, value: string) => {
-    const key = slot ? `${nodeID}:${slot}` : nodeID
-    const next = { ...promptBundle }
-    if (value) next[key] = value
-    else delete next[key]
-    setPromptBundleText(Object.keys(next).length > 0 ? JSON.stringify(next, null, 2) : "")
-  }
-
-  const testRunInputTemplate = (kind: WorkflowKind) => kind === "fragment"
+  const testRunInputTemplate = (kind: WorkflowKind) => kind === "character"
+    ? { description: "一位年轻的旅行者，寻找失落的故乡。", name: "旅人", ...characterCreationDefaults() }
+    : kind === "fragment"
     ? { userInput: "试运行输入", imageCount: 1 }
     : kind === "storyboardBranch"
       ? { parentStoryboardId: "替换为父故事板ID", seedPrompt: "试运行种子提示", sceneCount: 3 }
       : { storyId: "替换为故事ID", rawInput: "试运行输入", sceneCount: 3 }
 
-  const parseRunOutput = (raw: unknown): unknown => {
-    if (typeof raw !== "string") return raw
-    try { return JSON.parse(raw) } catch { return raw }
-  }
+
 
   const loadTestRunHistory = (releaseId: string) => {
     workflowApi.listTestRuns(releaseId)
@@ -415,12 +429,7 @@ export default function WorkflowsPage() {
       .catch(() => setTestRunHistory([]))
   }
 
-  const loadTestRunResult = (runId: string) => {
-    setTestRunResult(null)
-    workflowApi.getTestRunResult(runId)
-      .then((data) => setTestRunResult(data))
-      .catch(() => setTestRunResult(null))
-  }
+
 
   const openTestRun = (item: WorkflowDraft) => {
     const kind = workflowKindFromDraft(item)
@@ -496,19 +505,22 @@ export default function WorkflowsPage() {
   }
 
   const openCreate = () => {
+    setAdvancedOpen(false)
     setEditing(null)
     setViewing(false)
-    setForm({ kind: "storyboard", key: "", name: "", description: "", manifest: {}, nodes: defaultCanvas("storyboard"), promptBundle: {}, settings: defaultSettings() })
+    setForm({ kind: "storyboard", key: "", name: "", description: "", manifest: {}, creativeControls: defaultCreativeControls(), nodes: defaultCanvas("storyboard"), promptBundle: {}, settings: defaultSettings() })
     setPromptBundleText("")
 		setSelectedNodeID("plan_generation")
     setOpen(true)
   }
   const openEdit = (item: WorkflowDraft) => {
+    setAdvancedOpen(false)
+    try { parseCreativeControls(item.manifest?.creativeControls) } catch { toast.error(t("creativeInvalidSaved")); return }
     setEditing(item)
     setViewing(false)
     const kind = workflowKindFromDraft(item)
     const nodes = canvasFromDefinition(item.definition, kind)
-    setForm({ kind, key: item.key, name: item.name, description: item.description || "", manifest: item.manifest || {}, nodes, promptBundle: item.promptBundle || {}, settings: settingsFromPolicies(item.policies) })
+    setForm({ kind, key: item.key, name: item.name, description: item.description || "", manifest: item.manifest || {}, creativeControls: parseCreativeControls(item.manifest?.creativeControls), nodes, promptBundle: item.promptBundle || {}, settings: settingsFromPolicies(item.policies) })
     setPromptBundleText(item.promptBundle && Object.keys(item.promptBundle).length > 0 ? JSON.stringify(item.promptBundle, null, 2) : "")
     setSelectedNodeID(nodes[0]?.id || null)
     setOpen(true)
@@ -595,7 +607,7 @@ export default function WorkflowsPage() {
       setSaving(true)
       const payload: CreateWorkflowDraftRequest = {
         key: form.key.trim(), name: form.name.trim(), description: form.description.trim(),
-        manifest: workflowManifest(form.manifest, form.name.trim(), form.description.trim(), form.kind),
+        manifest: { ...workflowManifest(form.manifest, form.name.trim(), form.description.trim(), form.kind), creativeControls: parseCreativeControls(form.creativeControls) },
         definition: definitionFromCanvas(form.nodes),
         policies: policiesFromSettings(form.settings),
         promptBundle: parsePromptBundle(promptBundleText),
@@ -617,7 +629,7 @@ export default function WorkflowsPage() {
 		try {
 			setAiGenerating(true)
 			const generated = await workflowApi.generate(aiPrompt.trim())
-				const kind: WorkflowKind = generated.definition.nodes.some((node) => node.activity === "legacy.fragment.generate") ? "fragment" : generated.definition.nodes.some((node) => node.activity === "legacy.storyboard.branch") ? "storyboardBranch" : "storyboard"
+				const kind: WorkflowKind = generated.definition.nodes.some((node) => node.activity === "legacy.character.generate") ? "character" : generated.definition.nodes.some((node) => node.activity === "legacy.fragment.generate") ? "fragment" : generated.definition.nodes.some((node) => node.activity === "legacy.storyboard.branch") ? "storyboardBranch" : "storyboard"
 				const nodes = canvasFromDefinition(generated.definition, kind)
 				setForm((current) => ({
 					kind,
@@ -625,6 +637,7 @@ export default function WorkflowsPage() {
 				name: generated.name,
 				description: generated.description || "",
 				manifest: generated.manifest || {},
+ creativeControls:parseCreativeControls(generated.manifest?.creativeControls),
 				nodes,
 				promptBundle: generated.promptBundle || {},
 				settings: settingsFromPolicies(generated.policies),
@@ -715,6 +728,14 @@ export default function WorkflowsPage() {
         </header>
 
         <fieldset disabled={viewing} className="min-w-0 border-0 p-0 m-0">
+        <div className="mx-auto max-w-5xl px-5 pt-6">            <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">1</span><div><h2 className="text-sm font-semibold">{t("workflowDetails")}</h2><p className="text-xs text-muted-foreground">{t("workflowDetailsHelp")}</p></div></div><div className="space-y-3">
+              <div className="rounded-xl border border-border bg-background p-3"><p className="text-xs font-medium text-muted-foreground">{t("workflowKind")}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{(["storyboard", "fragment", "character", "storyboardBranch"] as WorkflowKind[]).map((kind) => <button key={kind} type="button" disabled={!!editing} onClick={() => selectKind(kind)} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${form.kind === kind ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50"}`}>{t(`kind.${kind}`)}</button>)}</div></div>
+              <div className="rounded-xl border border-border bg-background p-3"><p className="text-xs font-medium text-muted-foreground">{t("basicsGroup")}</p><div className="mt-2.5 space-y-3"><div><Label htmlFor="workflow-key" className="text-xs">{t("key")}</Label><Input id="workflow-key" className="mt-1.5" disabled={!!editing} value={form.key} onChange={(event) => setForm({ ...form, key: event.target.value })} placeholder={form.kind === "character" ? "character_generation" : form.kind === "fragment" ? "fragment_generation" : form.kind === "storyboardBranch" ? "storyboard_branch" : "storyboard_generation"} /></div><div><Label htmlFor="workflow-name" className="text-xs">{t("name")}</Label><Input id="workflow-name" className="mt-1.5" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("namePlaceholder")} /></div><div><Label htmlFor="workflow-description" className="text-xs">{t("workflowDescription")}</Label><Textarea id="workflow-description" className="mt-1.5 min-h-20" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t("descriptionPlaceholder")} /></div></div></div>
+            </div></section></div>
+        <CreativeControlsForm value={form.creativeControls} onChange={(creativeControls) => setForm((current) => ({ ...current, creativeControls }))} t={t} />
+        <details open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)} className="border-t border-border">
+          <summary className="cursor-pointer px-5 py-4 text-sm font-medium">{t("creativeAdvancedTitle")}</summary>
+          <p className="px-5 pb-4 text-xs leading-5 text-muted-foreground">{t("creativeAdvancedHelp")}</p>
         <section className="border-b border-border bg-[#fbfbfa] px-5 py-4">
           <div className="mx-auto max-w-5xl">
             <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
@@ -730,16 +751,18 @@ export default function WorkflowsPage() {
                       <div className="mt-2 grid gap-2 sm:grid-cols-2">
                         <label className="grid gap-1">
                           <span className="text-[11px] text-muted-foreground">{t("wholeNodePrompt")}</span>
-                          <select value={promptBundle[node.id] || ""} onChange={(event) => setPromptBinding(node.id, "", event.target.value)} className="h-8 rounded-lg border border-border bg-background px-2 text-xs">
+                          <select disabled aria-label={t("wholeNodePrompt")} value={promptBundle[node.id] || ""} className="h-8 rounded-lg border border-border bg-background px-2 text-xs">
                             <option value="">{t("noBinding")}</option>
+                            {promptBundle[node.id] && !releasedPromptOptions.some((option) => option.value === promptBundle[node.id]) && <option value={promptBundle[node.id]}>{promptBundle[node.id]}</option>}
                             {releasedPromptOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                           </select>
                         </label>
                         {(template.promptSlots || []).map((slot) => (
                           <label key={slot} className="grid gap-1">
                             <span className="text-[11px] text-muted-foreground">{t(`slot_${slot.replace(/-/g, "_")}`)}</span>
-                            <select value={promptBundle[`${node.id}:${slot}`] || ""} onChange={(event) => setPromptBinding(node.id, slot, event.target.value)} className="h-8 rounded-lg border border-border bg-background px-2 text-xs">
+                            <select disabled value={promptBundle[`${node.id}:${slot}`] || ""} className="h-8 rounded-lg border border-border bg-background px-2 text-xs">
                               <option value="">{t("noBinding")}</option>
+                              {promptBundle[`${node.id}:${slot}`] && !releasedPromptOptions.some((option) => option.value === promptBundle[`${node.id}:${slot}`]) && <option value={promptBundle[`${node.id}:${slot}`]}>{promptBundle[`${node.id}:${slot}`]}</option>}
                               {releasedPromptOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                             </select>
                           </label>
@@ -751,7 +774,7 @@ export default function WorkflowsPage() {
                 {releasedPromptOptions.length === 0 && <p className="text-xs text-muted-foreground">{t("noReleasedPrompts")}</p>}
                 <details className="rounded-xl border border-border bg-background p-3">
                   <summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t("advancedJson")}</summary>
-                  <Textarea id="workflow-prompt-bundle" className="mt-2 min-h-24 font-mono text-xs" value={promptBundleText} onChange={(event) => setPromptBundleText(event.target.value)} placeholder={'{"generate_fragment":"ptv_..."}'} />
+                  <Textarea id="workflow-prompt-bundle" className="mt-2 min-h-24 font-mono text-xs" readOnly value={promptBundleText} placeholder={'{"generate_fragment":"ptv_..."}'} />
                 </details>
               </div>
             </div>
@@ -760,10 +783,7 @@ export default function WorkflowsPage() {
 
         <div className="grid xl:grid-cols-[290px_minmax(430px,1fr)_350px]">
           <aside className="border-b border-border bg-[#fbfbfa] p-5 xl:border-b-0 xl:border-r">
-            <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">1</span><div><h2 className="text-sm font-semibold">{t("workflowDetails")}</h2><p className="text-xs text-muted-foreground">{t("workflowDetailsHelp")}</p></div></div><div className="space-y-3">
-              <div className="rounded-xl border border-border bg-background p-3"><p className="text-xs font-medium text-muted-foreground">{t("workflowKind")}</p><div className="mt-2 grid grid-cols-3 gap-2">{(["storyboard", "fragment", "storyboardBranch"] as WorkflowKind[]).map((kind) => <button key={kind} type="button" disabled={!!editing} onClick={() => selectKind(kind)} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${form.kind === kind ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50"}`}>{t(`kind.${kind}`)}</button>)}</div></div>
-              <div className="rounded-xl border border-border bg-background p-3"><p className="text-xs font-medium text-muted-foreground">{t("basicsGroup")}</p><div className="mt-2.5 space-y-3"><div><Label htmlFor="workflow-key" className="text-xs">{t("key")}</Label><Input id="workflow-key" className="mt-1.5" disabled={!!editing} value={form.key} onChange={(event) => setForm({ ...form, key: event.target.value })} placeholder={form.kind === "fragment" ? "fragment_generation" : form.kind === "storyboardBranch" ? "storyboard_branch" : "storyboard_generation"} /></div><div><Label htmlFor="workflow-name" className="text-xs">{t("name")}</Label><Input id="workflow-name" className="mt-1.5" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("namePlaceholder")} /></div><div><Label htmlFor="workflow-description" className="text-xs">{t("workflowDescription")}</Label><Textarea id="workflow-description" className="mt-1.5 min-h-20" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder={t("descriptionPlaceholder")} /></div></div></div>
-            </div></section>
+
             <div className="my-6 border-t border-border" />
             <section><div className="mb-4 flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-[11px] font-semibold">2</span><div><h2 className="text-sm font-semibold">{t("settingsTableTitle")}</h2><p className="text-xs text-muted-foreground">{t("executionPolicyHelp")}</p></div></div><div className="space-y-3"><div className="rounded-xl border border-border bg-background p-3"><div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-muted-foreground" /><Label htmlFor="workflow-duration" className="text-xs">{t("maxDuration")}</Label></div><Input id="workflow-duration" className="mt-2" type="number" min="0.0834" max="12" step="0.0834" value={form.settings.maxDurationHours} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxDurationHours: event.target.value } }))} /><p className="mt-1 text-[11px] text-muted-foreground">{t("maxDurationHelp")}</p></div><div className="grid grid-cols-2 gap-2"><div className="rounded-xl border border-border bg-background p-3"><Label htmlFor="workflow-parallelism" className="text-xs">{t("maxParallelism")}</Label><Input id="workflow-parallelism" className="mt-2" type="number" min="1" max="32" step="1" value={form.settings.maxParallelism} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxParallelism: event.target.value } }))} /></div><div className="rounded-xl border border-border bg-background p-3"><Label htmlFor="workflow-attempts" className="text-xs">{t("maxAttempts")}</Label><Input id="workflow-attempts" className="mt-2" type="number" min="1" max="10" step="1" value={form.settings.maxAttempts} onChange={(event) => setForm((current) => ({ ...current, settings: { ...current.settings, maxAttempts: event.target.value } }))} /></div></div></div></section>
           </aside>
@@ -783,13 +803,14 @@ export default function WorkflowsPage() {
               const current = nodeInputDefaults(selectedNode)[field.key]
               const unsetOption = <option value="">{t("fieldUnset")}</option>
               return <div key={field.key} className="rounded-lg border border-border bg-background p-2.5"><Label className="text-[11px] font-normal text-muted-foreground">{t(field.labelKey)}</Label>{field.type === "boolean" ? <select value={current === undefined || current === null ? "" : String(current)} onChange={(event) => setNodeInputDefault(selectedNode.id, field.key, event.target.value === "" ? "" : event.target.value === "true")} className="mt-1.5 h-8 w-full rounded-lg border border-border px-2 text-sm">{unsetOption}<option value="true">{t("fieldTrue")}</option><option value="false">{t("fieldFalse")}</option></select> : field.type === "select" ? <select value={typeof current === "string" ? current : ""} onChange={(event) => setNodeInputDefault(selectedNode.id, field.key, event.target.value)} className="mt-1.5 h-8 w-full rounded-lg border border-border px-2 text-sm">{unsetOption}{(field.options || []).map((option) => <option key={option} value={option}>{option}</option>)}</select> : <input type={field.type === "number" ? "number" : "text"} value={current === undefined || current === null ? "" : String(current)} onChange={(event) => setNodeInputDefault(selectedNode.id, field.key, field.type === "number" ? (event.target.value === "" ? "" : Number(event.target.value)) : event.target.value)} className="mt-1.5 h-8 w-full rounded-lg border border-border px-2 text-sm" />}</div>
-            })}</div><details className="mt-2"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t("advancedJson")}</summary><Textarea id="node-operating-note" className="mt-2 min-h-36 resize-y bg-background font-mono text-xs" value={selectedNode.configText} onChange={(event) => updateNode(selectedNode.id, { configText: event.target.value })} placeholder={t("nodeNotePlaceholder")} /><p className="mt-2 text-[11px] leading-4 text-muted-foreground">{t("guidancePrompts")}</p></details></div>}
+            })}</div><details className="mt-2"><summary className="cursor-pointer text-xs font-medium text-muted-foreground">{t("advancedJson")}</summary><Textarea id="node-operating-note" className="mt-2 min-h-36 resize-y bg-background font-mono text-xs" value={selectedNode.configText} onChange={(event) => updateNode(selectedNode.id, { configText: event.target.value })} placeholder={t("creativeNodeConfigPlaceholder")} /><p className="mt-2 text-[11px] leading-4 text-muted-foreground">{t("guidancePrompts")}</p></details></div>}
             <div className="mt-3 rounded-xl border border-border bg-muted/40 p-3"><p className="text-xs font-semibold">{t("promptBindings")}</p>{(() => { const keys = Object.keys(promptBundle).filter((key) => key === selectedNode.id || key.startsWith(selectedNode.id + ":")); if (keys.length === 0) return <p className="mt-1.5 text-xs text-muted-foreground">{t("noPromptBound")}</p>; return <div className="mt-1.5 space-y-1">{keys.map((key) => { const slot = key === selectedNode.id ? null : key.slice(selectedNode.id.length + 1); const label = releasedPromptOptions.find((option) => option.value === promptBundle[key])?.label || promptBundle[key]; return <div key={key} className="flex items-center justify-between gap-2 text-xs"><span className="text-muted-foreground">{slot ? t(`slot_${slot.replace(/-/g, "_")}`) : t("wholeNodePrompt")}</span><span className="truncate font-medium text-foreground">{label}</span></div> })}</div> })()}</div>
-            {(selectedTemplate.fields?.length || 0) === 0 && <><Label htmlFor="node-operating-note" className="mt-4 block">{t("nodeNote")}</Label><Textarea id="node-operating-note" className="mt-2 min-h-44 resize-y" value={selectedNode.configText} onChange={(event) => updateNode(selectedNode.id, { configText: event.target.value })} placeholder={t("nodeNotePlaceholder")} /></>}<div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900"><Layers3 className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>{t("savedAsConfig")}</span></div></section> : <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{t("selectNode")}</div>}
+            {(selectedTemplate.fields?.length || 0) === 0 && <><Label htmlFor="node-operating-note" className="mt-4 block">{t("nodeNote")}</Label><Textarea id="node-operating-note" className="mt-2 min-h-44 resize-y" value={selectedNode.configText} onChange={(event) => updateNode(selectedNode.id, { configText: event.target.value })} placeholder={t("creativeNodeConfigPlaceholder")} /></>}<div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-5 text-blue-900"><Layers3 className="mt-0.5 h-3.5 w-3.5 shrink-0" /><span>{t("savedAsConfig")}</span></div></section> : <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{t("selectNode")}</div>}
             <section className="mt-5 rounded-xl border border-border p-4"><h3 className="text-sm font-semibold">{t("reviewTitle")}</h3><p className="mt-1 text-xs text-muted-foreground">{t("reviewHelp")}</p><div className="mt-4 space-y-3">{[[detailsReady, t("checkDetails")], [hasExecutablePath(form.nodes, form.kind), t("checkSequence")], [hasValidSettings(form.settings), t("checkPolicy")]].map(([ready, label]) => <div key={String(label)} className="flex items-center gap-2 text-xs">{ready ? <CircleCheck className="h-4 w-4 text-emerald-600" /> : <CircleDashed className="h-4 w-4 text-amber-600" />}<span className={ready ? "text-foreground" : "text-muted-foreground"}>{label}</span></div>)}</div><div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">{t("configuredSteps", { configured: configuredNodeCount, total: form.nodes.length })}</div></section>
             <section className="mt-5 rounded-xl bg-foreground p-4 text-background"><p className="text-xs font-semibold">{t("autoGeneratedTitle")}</p><p className="mt-1 text-xs leading-5 text-background/70">{t("autoGeneratedHelp")}</p></section>
           </aside>
         </div>
+        </details>
         </fieldset>
       </div>
       {bindingDialog}

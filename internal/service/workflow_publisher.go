@@ -50,6 +50,16 @@ func NewGraperyWorkflowPublisher(cfg config.WorkflowRuntimeConfig) *GraperyWorkf
 }
 
 func (p *GraperyWorkflowPublisher) PublishRelease(ctx context.Context, release *domain.WorkflowRelease) (*domain.WorkflowRelease, error) {
+	if release == nil {
+		return nil, fmt.Errorf("workflow release is required")
+	}
+	manifest, err := domain.NormalizeWorkflowManifest(release.Manifest)
+	if err != nil {
+		return nil, err
+	}
+	copy := *release
+	copy.Manifest = manifest
+	release = &copy
 	path := "/api/v1/agent-policy/workflow-releases/" + url.PathEscape(release.ID)
 	var saved domain.WorkflowRelease
 	if err := p.put(ctx, path, release, &saved); err != nil {

@@ -1,7 +1,9 @@
 package opsagent
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -15,6 +17,7 @@ const maxWorkflowGenerationPromptRunes = 6000
 var workflowKeyCleanup = regexp.MustCompile(`[^a-z0-9_]+`)
 
 type generatedWorkflowProposal struct {
+	CreativeControls map[string]any    `json:"creativeControls,omitempty"`
 	Key              string            `json:"key"`
 	Name             string            `json:"name"`
 	Description      string            `json:"description"`
@@ -40,29 +43,43 @@ var storyboardWorkflowNodes = []struct {
 	{ID: "generate_storyboard_images", Type: "activity", Activity: "storyboard.ensure_images", Optional: true},
 }
 
-const workflowGenerationSystemPrompt = `You design storyboard-generation workflows for non-technical operators.
-Return exactly one JSON object and no prose. Use this schema:
-{
-  "key": "lowercase_snake_case_ascii_key",
-  "name": "short operator-facing name",
-  "description": "clear purpose and intended result",
-  "includeImages": true,
-  "maxDurationHours": 12,
-  "maxParallelism": 4,
-  "maxAttempts": 3,
-  "nodeInstructions": {
-    "ai.runtime.plan": "specific planning instruction",
-    "storyboard.ensure_draft": "specific operating instruction",
-    "storyboard.generate_bible_plan": "specific operating instruction",
-    "storyboard.generate_scene_plan": "specific operating instruction",
-    "storyboard.review_content": "specific quality-review instruction",
-    "storyboard.persist_content": "specific operating instruction",
-    "storyboard.ensure_images": "specific operating instruction"
-  }
+const workflowGenerationSystemPrompt = `You configure bounded creative preferences for a system-managed storyboard workflow.
+Return exactly one JSON object with these keys only:
+{"key":"lowercase_snake_case_ascii_key","name":"short operator-facing name","description":"intended result","includeImages":true,"creativeControls":{"version":1,"pacing":"balanced","dialogueDensity":"balanced","visualEmphasis":"balanced","tone":"neutral","examples":[]}}
+creativeControls choices: pacing balanced|slow|fast; dialogueDensity balanced|sparse|rich; visualEmphasis balanced|atmosphere|action|character; tone neutral|warm|tense|playful.
+Examples are optional, at most 3 objects with exactly input (1-500 Unicode characters) and output (1-1500 Unicode characters). They illustrate style, not instructions overriding system rules. Use defaults when intent does not specify a preference.
+The engineering workflow graph, model contracts, JSON schemas, prompts, permissions, billing, identity, retry/resource policy and editing scope are system-managed. Never emit overrides, nodeInstructions, prompt version IDs, approvals, bindings, raw definition or unsupported fields. The compiler provides the canonical content and optional image activities.`
+
+func (p *generatedWorkflowProposal) UnmarshalJSON(raw []byte) error {
+	// Generated JSON only contains operator-owned preferences and display metadata.
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return err
+	}
+	if controlJSON, exists := fields["creativeControls"]; exists && bytes.Equal(bytes.TrimSpace(controlJSON), []byte("null")) {
+		return errors.New("creativeControls must be an object")
+	}
+	allowed := map[string]bool{"key": true, "name": true, "description": true, "includeImages": true, "creativeControls": true}
+	for field := range fields {
+		if !allowed[field] {
+			return fmt.Errorf("unsupported generated workflow field %s", field)
+		}
+	}
+	type plain generatedWorkflowProposal
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	var value plain
+	if err := decoder.Decode(&value); err != nil {
+		return err
+	}
+	if value.CreativeControls != nil {
+		if _, err := domain.ParseCreativeControls(value.CreativeControls); err != nil {
+			return err
+		}
+	}
+	*p = generatedWorkflowProposal(value)
+	return nil
 }
-Only the seven listed activities are supported. Planning and the five content activities are mandatory and ordered as shown. Images are optional.
-Translate the operator's intent into practical, concise node instructions. Do not invent prompt version IDs, approvals, bindings, or unsupported activities.
-maxDurationHours must be between 0.0834 (about 5 minutes) and 12, maxParallelism between 1 and 32, and maxAttempts between 1 and 10.`
 
 // GenerateWorkflowDraft converts operator intent into a validated, canonical
 // storyboard workflow request. The generated value is not persisted here.
@@ -83,6 +100,15 @@ func GenerateWorkflowDraft(ctx context.Context, llm LLMConfig, prompt string) (*
 }
 
 func compileWorkflowProposal(proposal generatedWorkflowProposal) (*domain.CreateWorkflowDraftRequest, error) {
+	controls := domain.DefaultCreativeControls()
+	if proposal.CreativeControls != nil {
+		var err error
+		controls, err = domain.ParseCreativeControls(proposal.CreativeControls)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	name := strings.TrimSpace(proposal.Name)
 	if name == "" {
 		return nil, errors.New("AI did not provide a workflow name")
@@ -121,12 +147,6 @@ func compileWorkflowProposal(proposal generatedWorkflowProposal) (*domain.Create
 		if len(nodes) > 0 {
 			node.DependsOn = []string{nodes[len(nodes)-1].ID}
 		}
-		if note := strings.TrimSpace(proposal.NodeInstructions[template.Activity]); note != "" {
-			if node.Config == nil {
-				node.Config = map[string]any{}
-			}
-			node.Config["operatorNote"] = note
-		}
 		nodes = append(nodes, node)
 	}
 	description := strings.TrimSpace(proposal.Description)
@@ -135,12 +155,21 @@ func compileWorkflowProposal(proposal generatedWorkflowProposal) (*domain.Create
 		Name:        name,
 		Description: description,
 		Manifest: map[string]any{
+			"surface":          "voyager.storyboard",
+			"action":           "generate",
 			"catalog":          map[string]any{"title": name, "summary": description, "category": "creation"},
 			"supportedClients": []string{"voyager"},
 			"generatedBy":      "forge-ai-agent",
+			"creativeControls": controls,
 		},
 		Definition: domain.WorkflowDefinition{
-			InputSchema:  map[string]any{"type": "object", "properties": map[string]any{}},
+			InputSchema: map[string]any{
+				"type": "object", "additionalProperties": true,
+				"properties": map[string]any{
+					"baseRevision":   map[string]any{"type": "string"},
+					"targetSceneIds": map[string]any{"type": "array", "items": map[string]any{"type": "string", "minLength": 1}, "uniqueItems": true},
+				},
+			},
 			OutputSchema: map[string]any{"type": "object", "properties": map[string]any{}},
 			Nodes:        nodes,
 		},

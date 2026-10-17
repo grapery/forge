@@ -30,6 +30,12 @@ func (s *WorkflowService) CreateDraft(req *domain.CreateWorkflowDraftRequest, ac
 	if req == nil || strings.TrimSpace(req.Key) == "" || strings.TrimSpace(req.Name) == "" {
 		return nil, errors.New("workflow key and name are required")
 	}
+	manifest, err := domain.NormalizeWorkflowManifest(req.Manifest)
+	if err != nil {
+		return nil, err
+	}
+	req.Manifest = manifest
+
 	if err := validateForgeWorkflow(req.Definition, req.Policies); err != nil {
 		return nil, err
 	}
@@ -97,6 +103,12 @@ func (s *WorkflowService) UpdateDraft(id string, req *domain.UpdateWorkflowDraft
 	if req == nil {
 		return nil, errors.New("workflow update is required")
 	}
+	manifest, err := domain.NormalizeWorkflowManifest(req.Manifest)
+	if err != nil {
+		return nil, err
+	}
+	req.Manifest = manifest
+
 	if err := validateForgeWorkflow(req.Definition, req.Policies); err != nil {
 		return nil, err
 	}
@@ -128,6 +140,10 @@ func (s *WorkflowService) SubmitForReview(id, actor string) error {
 	if err != nil {
 		return err
 	}
+	if _, err := domain.NormalizeWorkflowManifest(draft.Manifest); err != nil {
+		return err
+	}
+
 	if err := validateForgeWorkflow(draft.Definition, draft.Policies); err != nil {
 		return err
 	}
@@ -172,6 +188,18 @@ func (s *WorkflowService) Publish(ctx context.Context, id, actor string) (*domai
 	if draft.Status != domain.WorkflowDraftStatusApproved || len(draft.ApprovedBy) == 0 {
 		return nil, errors.New("workflow must be approved before publishing")
 	}
+	manifest, err := domain.NormalizeWorkflowManifest(draft.Manifest)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateForgeWorkflow(draft.Definition, draft.Policies); err != nil {
+		return nil, err
+	}
+	if err := validateForgePromptBundle(draft.Definition, draft.PromptBundle); err != nil {
+		return nil, err
+	}
+	draft.Manifest = manifest
+
 	now := time.Now().UTC()
 	release := &domain.WorkflowRelease{
 		ID: "wfr_" + strings.TrimPrefix(draft.ID, "wfd_"), Key: draft.Key, Version: draft.Version,
@@ -539,19 +567,52 @@ func validateForgeWorkflow(definition domain.WorkflowDefinition, policies domain
 	return nil
 }
 
-// Runtime activities currently expose one operator-owned configuration
-// contract. Prompt/model configuration is versioned through PromptBundle and
-// must not be duplicated as inert arbitrary JSON on a node.
+// Only bounded input defaults and the planner field allowlist belong in node
+// configuration. Voyager creative preferences live in the manifest; core prompt,
+// schema, identity, billing and edit scope remain system-managed.
 func validateForgeNodeConfig(node domain.WorkflowNode) error {
 	for key, value := range node.Config {
-		if key != "inputDefaults" {
+		switch key {
+		case "inputDefaults":
+			defaults, ok := value.(map[string]any)
+			if !ok {
+				return fmt.Errorf("node %s inputDefaults must be an object", node.ID)
+			}
+			for field := range defaults {
+				if forgeSystemOwnedInput(field) {
+					return fmt.Errorf("node %s inputDefaults cannot override system-owned %s", node.ID, field)
+				}
+			}
+		case "inputPatchAllowlist":
+			if node.Activity != "ai.runtime.plan" {
+				return fmt.Errorf("node %s cannot define a planner allowlist", node.ID)
+			}
+			raw, err := json.Marshal(value)
+			if err != nil {
+				return err
+			}
+			var fields []string
+			if json.Unmarshal(raw, &fields) != nil {
+				return fmt.Errorf("planner inputPatchAllowlist must be a string array")
+			}
+			allowed := map[string]bool{"sceneCount": true, "generateImages": true, "continuityLevel": true, "visualBibleStrategy": true, "characterStrategy": true, "acceptanceChecks": true}
+			for _, field := range fields {
+				if !allowed[field] {
+					return fmt.Errorf("planner cannot override system-owned %s", field)
+				}
+			}
+		default:
 			return fmt.Errorf("node %s has unsupported runtime config %s", node.ID, key)
-		}
-		if _, ok := value.(map[string]any); !ok {
-			return fmt.Errorf("node %s inputDefaults must be an object", node.ID)
 		}
 	}
 	return nil
+}
+func forgeSystemOwnedInput(field string) bool {
+	switch field {
+	case "systemPrompt", "workflowSystemPrompt", "workflowUserPrompt", "workflowOutputSchema", "workflowModelConfig", "promptBundle", "promptSnapshots", "outputSchema", "jsonSchema", "userId", "authorId", "creatorId", "billingVersion", "billingStatus", "quotaReservationId", "permissions", "identity", "editScope", "operation", "targetSceneIds", "targetIndexes", "replaceImageIndex", "baseRevision":
+		return true
+	}
+	return false
 }
 
 func validateForgePromptBundle(definition domain.WorkflowDefinition, bundle map[string]string) error {

@@ -165,3 +165,24 @@ resolution, and recovery. Production should also keep
   Bible/Scene transaction remains one background content pipeline, while the
   externally durable workflow now has separate draft/content/image recovery
   boundaries.
+
+## 创作偏好与工程默认（2026-10-17）
+
+默认工作流不要求运营绑定提示词。主编辑页只配置作品偏好和少量示例，节点图、提示词版本绑定、资源策略和原始 JSON 位于折叠的「高级工程配置」。提示词模板产品保留给工程维护及其他产品用途。
+
+`release.manifest.creativeControls` 是可选的 v1 对象。缺省使用工程默认；对象内省略字段按默认补齐，提供的 `version` 必须为 `1`。四个枚举为：
+
+- `pacing`: `balanced`（默认）、`slow`、`fast`
+- `dialogueDensity`: `balanced`（默认）、`sparse`、`rich`
+- `visualEmphasis`: `balanced`（默认）、`atmosphere`、`action`、`character`
+- `tone`: `neutral`（默认）、`warm`、`tense`、`playful`
+
+`examples` 可选且最多 3 组，每组只能有非空 `input`（最多 500 Unicode 字符）和 `output`（最多 1500 Unicode 字符）。创作偏好对象及示例中的未知键、非法枚举、null、错误类型均拒绝。JSON 契约、权限、计费、角色身份和编辑范围属于系统约束，不能通过偏好、示例或节点默认输入覆盖。
+
+Create、Update、提交审核和发布都会校验该对象。它保存在原有 manifest JSON 内，沿用版本、revision、审核、发布 checksum、复制下一版和路由回滚流程，不增加数据表。AI 辅助只提出受限偏好，执行节点和规划输入白名单由编译器生成，不把自由文字作为系统提示词写入节点。
+
+本地回归：`go test ./internal/domain ./internal/service ./internal/opsagent`；web 执行 `npm run test:creative-controls`、TypeScript 和 ESLint 检查。这里的自动化验证不替代真实模型创作质量验收。
+
+Voyager 的故事碎片、故事板和角色默认草稿分别写入 `manifest.surface = voyager.fragment / voyager.storyboard / voyager.character`、`action = generate`；分支保留 `voyager.storyboard / branch`。角色默认节点使用 `legacy.character.generate`，默认异步生成记录、肖像、头像和三视图。高级区历史 PromptBundle 只读，版本 ID 仅保留审核用途，正文不再影响 Voyager 创作；其他产品的提示词管理功能保留。AI 工作流编译器只接受名称、用途、是否绘图及受限创作偏好，拒绝自由节点指令和资源策略覆盖。
+
+跨端边界：省略 creativeControls key 使用默认；显式整体 null、任一字段 null、非法 version/枚举、空白/不完整/带未知键的示例均拒绝。version 可省略，持久化归一为 1。
